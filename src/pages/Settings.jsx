@@ -3,39 +3,13 @@ import { Sun, Moon, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save,
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS } from "../data/mockData";
-import { fetchAuditLog } from "../lib/db";
-
-const ACTION_LABELS = {
-  "user.login": "Logged in",
-  "user.updated": "Updated a user",
-  "event.created": "Created an event",
-  "event.updated": "Edited an event",
-  "event.status_changed": "Changed event status",
-  "event.deleted": "Deleted an event",
-  "registration.updated": "Updated a registration",
-  "registration.attendance_changed": "Changed attendance status",
-  "registration.deleted": "Deleted a registration",
-  "certificate.approved": "Approved a certificate",
-  "certificate.deleted": "Deleted a certificate",
-  "file.uploaded": "Uploaded a file",
-  "file.deleted": "Deleted a file",
-};
-
-function relativeTime(iso) {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.round(diffMs / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours} hr ago`;
-  const days = Math.round(hours / 24);
-  return `${days} day${days === 1 ? "" : "s"} ago`;
-}
+import { relativeTime, ACTION_LABELS } from "../lib/helpers";
 
 export default function Settings({
   dark, setDark, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
   redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
+  tags = [], onSaveTag, onDeleteTag, onReorderTags, onBackfillStaffLinks, auditLog = [],
 }) {
   const [toggles, setToggles] = useState({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: true });
   const [devMode, setDevMode] = useState(false);
@@ -46,7 +20,29 @@ export default function Settings({
   const [profileAvatarId, setProfileAvatarId] = useState(session?.avatarId || CHARACTERS[0].id);
   const [profileAvatarColor, setProfileAvatarColor] = useState(session?.avatarColor || "blue");
   const canManageUsers = role === "admin" || role === "owner";
-  const [auditLog, setAuditLog] = useState([]);
+  const [tagsExpanded, setTagsExpanded] = useState(false);
+  const [editingTagId, setEditingTagId] = useState(null); // null | "new" | <id>
+  const [tagName, setTagName] = useState("");
+  const [tagError, setTagError] = useState("");
+
+  const startAddTag = () => { setEditingTagId("new"); setTagName(""); setTagError(""); };
+  const startEditTag = (t) => { setEditingTagId(t.id); setTagName(t.name); setTagError(""); };
+  const cancelTagEdit = () => { setEditingTagId(null); setTagError(""); };
+  const saveTag = () => {
+    if (!tagName.trim()) { setTagError("Please enter a tag name."); return; }
+    const isNew = editingTagId === "new";
+    onSaveTag({ id: isNew ? "tag" + Date.now() : editingTagId, name: tagName.trim(), sortOrder: isNew ? tags.length : tags.find(t => t.id === editingTagId)?.sortOrder ?? 0 }, isNew);
+    setEditingTagId(null);
+    setTagError("");
+  };
+  const moveTag = (index, dir) => {
+    const next = [...tags];
+    const swapWith = index + dir;
+    if (swapWith < 0 || swapWith >= next.length) return;
+    [next[index], next[swapWith]] = [next[swapWith], next[index]];
+    onReorderTags(next);
+  };
+  const alphabetizeTags = () => onReorderTags([...tags].sort((a, b) => a.name.localeCompare(b.name)));
   const [expandedUserId, setExpandedUserId] = useState(null);
   const [sessionActionStatus, setSessionActionStatus] = useState({});
   const [editingCpdTypeId, setEditingCpdTypeId] = useState(null); // null | "new" | <id>
@@ -72,10 +68,6 @@ export default function Settings({
     setEditingCpdTypeId(null);
     setCpdTypeError("");
   };
-
-  useEffect(() => {
-    if (canManageUsers) fetchAuditLog(50).then(setAuditLog);
-  }, [canManageUsers]);
 
   useEffect(() => {
     setProfileName(session?.name || "");
@@ -228,6 +220,15 @@ export default function Settings({
         <div className="whmi-card p-4">
           <div className="flex items-center gap-2 mb-1"><Shield size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Team Access</div></div>
           <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Admins have full rights. Owners can do everything except change code. Viewers can only see their own certificates and CPD history.</div>
+          {(() => {
+            const unlinkedCount = users.filter(u => ["admin", "owner"].includes(u.role) && !u.staffId).length;
+            return unlinkedCount > 0 && (
+              <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg mb-3" style={{ background: "var(--surface-2)" }}>
+                <span className="text-[11.5px]">{unlinkedCount} admin/owner{unlinkedCount === 1 ? "" : "s"} not yet in the Staff Directory.</span>
+                <button onClick={onBackfillStaffLinks} className="whmi-btn-ghost !py-1 !px-2.5 text-[11.5px] shrink-0">Add to Staff</button>
+              </div>
+            );
+          })()}
           <div className="space-y-1.5 mb-3">
             {visibleUsers.map(u => {
               const expanded = expandedUserId === u.id;
@@ -437,6 +438,64 @@ export default function Settings({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {canManageUsers && (
+        <div className="whmi-card p-4">
+          <button onClick={() => setTagsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              {tagsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <BadgeCheck size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Tags</div>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{tags.length}</span>
+          </button>
+          {tagsExpanded && (
+            <>
+              <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>The Topics chips shown on the event form. New tags typed there are added here automatically; reorder, rename, or delete them below.</div>
+              <div className="flex gap-1.5 mb-2">
+                {editingTagId === null && (
+                  <button onClick={startAddTag} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px]"><Plus size={13} />Add Tag</button>
+                )}
+                <button onClick={alphabetizeTags} className="whmi-btn-ghost text-[11.5px]">Sort Alphabetically</button>
+              </div>
+              <div className="space-y-1.5">
+                {tags.map((t, i) => (
+                  editingTagId === t.id ? (
+                    <div key={t.id} className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
+                      <input autoFocus value={tagName} onChange={e => setTagName(e.target.value)} placeholder="Tag name" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
+                      {tagError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{tagError}</div>}
+                      <div className="flex gap-1.5 justify-end">
+                        <button onClick={cancelTagEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
+                        <button onClick={saveTag} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
+                      <div className="text-[12.5px] font-semibold truncate">{t.name}</div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => moveTag(i, -1)} disabled={i === 0} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === 0 ? 0.4 : 1 }}><ArrowUp size={13} /></button>
+                        <button onClick={() => moveTag(i, 1)} disabled={i === tags.length - 1} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === tags.length - 1 ? 0.4 : 1 }}><ArrowDown size={13} /></button>
+                        <button onClick={() => startEditTag(t)} className="whmi-btn-ghost !p-1.5"><Pencil size={13} /></button>
+                        <button onClick={() => onDeleteTag(t)} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
+                      </div>
+                    </div>
+                  )
+                ))}
+                {tags.length === 0 && editingTagId !== "new" && <div className="text-[12px]" style={{ color: "var(--text-faint)" }}>No tags added yet.</div>}
+                {editingTagId === "new" && (
+                  <div className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
+                    <input autoFocus value={tagName} onChange={e => setTagName(e.target.value)} placeholder="Tag name" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
+                    {tagError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{tagError}</div>}
+                    <div className="flex gap-1.5 justify-end">
+                      <button onClick={cancelTagEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
+                      <button onClick={saveTag} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Add</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 

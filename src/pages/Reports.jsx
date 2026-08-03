@@ -84,7 +84,7 @@ async function exportPdf(rows, year, stats) {
   URL.revokeObjectURL(link.href);
 }
 
-export default function Reports({ events, previousEvents, registrations, reflections, primaryHex, secondaryHex, successHex }) {
+export default function Reports({ events, previousEvents, registrations, reflections, primaryHex, secondaryHex, successHex, tags = [] }) {
   const year = new Date().getFullYear();
   const eventsThisYear = [...events, ...previousEvents].filter(ev => new Date(`${ev.date}T00:00:00`).getFullYear() === year);
   const previousEventsThisYear = previousEvents.filter(ev => new Date(`${ev.date}T00:00:00`).getFullYear() === year);
@@ -96,7 +96,7 @@ export default function Reports({ events, previousEvents, registrations, reflect
   const feedbackAvg = avgFeedback(reflections, { limit: previousEventsThisYear.length || 1 });
 
   const trendData = attendanceTrend(previousEvents, registrations);
-  const topicData = topicPopularity(previousEvents, { year });
+  const topicData = topicPopularity(previousEvents, tags, { year });
   const hoursData = monthlyHours(previousEvents);
 
   const rows = reportRows(previousEventsThisYear, registrations, reflections);

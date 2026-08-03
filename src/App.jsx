@@ -7,7 +7,7 @@ import ExternalDashboard from "./pages/ExternalDashboard";
 import MyCertificates from "./pages/MyCertificates";
 import UpcomingEvents from "./pages/UpcomingEvents";
 import PreviousEvents from "./pages/PreviousEvents";
-import StaffDirectory from "./pages/StaffDirectory";
+import StaffDirectory, { blankStaff } from "./pages/StaffDirectory";
 import Reports from "./pages/Reports";
 import Certificates from "./pages/Certificates";
 import Settings from "./pages/Settings";
@@ -40,6 +40,7 @@ import {
   fetchReflections, insertReflection, deleteReflection, fetchDismissedPairs, insertDismissedPair,
   fetchAllFiles, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
   fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType, sendCertificateEmail,
+  fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog,
 } from "./lib/db";
 
 const WH_DOMAIN = "@wh.org.au";
@@ -57,6 +58,17 @@ export default function App() {
   const [reflections, setReflections] = useState([]);
   const [files, setFiles] = useState([]);
   const [cpdTypes, setCpdTypes] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [auditLog, setAuditLog] = useState([]);
+  // Writes to the DB and optimistically prepends locally so the Dashboard's Recent Activity
+  // feed reflects actions immediately, without waiting for a reload.
+  const pushAudit = (entry) => {
+    logAudit(entry);
+    setAuditLog(prev => [
+      { id: "temp" + Date.now() + Math.random().toString(36).slice(2, 6), createdAt: new Date().toISOString(), entityType: null, entityId: null, details: null, ...entry },
+      ...prev,
+    ].slice(0, 50));
+  };
   const [dismissedRegistrationPairs, setDismissedRegistrationPairs] = useState(new Set());
   const [dismissedReflectionPairs, setDismissedReflectionPairs] = useState(new Set());
   const [acknowledged, setAcknowledged] = useState(new Set());
@@ -78,6 +90,7 @@ export default function App() {
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [registerDefaultEventId, setRegisterDefaultEventId] = useState(null);
   const [createEventOpen, setCreateEventOpen] = useState(false);
+  const [createPreviousEventOpen, setCreatePreviousEventOpen] = useState(false);
   const [createCertificateOpen, setCreateCertificateOpen] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [previewSession, setPreviewSession] = useState(null);
@@ -131,10 +144,11 @@ export default function App() {
   const loadAppData = async () => {
     const [
       userList, staffList, eventList, prevEventList, certList, regList, externalList, reflectionList, fileList,
-      dismissedRegList, dismissedRefList, cpdTypeList,
+      dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList,
     ] = await Promise.all([
       fetchUsers(), fetchStaff(), fetchEvents(), fetchPreviousEvents(), fetchCertificates(), fetchRegistrations(), fetchExternalParticipants(),
-      fetchReflections(), fetchAllFiles(), fetchDismissedPairs("registration"), fetchDismissedPairs("reflection"), fetchCpdTypes(),
+      fetchReflections(), fetchAllFiles(), fetchDismissedPairs("registration"), fetchDismissedPairs("reflection"), fetchCpdTypes(), fetchTags(),
+      fetchAuditLog(50),
     ]);
     setUsers(userList);
     setStaffDirectory(staffList);
@@ -148,11 +162,13 @@ export default function App() {
     setDismissedRegistrationPairs(new Set(dismissedRegList));
     setDismissedReflectionPairs(new Set(dismissedRefList));
     setCpdTypes(cpdTypeList);
+    setTags(tagList);
+    setAuditLog(auditLogList);
   };
 
   const clearAppData = () => {
     setUsers([]); setStaffDirectory([]); setEvents([]); setPreviousEvents([]); setCertificates([]);
-    setRegistrations([]); setExternalParticipants([]); setReflections([]); setFiles([]); setCpdTypes([]);
+    setRegistrations([]); setExternalParticipants([]); setReflections([]); setFiles([]); setCpdTypes([]); setTags([]); setAuditLog([]);
     setDismissedRegistrationPairs(new Set()); setDismissedReflectionPairs(new Set());
   };
 
@@ -171,7 +187,7 @@ export default function App() {
         setPage(profile.role === "viewer" ? "mycpd" : "dashboard");
         await loadAppData();
         if (!mounted) return;
-        if (event === "SIGNED_IN") logAudit({ actorId: profile.id, action: "user.login" });
+        if (event === "SIGNED_IN") pushAudit({ actorId: profile.id, action: "user.login" });
       } else {
         setSession(null);
         clearAppData();
@@ -190,7 +206,7 @@ export default function App() {
   }, []);
 
   const handleLogout = () => {
-    if (session) logAudit({ actorId: session.id, action: "user.logout" });
+    if (session) pushAudit({ actorId: session.id, action: "user.logout" });
     setProfileOpen(false);
     setPreviewSession(null);
     supabase?.auth.signOut();
@@ -213,9 +229,25 @@ export default function App() {
     setSession(s => ({ ...s, ...patch }));
     setShowTour(true);
   };
+  // Every admin/owner should show up in the Staff Directory; auto-create and link a
+  // standalone staff record the moment a user becomes admin/owner (creation or promotion)
+  // if they don't already have one.
+  const autoLinkStaffFor = (u) => {
+    const staffRec = {
+      id: "s" + Date.now() + Math.random().toString(36).slice(2, 6), name: u.name,
+      profession: "", department: "", campuses: [], hours: 0, attended: 0, certificates: 0,
+      modality: "General XR", grade: "Grade 1", qualifiedYear: null, hoursLast3Years: null,
+      eventsThisYear: null, lastAttended: null, attendedEventIds: [],
+    };
+    insertStaff(staffRec);
+    setStaffDirectory(prev => [...prev, staffRec]);
+    updateUser(u.id, { staffId: staffRec.id });
+    pushAudit({ actorId: session?.id, action: "staff.created", entityType: "staff", entityId: staffRec.id, details: { name: staffRec.name } });
+    return staffRec.id;
+  };
   const handleUsersChange = (newList) => {
     const prevById = new Map(users.map(u => [u.id, u]));
-    newList.forEach(u => {
+    const finalList = newList.map(u => {
       const prev = prevById.get(u.id);
       if (!prev) insertUser(u);
       else if (
@@ -223,13 +255,25 @@ export default function App() {
         prev.verified !== u.verified || prev.secondaryEmail !== u.secondaryEmail || prev.certEmailPreference !== u.certEmailPreference
       ) {
         updateUser(u.id, u);
-        logAudit({
+        pushAudit({
           actorId: session?.id, action: "user.updated", entityType: "user", entityId: u.id,
           details: { role: u.role, name: u.name, userType: u.userType, verified: u.verified },
         });
       }
+      if (["admin", "owner"].includes(u.role) && !u.staffId) {
+        return { ...u, staffId: autoLinkStaffFor(u) };
+      }
+      return u;
     });
-    setUsers(newList);
+    setUsers(finalList);
+  };
+  const handleBackfillStaffLinks = () => {
+    const unlinked = users.filter(u => ["admin", "owner"].includes(u.role) && !u.staffId);
+    if (unlinked.length === 0) return;
+    setUsers(prev => prev.map(u => {
+      const needsLink = unlinked.some(x => x.id === u.id);
+      return needsLink ? { ...u, staffId: autoLinkStaffFor(u) } : u;
+    }));
   };
   const requestSaveUserContact = (user, patch) => requestConfirm({
     title: "Save contact details?",
@@ -238,13 +282,13 @@ export default function App() {
     onConfirm: () => {
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...patch } : u));
       updateUser(user.id, patch);
-      logAudit({ actorId: session?.id, action: "user.updated", entityType: "user", entityId: user.id, details: patch });
+      pushAudit({ actorId: session?.id, action: "user.updated", entityType: "user", entityId: user.id, details: patch });
     },
   });
   const handleRevokeSession = async (u, action) => {
     const result = await revokeUserSession(u.authId, action);
     if (result.ok) {
-      logAudit({
+      pushAudit({
         actorId: session?.id, action: action === "restore" ? "user.session_restored" : "user.session_revoked",
         entityType: "user", entityId: u.id, details: { name: u.name },
       });
@@ -257,13 +301,13 @@ export default function App() {
     setStaffDirectory(prev => prev.map(s => s.id === rec.id ? rec : s));
     updateStaff(rec.id, rec);
     setSelectedStaff(rec);
-    logAudit({ actorId: session?.id, action: "staff.updated", entityType: "staff", entityId: rec.id, details: { name: rec.name } });
+    pushAudit({ actorId: session?.id, action: "staff.updated", entityType: "staff", entityId: rec.id, details: { name: rec.name } });
   };
   const handleStaffCreate = (rec, linkedUserId) => {
     setStaffDirectory(prev => [...prev, rec]);
     insertStaff(rec);
     setSelectedStaff(rec);
-    logAudit({ actorId: session?.id, action: "staff.created", entityType: "staff", entityId: rec.id, details: { name: rec.name } });
+    pushAudit({ actorId: session?.id, action: "staff.created", entityType: "staff", entityId: rec.id, details: { name: rec.name } });
     if (linkedUserId) {
       setUsers(prev => prev.map(u => u.id === linkedUserId ? { ...u, staffId: rec.id } : u));
       updateUser(linkedUserId, { staffId: rec.id });
@@ -275,12 +319,12 @@ export default function App() {
     setEvents(prev => prev.map(e => e.id === selectedEvent.id ? { ...e, status: newStatus } : e));
     setSelectedEvent(ev => ev ? { ...ev, status: newStatus } : ev);
     updateEventStatus(selectedEvent.id, newStatus);
-    logAudit({ actorId: session?.id, action: "event.status_changed", entityType: "event", entityId: selectedEvent.id, details: { from: fromStatus, to: newStatus } });
+    pushAudit({ actorId: session?.id, action: "event.status_changed", entityType: "event", entityId: selectedEvent.id, details: { from: fromStatus, to: newStatus } });
   };
   const handleApproveCertificate = (cert) => {
     setCertificates(prev => prev.map(c => c.id === cert.id ? { ...c, status: "Sent" } : c));
     updateCertificateStatus(cert.id, "Sent");
-    logAudit({ actorId: session?.id, action: "certificate.approved", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
+    pushAudit({ actorId: session?.id, action: "certificate.approved", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
   };
   const handleApproveAndSendAll = async () => {
     const awaiting = certificates.filter(c => c.status === "Awaiting Approval");
@@ -288,7 +332,7 @@ export default function App() {
       const res = await sendCertificateEmail(cert.id, false);
       if (res.ok) {
         setCertificates(prev => prev.map(c => c.id === cert.id ? { ...c, status: "Sent", sentAt: new Date().toISOString() } : c));
-        logAudit({ actorId: session?.id, action: "certificate.approved", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
+        pushAudit({ actorId: session?.id, action: "certificate.approved", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
       }
     }
   };
@@ -296,24 +340,29 @@ export default function App() {
     const res = await sendCertificateEmail(cert.id, true);
     if (res.ok) {
       setCertificates(prev => prev.map(c => c.id === cert.id ? { ...c, resendCount: (c.resendCount || 0) + 1, lastResentAt: new Date().toISOString() } : c));
-      logAudit({ actorId: session?.id, action: "certificate.resent", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
+      pushAudit({ actorId: session?.id, action: "certificate.resent", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
     }
   };
   const handleManualCertificateCreated = async () => {
     const certList = await fetchCertificates();
     setCertificates(certList);
-    logAudit({ actorId: session?.id, action: "certificate.created_manual" });
+    pushAudit({ actorId: session?.id, action: "certificate.created_manual" });
   };
   const handleCreateEvent = (payload) => {
     setEvents(prev => [...prev, payload]);
     insertEvent(payload);
-    logAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: payload.id, details: { title: payload.title } });
+    pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: payload.id, details: { title: payload.title } });
+  };
+  const handleCreatePreviousEvent = (payload) => {
+    setPreviousEvents(prev => [...prev, payload]);
+    insertEvent(payload);
+    pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
   const handleUpdateEvent = (payload) => {
     setEvents(prev => prev.map(e => e.id === payload.id ? payload : e));
     setSelectedEvent(payload);
     updateEvent(payload.id, payload);
-    logAudit({ actorId: session?.id, action: "event.updated", entityType: "event", entityId: payload.id, details: { title: payload.title } });
+    pushAudit({ actorId: session?.id, action: "event.updated", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
   // Previous events live in a separate fetched array from `events`; updating that one
   // instead keeps the archive view in sync without needing a refetch.
@@ -321,7 +370,7 @@ export default function App() {
     setPreviousEvents(prev => prev.map(e => e.id === payload.id ? { ...e, ...payload } : e));
     setSelectedArchiveEvent(ev => ev ? { ...ev, ...payload } : ev);
     updateEvent(payload.id, payload);
-    logAudit({ actorId: session?.id, action: "event.updated", entityType: "event", entityId: payload.id, details: { title: payload.title } });
+    pushAudit({ actorId: session?.id, action: "event.updated", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
 
   // Centralised confirm flow; deletes, and any other "are you sure?" action, route through here.
@@ -342,12 +391,12 @@ export default function App() {
     setEvents(prev => prev.filter(e => e.id !== ev.id));
     deleteEventRow(ev.id);
     setSelectedEvent(null);
-    logAudit({ actorId: session?.id, action: "event.deleted", entityType: "event", entityId: ev.id, details: { title: ev.title } });
+    pushAudit({ actorId: session?.id, action: "event.deleted", entityType: "event", entityId: ev.id, details: { title: ev.title } });
   });
   const requestDeleteCertificate = (c) => requestDelete(`the certificate for "${c.staff}"`, () => {
     setCertificates(prev => prev.filter(x => x.id !== c.id));
     deleteCertificateRow(c.id);
-    logAudit({ actorId: session?.id, action: "certificate.deleted", entityType: "certificate", entityId: c.id, details: { staff: c.staff } });
+    pushAudit({ actorId: session?.id, action: "certificate.deleted", entityType: "certificate", entityId: c.id, details: { staff: c.staff } });
   });
 
   const requestSaveCpdType = (cpdType, isNew) => requestConfirm({
@@ -358,18 +407,52 @@ export default function App() {
       if (isNew) {
         setCpdTypes(prev => [...prev, cpdType]);
         insertCpdType(cpdType);
-        logAudit({ actorId: session?.id, action: "cpd_type.created", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
+        pushAudit({ actorId: session?.id, action: "cpd_type.created", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
       } else {
         setCpdTypes(prev => prev.map(t => t.id === cpdType.id ? cpdType : t));
         updateCpdType(cpdType.id, cpdType);
-        logAudit({ actorId: session?.id, action: "cpd_type.updated", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
+        pushAudit({ actorId: session?.id, action: "cpd_type.updated", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
       }
     },
   });
+  const handleAddTag = (name) => {
+    if (tags.some(t => t.name.toLowerCase() === name.toLowerCase())) return;
+    const tag = { id: "tag" + Date.now(), name, sortOrder: tags.length };
+    setTags(prev => [...prev, tag]);
+    insertTag(tag);
+    pushAudit({ actorId: session?.id, action: "tag.created", entityType: "tag", entityId: tag.id, details: { name } });
+  };
+  const requestSaveTag = (tag, isNew) => requestConfirm({
+    title: isNew ? "Add tag?" : "Save changes?",
+    message: `${isNew ? "Add" : "Rename to"} "${tag.name}"?`,
+    confirmLabel: isNew ? "Add" : "Save",
+    onConfirm: () => {
+      if (isNew) {
+        setTags(prev => [...prev, tag]);
+        insertTag(tag);
+        pushAudit({ actorId: session?.id, action: "tag.created", entityType: "tag", entityId: tag.id, details: { name: tag.name } });
+      } else {
+        setTags(prev => prev.map(t => t.id === tag.id ? tag : t));
+        updateTag(tag.id, tag);
+        pushAudit({ actorId: session?.id, action: "tag.updated", entityType: "tag", entityId: tag.id, details: { name: tag.name } });
+      }
+    },
+  });
+  const requestDeleteTag = (tag) => requestDelete(`the tag "${tag.name}"`, () => {
+    setTags(prev => prev.filter(t => t.id !== tag.id));
+    deleteTag(tag.id);
+    pushAudit({ actorId: session?.id, action: "tag.deleted", entityType: "tag", entityId: tag.id, details: { name: tag.name } });
+  });
+  const handleReorderTags = (newOrder) => {
+    const withOrder = newOrder.map((t, i) => ({ ...t, sortOrder: i }));
+    setTags(withOrder);
+    withOrder.forEach(t => updateTag(t.id, { sortOrder: t.sortOrder }));
+  };
+
   const requestDeleteCpdType = (cpdType) => requestDelete(`the CPD type "${cpdType.name}"`, () => {
     setCpdTypes(prev => prev.filter(t => t.id !== cpdType.id));
     deleteCpdType(cpdType.id);
-    logAudit({ actorId: session?.id, action: "cpd_type.deleted", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
+    pushAudit({ actorId: session?.id, action: "cpd_type.deleted", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
   });
 
   // Test accounts exist purely for admin/owner "preview as" — no real Supabase Auth
@@ -385,7 +468,7 @@ export default function App() {
     };
     setUsers(prev => [...prev, newUser]);
     insertUser(newUser);
-    logAudit({ actorId: session?.id, action: "user.updated", entityType: "user", entityId: newUser.id, details: { name: newUser.name, isTest: true } });
+    pushAudit({ actorId: session?.id, action: "user.updated", entityType: "user", entityId: newUser.id, details: { name: newUser.name, isTest: true } });
   };
 
   const handleToggleRedDots = () => {
@@ -428,13 +511,13 @@ export default function App() {
   const requestDeleteRegistration = (reg) => requestDelete(`the registration for "${reg.name}"`, () => {
     setRegistrations(prev => prev.filter(r => r.id !== reg.id));
     deleteRegistration(reg.id);
-    logAudit({ actorId: session?.id, action: "registration.deleted", entityType: "registration", entityId: reg.id, details: { name: reg.name, eventId: reg.eventId } });
+    pushAudit({ actorId: session?.id, action: "registration.deleted", entityType: "registration", entityId: reg.id, details: { name: reg.name, eventId: reg.eventId } });
   });
 
   const handleUpdateRegistrationField = (reg, patch) => {
     setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, ...patch } : r));
     updateRegistration(reg.id, patch);
-    logAudit({ actorId: session?.id, action: "registration.updated", entityType: "registration", entityId: reg.id, details: patch });
+    pushAudit({ actorId: session?.id, action: "registration.updated", entityType: "registration", entityId: reg.id, details: patch });
   };
 
   // Attendance-status edits can free up a spot (Registered/Attended -> Cancelled/No Show),
@@ -458,7 +541,7 @@ export default function App() {
       return next;
     });
     updateRegistration(reg.id, { attendanceStatus: newStatus });
-    logAudit({ actorId: session?.id, action: "registration.attendance_changed", entityType: "registration", entityId: reg.id, details: { status: newStatus } });
+    pushAudit({ actorId: session?.id, action: "registration.attendance_changed", entityType: "registration", entityId: reg.id, details: { status: newStatus } });
   };
 
   const requestDeleteReflection = (r) => requestDelete(`the reflection from "${r.name}"`, () => {
@@ -629,21 +712,24 @@ export default function App() {
             {page === "dashboard" && viewSession.role !== "viewer" && (
               <Dashboard
                 events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} certificates={certificates} files={files}
+                auditLog={auditLog} users={users}
                 openEvent={openEvent} setPage={changePage} layoutOrder={layoutOrder} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} userName={viewSession.name.split(" ")[0]}
                 onCreateCertificate={() => { changePage("certificates"); setCreateCertificateOpen(true); }}
+                onAddStaff={() => { changePage("staff"); setSelectedStaff(blankStaff()); }}
+                onAddEvent={() => { changePage("upcoming"); setCreateEventOpen(true); }}
               />
             )}
             {page === "mycpd" && viewSession.userType === "external" && (
-              <ExternalDashboard user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} openEvent={openEvent} onOpenRegister={handleOpenRegister} />
+              <ExternalDashboard user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} />
             )}
             {page === "mycpd" && viewSession.userType !== "external" && (
-              <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} />
+              <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} />
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
-            {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} />}
-            {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} />}
+            {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} />}
+            {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} />}
             {page === "staff" && <StaffDirectory openStaff={openStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} />}
-            {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} />}
+            {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} />}
             {page === "certificates" && (
               <Certificates
                 certificates={certificates} canManage={canManage} onRequestDelete={requestDeleteCertificate} onApprove={handleApproveCertificate}
@@ -665,6 +751,8 @@ export default function App() {
                 onReplayTour={() => { changePage(homePage); setShowTour(true); }}
                 onRevokeSession={handleRevokeSession}
                 cpdTypes={cpdTypes} onSaveCpdType={requestSaveCpdType} onDeleteCpdType={requestDeleteCpdType}
+                tags={tags} onSaveTag={requestSaveTag} onDeleteTag={requestDeleteTag} onReorderTags={handleReorderTags}
+                onBackfillStaffLinks={handleBackfillStaffLinks} auditLog={auditLog}
                 previewSession={previewSession} onPreviewAs={setPreviewSession} onCreateTestAccount={handleCreateTestAccount}
                 onSaveUserContact={requestSaveUserContact}
               />
@@ -684,7 +772,7 @@ export default function App() {
           dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
           reflections={reflections} onDeleteReflection={requestDeleteReflection}
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}
-          cpdTypes={cpdTypes} files={files}
+          cpdTypes={cpdTypes} files={files} tags={tags} onSaveTag={handleAddTag} viewerUserType={viewSession.userType}
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}
@@ -694,10 +782,16 @@ export default function App() {
           onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField}
           onUpdateAttendanceStatus={handleUpdateAttendanceStatus}
           dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
+          cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag}
         />
         <EventFormModal
           open={createEventOpen} onClose={() => setCreateEventOpen(false)} event={null}
-          onSave={handleCreateEvent} uploadedBy={session.id} cpdTypes={cpdTypes}
+          onSave={handleCreateEvent} uploadedBy={session.id} cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag}
+        />
+        <EventFormModal
+          open={createPreviousEventOpen} onClose={() => setCreatePreviousEventOpen(false)} event={null}
+          onSave={handleCreatePreviousEvent} uploadedBy={session.id} cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag}
+          initialStatus="Completed"
         />
         <CreateCertificateModal
           open={createCertificateOpen} onClose={() => setCreateCertificateOpen(false)}

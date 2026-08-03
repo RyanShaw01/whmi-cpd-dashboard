@@ -9,7 +9,7 @@ const SORT_OPTIONS = [
   { id: "certificates", label: "Certificates" },
 ];
 
-const blankStaff = () => ({
+export const blankStaff = () => ({
   isNew: true, id: null, name: "", profession: "", department: "", campuses: [],
   hours: 0, attended: 0, certificates: 0, modality: "General XR", grade: "Grade 1",
   qualifiedYear: null, hoursLast3Years: null, eventsThisYear: null, lastAttended: null, attendedEventIds: [],

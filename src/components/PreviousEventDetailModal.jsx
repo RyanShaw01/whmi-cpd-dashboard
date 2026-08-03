@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info } from "lucide-react";
+import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
 import EventFilesPanel from "./EventFilesPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
 import RegistrationsPanel from "./RegistrationsPanel";
+import EventForm from "./EventForm";
 import { fmtDate } from "../lib/helpers";
 
 const TABS = ["overview", "attendance", "files", "recording", "reflections", "certificates"];
@@ -20,11 +21,37 @@ export default function PreviousEventDetailModal({
   dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair, onDeleteReflection,
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
+  cpdTypes, tags, onSaveTag,
 }) {
   const [tab, setTab] = useState("overview");
   const [recordingUrl, setRecordingUrl] = useState(event?.recordingUrl || "");
   const [savedNote, setSavedNote] = useState(false);
+  const [editing, setEditing] = useState(false);
   if (!event) return null;
+
+  if (editing) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
+        <div className="whmi-card w-full max-w-lg max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
+          <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+            <h2 className="disp text-[16px] font-extrabold">Edit Event</h2>
+            <button onClick={() => setEditing(false)} className="whmi-btn-ghost !p-2"><X size={14} /></button>
+          </div>
+          <div className="p-5">
+            <EventForm
+              event={event}
+              onSave={(payload) => { onEdit(payload); setEditing(false); }}
+              onCancel={() => setEditing(false)}
+              uploadedBy={session?.id}
+              cpdTypes={cpdTypes}
+              tags={tags}
+              onSaveTag={onSaveTag}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
   // `event.attendance` is already live-computed with a seed-data fallback (Phase 10); reuse
@@ -73,9 +100,14 @@ export default function PreviousEventDetailModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
       <div className="whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
         <div className="min-h-[92px] relative flex items-end p-5" style={{ background: "var(--accent-primary)" }}>
-          <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }}>
-            <X size={15} color="white" />
-          </button>
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+            <button onClick={() => setEditing(true)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Edit event">
+              <Pencil size={13} color="white" />
+            </button>
+            <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }}>
+              <X size={15} color="white" />
+            </button>
+          </div>
           <div className="min-w-0 pr-8">
             <span className="text-white/80 text-[11px] font-semibold uppercase tracking-wide">{event.topic}</span>
             <h2 className="disp text-white text-[19px] font-extrabold leading-tight break-words">{event.title}</h2>

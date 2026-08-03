@@ -4,7 +4,6 @@
  * already-fetched arrays (events/previousEvents/registrations/reflections/certificates)
  * and returns plain numbers/arrays, no side effects, no fetching.
  */
-import { TOPICS } from "../data/mockData";
 import { eventCpdHours, hasEventEnded } from "./helpers";
 
 const ACTIVE_STATUSES = new Set(["Registered", "Attended"]);
@@ -57,9 +56,9 @@ export function attendanceTrend(previousEvents, registrations, months = 6) {
   });
 }
 
-export function topicPopularity(previousEvents, { year = new Date().getFullYear() } = {}) {
+export function topicPopularity(previousEvents, tags, { year = new Date().getFullYear() } = {}) {
   const inYear = previousEvents.filter(ev => new Date(`${ev.date}T00:00:00`).getFullYear() === year);
-  return TOPICS.map(topic => ({ topic, events: inYear.filter(ev => ev.topic === topic).length }));
+  return tags.map(t => ({ topic: t.name, events: inYear.filter(ev => ev.topic === t.name).length }));
 }
 
 export function modeSplit(previousEvents) {

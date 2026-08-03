@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Table2, CalendarDays } from "lucide-react";
+import { Table2, CalendarDays, Plus } from "lucide-react";
 import YearCalendar from "../components/YearCalendar";
 import { fmtDate } from "../lib/helpers";
 
-export default function PreviousEvents({ previousEvents, onOpenArchive }) {
+export default function PreviousEvents({ previousEvents, onOpenArchive, canManage, onCreatePreviousEvent }) {
   const years = [...new Set(previousEvents.map(ev => new Date(`${ev.date}T00:00:00`).getFullYear()))].sort((a, b) => b - a);
   const currentYear = new Date().getFullYear();
   const [view, setView] = useState("table");
@@ -30,6 +30,9 @@ export default function PreviousEvents({ previousEvents, onOpenArchive }) {
               <CalendarDays size={13} />Calendar
             </button>
           </div>
+          {canManage && onCreatePreviousEvent && (
+            <button onClick={onCreatePreviousEvent} className="whmi-btn-primary flex items-center gap-1.5"><Plus size={15} />Add Past Event</button>
+          )}
         </div>
       </div>
 

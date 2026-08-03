@@ -1,12 +1,13 @@
 import { Clock, Award, ChevronRight, Download, Video, ClipboardList, Link2 } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
+import PersonalStatsRow from "../components/PersonalStatsRow";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTime12h } from "../lib/helpers";
 
 // Landing page for external accounts (non @wh.org.au). Shows events they've registered for
 // (past + upcoming, recordings, certificates) plus a "Browse & Register" section covering
 // every event admins have opted into external visibility (events.open_to_external) — unlike
 // the internal viewer catalog, this is deliberately scoped to only externally-open events.
-export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, openEvent, onOpenRegister }) {
+export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, reflections, openEvent, onOpenRegister, onNavigatePage }) {
   const myRegisteredEventIds = new Set((registrations || []).filter(r => r.userId === user.id).map(r => r.eventId));
   const myUpcoming = events.filter(e => myRegisteredEventIds.has(e.id));
   const myPast = previousEvents.filter(e => myRegisteredEventIds.has(e.id));
@@ -48,6 +49,11 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
       <div className="whmi-card p-4 text-[12px]" style={{ color: "var(--text-faint)" }}>
         Your account is marked as an external CPD participant. If this should be a Western Health staff account, contact the education team.
       </div>
+
+      <PersonalStatsRow
+        user={user} certificates={certificates} events={events} registrations={registrations} reflections={reflections}
+        onNavigateCertificates={onNavigatePage ? () => onNavigatePage("mycertificates") : undefined}
+      />
 
       <div className="whmi-card p-5">
         <h2 className="disp text-[15px] font-bold mb-3 flex items-center gap-1.5"><Clock size={16} style={{ color: "var(--accent-primary)" }} />Upcoming</h2>

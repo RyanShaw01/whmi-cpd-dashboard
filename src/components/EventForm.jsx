@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Save, X, Plus } from "lucide-react";
-import { TOPICS, CAMPUS_OPTIONS, LOCATION_OPTIONS } from "../data/mockData";
+import { CAMPUS_OPTIONS, LOCATION_OPTIONS } from "../data/mockData";
 import { formatDuration } from "../lib/helpers";
 import EventFilesPanel from "./EventFilesPanel";
 import InfoTooltip from "./InfoTooltip";
@@ -14,7 +14,7 @@ const emptyEvent = {
   date: "", start: "", end: "", location: "", campus: "", mode: "In-person",
   meetingUrl: "", room: "", capacity: "", onlineCapacity: "", inPersonCapacity: "",
   waitlist: 0, status: "Draft", registered: 0, reflectionAutoEmail: true, asmirtCode: "",
-  cpdTypeId: null, openToExternal: true,
+  cpdTypeId: null, openToExternal: true, showRegCountExternal: false,
 };
 
 const field = "text-[11px] font-semibold block mb-1";
@@ -22,8 +22,10 @@ const field = "text-[11px] font-semibold block mb-1";
 // DB rows use null for "not set"; text/number inputs need "" so they stay controlled.
 const nullsToEmpty = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v == null ? "" : v]));
 
-export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [] }) {
-  const [form, setForm] = useState(event ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [] } : emptyEvent);
+export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus }) {
+  const [form, setForm] = useState(event
+    ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [] }
+    : { ...emptyEvent, status: initialStatus || emptyEvent.status });
   const [newTag, setNewTag] = useState("");
   const isEdit = Boolean(event);
 
@@ -31,7 +33,10 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
   const toggleTag = (t) => setForm(f => ({ ...f, tags: f.tags.includes(t) ? f.tags.filter(x => x !== t) : [...f.tags, t] }));
   const addCustomTag = () => {
     const t = newTag.trim();
-    if (t && !form.tags.includes(t)) setForm(f => ({ ...f, tags: [...f.tags, t] }));
+    if (t && !form.tags.includes(t)) {
+      setForm(f => ({ ...f, tags: [...f.tags, t] }));
+      onSaveTag?.(t);
+    }
     setNewTag("");
   };
 
@@ -73,12 +78,12 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       <div>
         <label className={field}>Topics</label>
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {TOPICS.map(t => (
-            <button key={t} type="button" onClick={() => toggleTag(t)} className="whmi-badge" style={{ background: form.tags.includes(t) ? "var(--accent-primary)" : "var(--surface-2)", color: form.tags.includes(t) ? "white" : "var(--text-dim)" }}>
-              {t}
+          {tags.map(t => (
+            <button key={t.id} type="button" onClick={() => toggleTag(t.name)} className="whmi-badge" style={{ background: form.tags.includes(t.name) ? "var(--accent-primary)" : "var(--surface-2)", color: form.tags.includes(t.name) ? "white" : "var(--text-dim)" }}>
+              {t.name}
             </button>
           ))}
-          {form.tags.filter(t => !TOPICS.includes(t)).map(t => (
+          {form.tags.filter(t => !tags.some(tag => tag.name === t)).map(t => (
             <button key={t} type="button" onClick={() => toggleTag(t)} className="whmi-badge flex items-center gap-1" style={{ background: "var(--accent-primary)", color: "white" }}>
               {t}<X size={10} />
             </button>
@@ -199,6 +204,16 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
         </div>
         <button type="button" onClick={() => set("openToExternal", !form.openToExternal)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: form.openToExternal ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
           <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: form.openToExternal ? "20px" : "3px", width: 18, height: 18 }} />
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between p-3 rounded-xl" style={{ border: "1px solid var(--border)" }}>
+        <div>
+          <div className="text-[12.5px] font-semibold">Show registration numbers to external viewers</div>
+          <div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Off by default; internal staff never see registration counts on an unlimited-capacity event either way.</div>
+        </div>
+        <button type="button" onClick={() => set("showRegCountExternal", !form.showRegCountExternal)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: form.showRegCountExternal ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+          <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: form.showRegCountExternal ? "20px" : "3px", width: 18, height: 18 }} />
         </button>
       </div>
 

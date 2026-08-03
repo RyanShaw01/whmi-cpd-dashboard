@@ -30,13 +30,14 @@ function exportAttendeesCsv(event, regs) {
 }
 
 export default function EventDetailModal({
-  event, onClose, registrations, canManage, onDelete, onStatusChange, onEdit, uploadedBy, session, cpdTypes, files,
+  event, onClose, registrations, canManage, onDelete, onStatusChange, onEdit, uploadedBy, session, cpdTypes, files, tags, onSaveTag, viewerUserType,
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
 }) {
   const [regTab, setRegTab] = useState("overview");
   const [editing, setEditing] = useState(false);
+  const [meetingUrlDraft, setMeetingUrlDraft] = useState("");
   if (!event) return null;
   const joinable = event.meetingUrl && canJoinMeeting(event.date, event.start, event.end);
   const bannerUrl = eventBannerUrl(files, event.id);
@@ -61,6 +62,8 @@ export default function EventDetailModal({
               onCancel={() => setEditing(false)}
               uploadedBy={uploadedBy}
               cpdTypes={cpdTypes}
+              tags={tags}
+              onSaveTag={onSaveTag}
             />
           </div>
         </div>
@@ -154,7 +157,7 @@ export default function EventDetailModal({
               { id: "registrations", label: "Registrations" },
               { id: "reflections", label: "Reflections" },
               { id: "certificates", label: "Certificates" },
-              ...(canManage ? [{ id: "qr", label: "QR Code(s)" }] : []),
+              ...(canManage ? [{ id: "qr", label: "Links/QR Codes" }] : []),
             ].map(t => (
               <button key={t.id} onClick={() => setRegTab(t.id)} className="px-3 py-2 text-[12.5px] font-semibold whitespace-nowrap" style={{ color: regTab === t.id ? "var(--text)" : "var(--text-faint)", borderBottom: regTab === t.id ? "2px solid var(--accent-secondary)" : "2px solid transparent" }}>
                 {t.label}
@@ -164,17 +167,20 @@ export default function EventDetailModal({
 
           {regTab === "overview" && (
             <div className="space-y-3">
-              <div className="whmi-card p-3">
-                <div className="flex justify-between text-[12px] mb-1.5" style={{ color: "var(--text-dim)" }}>
-                  <span>{event.capacity == null ? `${event.registered} registered · Unlimited capacity` : `${event.registered} of ${event.capacity} registered`}</span>
-                  {event.waitlist > 0 && <span>{event.waitlist} on waitlist</span>}
-                </div>
-                {event.capacity != null && (
-                  <div className="h-2 rounded-full" style={{ background: "var(--surface-2)" }}>
-                    <div className="h-2 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (event.registered / event.capacity) * 100)}%` }} />
+              {(canManage
+                || (viewerUserType === "external" ? event.showRegCountExternal : event.capacity != null)) && (
+                <div className="whmi-card p-3">
+                  <div className="flex justify-between text-[12px] mb-1.5" style={{ color: "var(--text-dim)" }}>
+                    <span>{event.capacity == null ? `${event.registered} registered · Unlimited capacity` : `${event.registered} of ${event.capacity} registered`}</span>
+                    {event.waitlist > 0 && <span>{event.waitlist} on waitlist</span>}
                   </div>
-                )}
-              </div>
+                  {event.capacity != null && (
+                    <div className="h-2 rounded-full" style={{ background: "var(--surface-2)" }}>
+                      <div className="h-2 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (event.registered / event.capacity) * 100)}%` }} />
+                    </div>
+                  )}
+                </div>
+              )}
               {canLeaveFeedback && (
                 <Link to={`/event/${event.id}/reflect`} className="whmi-btn-primary flex items-center justify-center gap-1.5 w-full"><MessageSquareText size={14} />Leave Feedback & Get Certificate</Link>
               )}
@@ -241,6 +247,20 @@ export default function EventDetailModal({
                   event={event} url={event.meetingUrl} filenameSuffix="join-meeting"
                   disabled={!event.meetingUrl} disabledMessage="Add a Teams/Zoom meeting link to this event to generate a join code."
                 />
+                {!event.meetingUrl && onEdit && (
+                  <div className="w-full max-w-[220px] flex gap-1.5 mt-3">
+                    <input
+                      value={meetingUrlDraft} onChange={e => setMeetingUrlDraft(e.target.value)}
+                      placeholder="https://teams.microsoft.com/..." className="whmi-input flex-1 px-2 py-1.5 text-[11px]"
+                    />
+                    <button
+                      onClick={() => { if (meetingUrlDraft.trim()) { onEdit({ ...event, meetingUrl: meetingUrlDraft.trim() }); setMeetingUrlDraft(""); } }}
+                      className="whmi-btn-primary !px-2.5 text-[11px]"
+                    >
+                      Save
+                    </button>
+                  </div>
+                )}
                 <p className="text-[11.5px] text-center mt-3 max-w-xs" style={{ color: "var(--text-faint)" }}>
                   {event.meetingUrl ? "Scanning this code joins the online meeting directly." : "No meeting link added yet."}
                 </p>

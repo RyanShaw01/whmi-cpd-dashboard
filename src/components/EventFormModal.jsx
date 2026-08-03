@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import EventForm from "./EventForm";
 
-export default function EventFormModal({ open, onClose, event, onSave, uploadedBy, cpdTypes }) {
+export default function EventFormModal({ open, onClose, event, onSave, uploadedBy, cpdTypes, tags, onSaveTag, initialStatus }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
@@ -11,7 +11,7 @@ export default function EventFormModal({ open, onClose, event, onSave, uploadedB
           <button onClick={onClose} className="whmi-btn-ghost !p-2"><X size={14} /></button>
         </div>
         <div className="p-5">
-          <EventForm event={event} onSave={(payload) => { onSave(payload); onClose(); }} onCancel={onClose} uploadedBy={uploadedBy} cpdTypes={cpdTypes} />
+          <EventForm event={event} onSave={(payload) => { onSave(payload); onClose(); }} onCancel={onClose} uploadedBy={uploadedBy} cpdTypes={cpdTypes} tags={tags} onSaveTag={onSaveTag} initialStatus={initialStatus} />
         </div>
       </div>
     </div>

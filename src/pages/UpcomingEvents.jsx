@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, Calendar, MapPin, UserCircle2, Link2, Trash2, ClipboardList } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
-import { fmtDate, canJoinMeeting, fmtTimeRange12h } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl } from "../lib/helpers";
 
-export default function UpcomingEvents({ events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent }) {
+export default function UpcomingEvents({ events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files }) {
   const [filter, setFilter] = useState("All");
   const statuses = ["All", "Registration Open", "Draft", "Awaiting Approval"];
   const filtered = filter === "All" ? events : events.filter(e => e.status === filter);
@@ -47,6 +47,7 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
         {filtered.map(ev => {
           const joinable = ev.meetingUrl && canJoinMeeting(ev.date, ev.start, ev.end);
           const needsAttention = canManage && (ev.status === "Draft" || ev.status === "Awaiting Approval");
+          const bannerUrl = eventBannerUrl(files, ev.id);
           return (
             <div
               key={ev.id}
@@ -73,8 +74,8 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
                 </button>
               )}
               <button onClick={() => openEvent(ev)} className="w-full text-left whmi-row-hover transition rounded-lg -m-1 p-1">
-                <div className="h-20 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden" style={{ background: "var(--accent-primary)" }}>
-                  <span className="text-white font-bold text-[13px] disp z-10 px-3 text-center break-words">{ev.topic}</span>
+                <div className="h-20 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden" style={bannerUrl ? { backgroundImage: `url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : { background: "var(--accent-primary)" }}>
+                  {!bannerUrl && <span className="text-white font-bold text-[13px] disp z-10 px-3 text-center break-words">{ev.topic}</span>}
                 </div>
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <StatusBadge status={ev.status} />

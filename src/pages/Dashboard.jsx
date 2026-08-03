@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
-import { ACTIVITY_FEED } from "../data/mockData";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl } from "../lib/helpers";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
 const QUICK_ACTIONS = [
@@ -20,7 +19,28 @@ const QUICK_ACTIONS = [
   { id: "reports", label: "Export Reports", icon: Download, color: "var(--accent-primary)" },
 ];
 
-export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, files, openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate }) {
+// Groups consecutive same-actor/same-action entries (already ordered newest-first) into one
+// line, e.g. "Leah Biffin updated 3 events" instead of three separate rows.
+function groupActivity(auditLog, users) {
+  const groups = [];
+  for (const entry of auditLog) {
+    const last = groups[groups.length - 1];
+    if (last && last.actorId === entry.actorId && last.action === entry.action) {
+      last.count += 1;
+      last.latest = entry.createdAt;
+    } else {
+      groups.push({ actorId: entry.actorId, action: entry.action, count: 1, latest: entry.createdAt });
+    }
+  }
+  return groups.map(g => {
+    const actor = users.find(u => u.id === g.actorId);
+    const label = ACTION_LABELS[g.action] || g.action;
+    const text = g.count > 1 ? `${actor?.name || "Someone"} ${label} (${g.count} times)` : `${actor?.name || "Someone"} ${label}`;
+    return { key: `${g.actorId}-${g.action}-${g.latest}`, text, time: relativeTime(g.latest) };
+  });
+}
+
+export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent }) {
   // Re-render every minute so countdowns (and join-meeting availability) stay fresh.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -82,8 +102,8 @@ export default function Dashboard({ events, previousEvents, registrations, refle
                       <span>{ev.presenter}</span>
                     </div>
                   </div>
-                  <div className="text-right shrink-0 hidden sm:block">
-                    <div className="text-[12px] font-bold">{ev.registered}/{ev.capacity ?? "∞"}</div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0 hidden sm:flex">
+                    <div className="text-[12px] font-bold whitespace-nowrap">{ev.capacity == null ? `${ev.registered} attendees` : `${ev.registered}/${ev.capacity} registered`}</div>
                     <StatusBadge status={ev.status} />
                   </div>
                   <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />
@@ -98,8 +118,8 @@ export default function Dashboard({ events, previousEvents, registrations, refle
       <div key="activity" className="whmi-card p-5">
         <h2 className="disp text-[15px] font-bold mb-4">Recent Activity</h2>
         <div className="space-y-4">
-          {ACTIVITY_FEED.map(a => (
-            <div key={a.id} className="flex gap-3">
+          {groupActivity(auditLog, users).slice(0, 8).map(a => (
+            <div key={a.key} className="flex gap-3">
               <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: primaryHex }} />
               <div className="min-w-0">
                 <div className="text-[12.5px] leading-snug break-words">{a.text}</div>
@@ -107,6 +127,7 @@ export default function Dashboard({ events, previousEvents, registrations, refle
               </div>
             </div>
           ))}
+          {auditLog.length === 0 && <div className="text-[12.5px]" style={{ color: "var(--text-faint)" }}>No activity recorded yet.</div>}
         </div>
       </div>
     ),
@@ -178,7 +199,16 @@ export default function Dashboard({ events, previousEvents, registrations, refle
       <div className="whmi-quick-actions-group">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {QUICK_ACTIONS.map(a => (
-            <button key={a.id} onClick={() => a.id === "certificates" ? onCreateCertificate() : setPage(a.id)} className="whmi-quick-action">
+            <button
+              key={a.id}
+              onClick={() => {
+                if (a.id === "certificates") onCreateCertificate();
+                else if (a.id === "staff") onAddStaff();
+                else if (a.id === "upcoming") onAddEvent();
+                else setPage(a.id);
+              }}
+              className="whmi-quick-action"
+            >
               <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ background: a.color + "22" }}>
                 <a.icon size={14} style={{ color: a.color }} />
               </div>

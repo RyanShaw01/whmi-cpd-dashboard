@@ -58,7 +58,7 @@ const eventFromRow = (r) => ({
   tags: r.tags || [], reflectionMethod: r.reflection_method || "link", asmirtCode: r.asmirt_code || "",
   recordingUrl: r.recording_url || "",
   cpdTypeId: r.cpd_type_id || null, openToExternal: r.open_to_external == null ? true : !!r.open_to_external,
-  reflectionAutoEmail: r.reflection_auto_email !== false,
+  reflectionAutoEmail: r.reflection_auto_email !== false, showRegCountExternal: !!r.show_reg_count_external,
 });
 const eventToRow = (e) => ({
   title: e.title, topic: e.topic, date: e.date, start_time: e.start, end_time: e.end,
@@ -72,7 +72,7 @@ const eventToRow = (e) => ({
   tags: e.tags || [], reflection_method: e.reflectionMethod || "link", asmirt_code: e.asmirtCode || null,
   recording_url: e.recordingUrl || null,
   cpd_type_id: e.cpdTypeId || null, open_to_external: e.openToExternal ?? true,
-  reflection_auto_email: e.reflectionAutoEmail !== false,
+  reflection_auto_email: e.reflectionAutoEmail !== false, show_reg_count_external: e.showRegCountExternal ?? false,
 });
 
 const certFromRow = (r) => ({
@@ -300,6 +300,36 @@ export async function deleteCpdType(id) {
   const { error } = await supabase.from("cpd_types").delete().eq("id", id);
   if (error) console.error("deleteCpdType", error);
 }
+/* ---------------------------------------------------------------------- */
+/* tags (admin-managed event topics)                                      */
+/* ---------------------------------------------------------------------- */
+const tagFromRow = (r) => ({ id: r.id, name: r.name, sortOrder: r.sort_order });
+
+export async function fetchTags() {
+  if (!supabaseConfigured) return [];
+  const { data, error } = await supabase.from("tags").select("*").order("sort_order");
+  if (error) { console.error("fetchTags", error); return []; }
+  return data.map(tagFromRow);
+}
+export async function insertTag(tag) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("tags").insert({ id: tag.id, name: tag.name, sort_order: tag.sortOrder ?? 0 });
+  if (error) console.error("insertTag", error);
+}
+export async function updateTag(id, patch) {
+  if (!supabaseConfigured) return;
+  const row = {};
+  if ("name" in patch) row.name = patch.name;
+  if ("sortOrder" in patch) row.sort_order = patch.sortOrder;
+  const { error } = await supabase.from("tags").update(row).eq("id", id);
+  if (error) console.error("updateTag", error);
+}
+export async function deleteTag(id) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("tags").delete().eq("id", id);
+  if (error) console.error("deleteTag", error);
+}
+
 export async function deleteCertificate(id) {
   if (!supabaseConfigured) return;
   const { error } = await supabase.from("certificates").delete().eq("id", id);

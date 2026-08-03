@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { Clock, CheckCircle2, Award, ChevronRight, Download, ClipboardList, MessageSquareText } from "lucide-react";
-import StatCard from "../components/StatCard";
+import { ChevronRight, Download, ClipboardList, MessageSquareText } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
+import PersonalStatsRow from "../components/PersonalStatsRow";
 import { fmtDate, hasEventEnded } from "../lib/helpers";
 
-export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, openEvent, onOpenRegister }) {
+export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, openEvent, onOpenRegister, onNavigatePage }) {
   const staff = staffDirectory.find(s => s.id === user.staffId);
   const myCerts = certificates.filter(c => c.staff === user.name);
   const myPastEvents = staff?.attendedEventIds
@@ -27,15 +27,10 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
         )}
       </div>
 
-      {staff ? (
-        <div className="grid grid-cols-3 gap-4">
-          <StatCard label="CPD Hours" value={staff.hours} icon={Clock} accent="var(--accent-primary)" />
-          <StatCard label="Events Attended" value={staff.attended} icon={CheckCircle2} accent="var(--accent-success)" />
-          <StatCard label="Certificates" value={staff.certificates} icon={Award} accent="var(--accent-secondary)" />
-        </div>
-      ) : (
-        <div className="whmi-card p-4 text-[12.5px]" style={{ color: "var(--text-faint)" }}>No staff record linked to your account yet.</div>
-      )}
+      <PersonalStatsRow
+        user={user} certificates={certificates} events={events} registrations={registrations} reflections={reflections}
+        onNavigateCertificates={onNavigatePage ? () => onNavigatePage("mycertificates") : undefined}
+      />
 
       {needsFeedback.length > 0 && (
         <div className="whmi-card p-5" style={{ borderColor: "var(--accent-secondary)" }}>

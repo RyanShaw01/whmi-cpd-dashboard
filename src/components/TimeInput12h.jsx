@@ -29,6 +29,11 @@ export default function TimeInput12h({ value, onChange }) {
   const periodRef = useRef(null);
 
   useEffect(() => {
+    // Skip resyncing from `value` when it's just the echo of what this component itself
+    // just emitted (every keystroke round-trips through the parent's onChange) — otherwise
+    // to12h()'s zero-padding stomps an in-progress single-digit minute (e.g. "3" -> "03")
+    // before the user finishes typing the second digit.
+    if (hour && minute !== "" && to24h(hour, minute, period) === value) return;
     const n = to12h(value);
     setHour(n.hour);
     setMinute(n.minute);

@@ -102,6 +102,69 @@ export function myCertificates(certificates, user) {
   return certificates.filter(c => c.staff === user.name);
 }
 
+export const ACTION_LABELS = {
+  "user.login": "logged in",
+  "user.logout": "logged out",
+  "user.updated": "updated a user",
+  "staff.created": "added a staff record",
+  "staff.updated": "updated a staff record",
+  "event.created": "created an event",
+  "event.updated": "edited an event",
+  "event.status_changed": "changed event status",
+  "event.deleted": "deleted an event",
+  "registration.updated": "updated a registration",
+  "registration.attendance_changed": "changed attendance status",
+  "registration.deleted": "deleted a registration",
+  "certificate.approved": "approved a certificate",
+  "certificate.resent": "resent a certificate",
+  "certificate.created_manual": "created a manual certificate",
+  "certificate.deleted": "deleted a certificate",
+  "cpd_type.created": "added a CPD type",
+  "cpd_type.updated": "updated a CPD type",
+  "cpd_type.deleted": "deleted a CPD type",
+  "tag.created": "added a tag",
+  "tag.updated": "updated a tag",
+  "tag.deleted": "deleted a tag",
+  "file.uploaded": "uploaded a file",
+  "file.deleted": "deleted a file",
+};
+
+export function relativeTime(iso) {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+/* Cert-based CPD hour totals for a user (works for both internal viewers and externals,
+ * neither of which necessarily have a linked `staff` record with a pre-aggregated total). */
+export function myCpdTotals(certificates, user, { year = new Date().getFullYear() } = {}) {
+  const sent = myCertificates(certificates, user).filter(c => c.status === "Sent");
+  const total = sent.reduce((sum, c) => sum + (c.cpdHours || 0), 0);
+  const thisYear = sent
+    .filter(c => c.date && new Date(`${c.date}T00:00:00`).getFullYear() === year)
+    .reduce((sum, c) => sum + (c.cpdHours || 0), 0);
+  return { total: Math.round(total * 10) / 10, thisYear: Math.round(thisYear * 10) / 10 };
+}
+
+/* Finished events this user registered for but hasn't reflected on yet — matches registrations
+ * by userId or email so it works whether or not the registration has a linked account. */
+export function outstandingReflectionsForUser(events, registrations, reflections, user) {
+  const myRegisteredEventIds = new Set(
+    (registrations || [])
+      .filter(r => r.userId === user.id || r.email?.toLowerCase() === user.email?.toLowerCase())
+      .map(r => r.eventId)
+  );
+  const myReflectedEventIds = new Set(
+    (reflections || []).filter(r => r.email?.toLowerCase() === user.email?.toLowerCase()).map(r => r.eventId)
+  );
+  return (events || []).filter(e => myRegisteredEventIds.has(e.id) && hasEventEnded(e.date, e.end) && !myReflectedEventIds.has(e.id));
+}
+
 /* The event's "Promotional Flyer" file, if one's been uploaded and it's an image
  * (PDFs etc. have no visual banner to show). */
 export function eventBannerUrl(files, eventId) {

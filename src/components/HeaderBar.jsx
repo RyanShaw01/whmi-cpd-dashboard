@@ -33,14 +33,6 @@ export default function HeaderBar({
           </div>
         )}
         {canManage && (
-          <div data-tour="header-notifications">
-            <NotificationBell
-              groups={notificationGroups} redDotsEnabled={redDotsEnabled}
-              onNavigate={onNavigateNotification} onAcknowledgeGroup={onAcknowledgeGroup} onAcknowledgeAll={onAcknowledgeAll}
-            />
-          </div>
-        )}
-        {canManage && (
           <div className="relative">
             <button onClick={() => setPreviewMenuOpen(o => !o)} className="whmi-btn-ghost !p-2" title="Preview as a test account">
               <Eye size={15} />
@@ -57,7 +49,7 @@ export default function HeaderBar({
                       <button
                         key={t.id}
                         onClick={() => { onPreviewAs(previewSession?.id === t.id ? null : t); setPreviewMenuOpen(false); }}
-                        className="w-full flex items-center gap-2 p-2 rounded-lg text-left"
+                        className="w-full flex items-center gap-2 p-2 rounded-lg text-left whmi-row-hover"
                         style={{ background: previewSession?.id === t.id ? "var(--surface-2)" : "transparent" }}
                       >
                         <CharacterAvatar avatarId={t.avatarId} color={t.avatarColor} size={24} />
@@ -77,6 +69,14 @@ export default function HeaderBar({
                 </div>
               </div>
             )}
+          </div>
+        )}
+        {canManage && (
+          <div data-tour="header-notifications">
+            <NotificationBell
+              groups={notificationGroups} redDotsEnabled={redDotsEnabled}
+              onNavigate={onNavigateNotification} onAcknowledgeGroup={onAcknowledgeGroup} onAcknowledgeAll={onAcknowledgeAll}
+            />
           </div>
         )}
         {!canManage && (
