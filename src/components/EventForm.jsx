@@ -54,6 +54,11 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       inPersonCapacity: form.inPersonCapacity === "" ? null : Number(form.inPersonCapacity),
       waitlist: Number(form.waitlist) || 0,
       registered: Number(form.registered) || 0,
+      // The banner position/zoom are saved instantly (via BannerPositionEditor, bypassing this
+      // form entirely) as soon as they're dragged, so `form` still holds whatever stale
+      // snapshot it was initialized with at mount. Carry the *live* event's values forward here
+      // instead, or a full-form save would silently revert any banner adjustment just made.
+      ...(event ? { bannerFocalX: event.bannerFocalX, bannerFocalY: event.bannerFocalY, bannerZoom: event.bannerZoom } : {}),
     };
     onSave(payload);
   };
