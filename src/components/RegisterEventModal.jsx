@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { X, ClipboardList } from "lucide-react";
+import { X, ClipboardList, Calendar, Clock } from "lucide-react";
 import { CAMPUS_OPTIONS } from "../data/mockData";
+import { fmtDate, fmtTimeRange12h } from "../lib/helpers";
 
 export default function RegisterEventModal({ open, onClose, session, events, defaultEventId, onSubmit }) {
   const openEvents = events.filter(e => e.status === "Registration Open");
@@ -43,7 +44,7 @@ export default function RegisterEventModal({ open, onClose, session, events, def
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
-      <div className="whmi-card w-full max-w-md max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
+      <div className="whmi-card w-full max-w-lg max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
         <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
           <h2 className="disp text-[16px] font-extrabold flex items-center gap-2"><ClipboardList size={17} style={{ color: "var(--accent-primary)" }} />Register for a CPD Event</h2>
           <button onClick={onClose} className="whmi-btn-ghost !p-2"><X size={14} /></button>
@@ -51,10 +52,22 @@ export default function RegisterEventModal({ open, onClose, session, events, def
         <form onSubmit={submit} className="p-5 space-y-3">
           <div>
             <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Event</label>
-            <select required value={eventId} onChange={e => setEventId(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1">
-              <option value="" disabled>Select an event…</option>
-              {openEvents.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
-            </select>
+            <div className="space-y-2 mt-1 max-h-64 overflow-y-auto whmi-scroll pr-0.5">
+              {openEvents.map(ev => (
+                <button
+                  key={ev.id} type="button" onClick={() => setEventId(ev.id)}
+                  className="w-full text-left p-3 rounded-xl transition"
+                  style={{ border: `2px solid ${eventId === ev.id ? "var(--accent-primary)" : "var(--border)"}`, background: eventId === ev.id ? "var(--surface-2)" : "transparent" }}
+                >
+                  <div className="font-semibold text-[14px] break-words">{ev.title}</div>
+                  <div className="flex items-center gap-3 mt-1 text-[11.5px] flex-wrap" style={{ color: "var(--text-dim)" }}>
+                    <span className="flex items-center gap-1"><Calendar size={11} />{fmtDate(ev.date)}</span>
+                    <span className="flex items-center gap-1"><Clock size={11} />{fmtTimeRange12h(ev.start, ev.end)}</span>
+                  </div>
+                  {ev.description && <p className="text-[11.5px] mt-1.5 line-clamp-2" style={{ color: "var(--text-faint)" }}>{ev.description}</p>}
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Name</label>

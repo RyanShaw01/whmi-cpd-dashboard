@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import CharacterAvatar from "./CharacterAvatar";
-import { CHARACTERS, AVATAR_COLORS } from "../data/mockData";
+import { useAvatarIcons, useAvatarColors } from "../lib/avatarRegistry";
 
 export default function AvatarPicker({ avatarId, avatarColor, onChangeAvatar, onChangeColor, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
+  const icons = useAvatarIcons();
+  const colors = useAvatarColors();
   const swatchSize = 30;
 
   return (
@@ -20,7 +22,7 @@ export default function AvatarPicker({ avatarId, avatarColor, onChangeAvatar, on
       {open && (
         <div className="mt-3 space-y-3">
           <div className="grid grid-cols-6 gap-1.5">
-            {CHARACTERS.map(c => (
+            {icons.map(c => (
               <button
                 key={c.id}
                 type="button"
@@ -41,14 +43,14 @@ export default function AvatarPicker({ avatarId, avatarColor, onChangeAvatar, on
           <div>
             <div className="text-[11px] font-semibold mb-1.5" style={{ color: "var(--text-faint)" }}>Background colour</div>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(AVATAR_COLORS).map(([name, hex]) => (
+              {colors.map(c => (
                 <button
-                  key={name}
+                  key={c.id}
                   type="button"
-                  onClick={() => onChangeColor(name)}
-                  title={name}
+                  onClick={() => onChangeColor(c.name)}
+                  title={c.name}
                   className="w-7 h-7 rounded-full shrink-0"
-                  style={{ background: hex, outline: avatarColor === name ? "2px solid var(--text)" : "1px solid var(--border)", outlineOffset: 2 }}
+                  style={{ background: c.hex, outline: avatarColor === c.name ? "2px solid var(--text)" : "1px solid var(--border)", outlineOffset: 2 }}
                 />
               ))}
             </div>

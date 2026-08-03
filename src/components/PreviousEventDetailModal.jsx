@@ -21,7 +21,7 @@ export default function PreviousEventDetailModal({
   dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair, onDeleteReflection,
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
-  cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerFocal, onRemoveBanner,
+  cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner,
   onCreateCertificateFor, onSendReflectionReminder,
 }) {
   const [tab, setTab] = useState("overview");
@@ -49,7 +49,7 @@ export default function PreviousEventDetailModal({
               onSaveTag={onSaveTag}
               onFilesChange={onFilesChange}
               files={files}
-              onUpdateBannerFocal={onUpdateBannerFocal}
+              onUpdateBannerCrop={onUpdateBannerCrop}
               onRemoveBanner={onRemoveBanner}
             />
           </div>

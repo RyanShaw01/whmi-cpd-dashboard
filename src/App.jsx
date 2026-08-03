@@ -42,7 +42,10 @@ import {
   fetchAllFiles, deleteEventFile, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
   fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType, sendCertificateEmail,
   fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog, sendReflectionReminder,
+  fetchAvatarIcons, insertAvatarIcon, updateAvatarIcon, deleteAvatarIcon, uploadAvatarIconImage,
+  fetchAvatarColors, insertAvatarColor, updateAvatarColor, deleteAvatarColor,
 } from "./lib/db";
+import { setAvatarIcons as setRegistryIcons, setAvatarColors as setRegistryColors } from "./lib/avatarRegistry";
 
 const WH_DOMAIN = "@wh.org.au";
 
@@ -60,6 +63,8 @@ export default function App() {
   const [files, setFiles] = useState([]);
   const [cpdTypes, setCpdTypes] = useState([]);
   const [tags, setTags] = useState([]);
+  const [avatarIcons, setAvatarIcons] = useState([]);
+  const [avatarColors, setAvatarColors] = useState([]);
   const [auditLog, setAuditLog] = useState([]);
   // Writes to the DB and optimistically prepends locally so the Dashboard's Recent Activity
   // feed reflects actions immediately, without waiting for a reload.
@@ -146,12 +151,16 @@ export default function App() {
   const loadAppData = async () => {
     const [
       userList, staffList, eventList, prevEventList, certList, regList, externalList, reflectionList, fileList,
-      dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList,
+      dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList, avatarIconList, avatarColorList,
     ] = await Promise.all([
       fetchUsers(), fetchStaff(), fetchEvents(), fetchPreviousEvents(), fetchCertificates(), fetchRegistrations(), fetchExternalParticipants(),
       fetchReflections(), fetchAllFiles(), fetchDismissedPairs("registration"), fetchDismissedPairs("reflection"), fetchCpdTypes(), fetchTags(),
-      fetchAuditLog(50),
+      fetchAuditLog(50), fetchAvatarIcons(), fetchAvatarColors(),
     ]);
+    setAvatarIcons(avatarIconList);
+    setAvatarColors(avatarColorList);
+    setRegistryIcons(avatarIconList);
+    setRegistryColors(avatarColorList);
     setUsers(userList);
     setStaffDirectory(staffList);
     setEvents(eventList);
@@ -171,6 +180,7 @@ export default function App() {
   const clearAppData = () => {
     setUsers([]); setStaffDirectory([]); setEvents([]); setPreviousEvents([]); setCertificates([]);
     setRegistrations([]); setExternalParticipants([]); setReflections([]); setFiles([]); setCpdTypes([]); setTags([]); setAuditLog([]);
+    setAvatarIcons([]); setAvatarColors([]);
     setDismissedRegistrationPairs(new Set()); setDismissedReflectionPairs(new Set());
   };
 
@@ -377,12 +387,12 @@ export default function App() {
     pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
   const refreshFiles = () => { fetchAllFiles().then(setFiles); };
-  const handleUpdateBannerFocal = (event, bannerFocalX, bannerFocalY) => {
-    const patched = { ...event, bannerFocalX, bannerFocalY };
-    setEvents(prev => prev.map(e => e.id === event.id ? { ...e, bannerFocalX, bannerFocalY } : e));
-    setPreviousEvents(prev => prev.map(e => e.id === event.id ? { ...e, bannerFocalX, bannerFocalY } : e));
-    setSelectedEvent(ev => ev && ev.id === event.id ? { ...ev, bannerFocalX, bannerFocalY } : ev);
-    setSelectedArchiveEvent(ev => ev && ev.id === event.id ? { ...ev, bannerFocalX, bannerFocalY } : ev);
+  const handleUpdateBannerCrop = (event, bannerFocalX, bannerFocalY, bannerZoom) => {
+    const patched = { ...event, bannerFocalX, bannerFocalY, bannerZoom };
+    setEvents(prev => prev.map(e => e.id === event.id ? { ...e, bannerFocalX, bannerFocalY, bannerZoom } : e));
+    setPreviousEvents(prev => prev.map(e => e.id === event.id ? { ...e, bannerFocalX, bannerFocalY, bannerZoom } : e));
+    setSelectedEvent(ev => ev && ev.id === event.id ? { ...ev, bannerFocalX, bannerFocalY, bannerZoom } : ev);
+    setSelectedArchiveEvent(ev => ev && ev.id === event.id ? { ...ev, bannerFocalX, bannerFocalY, bannerZoom } : ev);
     updateEvent(event.id, patched);
   };
   const handleRemoveBanner = (event) => {
@@ -441,10 +451,12 @@ export default function App() {
         setCpdTypes(prev => [...prev, cpdType]);
         insertCpdType(cpdType);
         pushAudit({ actorId: session?.id, action: "cpd_type.created", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
+        showToast("CPD type added.");
       } else {
         setCpdTypes(prev => prev.map(t => t.id === cpdType.id ? cpdType : t));
         updateCpdType(cpdType.id, cpdType);
         pushAudit({ actorId: session?.id, action: "cpd_type.updated", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
+        showToast("CPD type saved.");
       }
     },
   });
@@ -482,10 +494,74 @@ export default function App() {
     withOrder.forEach(t => updateTag(t.id, { sortOrder: t.sortOrder }));
   };
 
+  const requestSaveAvatarIcon = (icon, isNew) => requestConfirm({
+    title: isNew ? "Add icon?" : "Save changes?",
+    message: `${isNew ? "Add" : "Save changes to"} "${icon.label}"?`,
+    confirmLabel: isNew ? "Add" : "Save",
+    onConfirm: () => {
+      const next = { ...icon, sortOrder: isNew ? avatarIcons.length : avatarIcons.find(i => i.id === icon.id)?.sortOrder ?? 0 };
+      if (isNew) {
+        setAvatarIcons(prev => { const l = [...prev, next]; setRegistryIcons(l); return l; });
+        insertAvatarIcon(next);
+        pushAudit({ actorId: session?.id, action: "avatar_icon.created", entityType: "avatar_icon", entityId: next.id, details: { label: next.label } });
+      } else {
+        setAvatarIcons(prev => { const l = prev.map(i => i.id === next.id ? next : i); setRegistryIcons(l); return l; });
+        updateAvatarIcon(next.id, next);
+        pushAudit({ actorId: session?.id, action: "avatar_icon.updated", entityType: "avatar_icon", entityId: next.id, details: { label: next.label } });
+      }
+      showToast(isNew ? "Icon added." : "Icon saved.");
+    },
+  });
+  const requestDeleteAvatarIcon = (icon) => requestDelete(`the icon "${icon.label}"`, () => {
+    setAvatarIcons(prev => { const l = prev.filter(i => i.id !== icon.id); setRegistryIcons(l); return l; });
+    deleteAvatarIcon(icon.id);
+    pushAudit({ actorId: session?.id, action: "avatar_icon.deleted", entityType: "avatar_icon", entityId: icon.id, details: { label: icon.label } });
+    showToast("Icon deleted.");
+  });
+  const handleReorderAvatarIcons = (newOrder) => {
+    const withOrder = newOrder.map((icon, i) => ({ ...icon, sortOrder: i }));
+    setAvatarIcons(withOrder);
+    setRegistryIcons(withOrder);
+    withOrder.forEach(icon => updateAvatarIcon(icon.id, { sortOrder: icon.sortOrder }));
+  };
+  const handleUploadAvatarIconImage = (file) => uploadAvatarIconImage(file);
+
+  const requestSaveAvatarColor = (color, isNew) => requestConfirm({
+    title: isNew ? "Add colour?" : "Save changes?",
+    message: `${isNew ? "Add" : "Save changes to"} "${color.name}"?`,
+    confirmLabel: isNew ? "Add" : "Save",
+    onConfirm: () => {
+      const next = { ...color, sortOrder: isNew ? avatarColors.length : avatarColors.find(c => c.id === color.id)?.sortOrder ?? 0 };
+      if (isNew) {
+        setAvatarColors(prev => { const l = [...prev, next]; setRegistryColors(l); return l; });
+        insertAvatarColor(next);
+        pushAudit({ actorId: session?.id, action: "avatar_color.created", entityType: "avatar_color", entityId: next.id, details: { name: next.name } });
+      } else {
+        setAvatarColors(prev => { const l = prev.map(c => c.id === next.id ? next : c); setRegistryColors(l); return l; });
+        updateAvatarColor(next.id, next);
+        pushAudit({ actorId: session?.id, action: "avatar_color.updated", entityType: "avatar_color", entityId: next.id, details: { name: next.name } });
+      }
+      showToast(isNew ? "Colour added." : "Colour saved.");
+    },
+  });
+  const requestDeleteAvatarColor = (color) => requestDelete(`the colour "${color.name}"`, () => {
+    setAvatarColors(prev => { const l = prev.filter(c => c.id !== color.id); setRegistryColors(l); return l; });
+    deleteAvatarColor(color.id);
+    pushAudit({ actorId: session?.id, action: "avatar_color.deleted", entityType: "avatar_color", entityId: color.id, details: { name: color.name } });
+    showToast("Colour deleted.");
+  });
+  const handleReorderAvatarColors = (newOrder) => {
+    const withOrder = newOrder.map((color, i) => ({ ...color, sortOrder: i }));
+    setAvatarColors(withOrder);
+    setRegistryColors(withOrder);
+    withOrder.forEach(color => updateAvatarColor(color.id, { sortOrder: color.sortOrder }));
+  };
+
   const requestDeleteCpdType = (cpdType) => requestDelete(`the CPD type "${cpdType.name}"`, () => {
     setCpdTypes(prev => prev.filter(t => t.id !== cpdType.id));
     deleteCpdType(cpdType.id);
     pushAudit({ actorId: session?.id, action: "cpd_type.deleted", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
+    showToast("CPD type deleted.");
   });
 
   // Test accounts exist purely for admin/owner "preview as" — no real Supabase Auth
@@ -786,6 +862,10 @@ export default function App() {
                 cpdTypes={cpdTypes} onSaveCpdType={requestSaveCpdType} onDeleteCpdType={requestDeleteCpdType}
                 tags={tags} onSaveTag={requestSaveTag} onDeleteTag={requestDeleteTag} onReorderTags={handleReorderTags}
                 onBackfillStaffLinks={handleBackfillStaffLinks} auditLog={auditLog}
+                avatarIcons={avatarIcons} onSaveAvatarIcon={requestSaveAvatarIcon} onDeleteAvatarIcon={requestDeleteAvatarIcon}
+                onReorderAvatarIcons={handleReorderAvatarIcons} onUploadAvatarIconImage={handleUploadAvatarIconImage}
+                avatarColors={avatarColors} onSaveAvatarColor={requestSaveAvatarColor} onDeleteAvatarColor={requestDeleteAvatarColor}
+                onReorderAvatarColors={handleReorderAvatarColors}
                 previewSession={previewSession} onPreviewAs={setPreviewSession} onCreateTestAccount={handleCreateTestAccount}
                 onSaveUserContact={requestSaveUserContact}
               />
@@ -806,7 +886,7 @@ export default function App() {
           reflections={reflections} onDeleteReflection={requestDeleteReflection}
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}
           cpdTypes={cpdTypes} files={files} tags={tags} onSaveTag={handleAddTag} viewerUserType={viewSession.userType} onFilesChange={refreshFiles}
-          onUpdateBannerFocal={handleUpdateBannerFocal} onRemoveBanner={handleRemoveBanner}
+          onUpdateBannerCrop={handleUpdateBannerCrop} onRemoveBanner={handleRemoveBanner}
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}
@@ -817,7 +897,7 @@ export default function App() {
           onUpdateAttendanceStatus={handleUpdateAttendanceStatus}
           dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
           cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag} onFilesChange={refreshFiles} files={files}
-          onUpdateBannerFocal={handleUpdateBannerFocal} onRemoveBanner={handleRemoveBanner}
+          onUpdateBannerCrop={handleUpdateBannerCrop} onRemoveBanner={handleRemoveBanner}
           onCreateCertificateFor={handleCreateCertificateForRegistrant} onSendReflectionReminder={handleSendReflectionReminder}
         />
         <EventFormModal

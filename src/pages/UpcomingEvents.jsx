@@ -74,8 +74,18 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
                 </button>
               )}
               <button onClick={() => openEvent(ev)} className="w-full text-left whmi-row-hover transition rounded-lg -m-1 p-1">
-                <div className="h-20 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden" style={bannerUrl ? { backgroundImage: `url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%` } : { background: "var(--accent-primary)" }}>
-                  {!bannerUrl && <span className="text-white font-bold text-[13px] disp z-10 px-3 text-center break-words">{ev.topic}</span>}
+                <div className="h-20 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden" style={!bannerUrl ? { background: "var(--accent-primary)" } : undefined}>
+                  {bannerUrl ? (
+                    <img
+                      src={bannerUrl} alt="" className="w-full h-full object-cover"
+                      style={{
+                        objectPosition: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%`,
+                        transform: `scale(${ev.bannerZoom ?? 1})`, transformOrigin: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%`,
+                      }}
+                    />
+                  ) : (
+                    <span className="text-white font-bold text-[13px] disp z-10 px-3 text-center break-words">{ev.topic}</span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <StatusBadge status={ev.status} />

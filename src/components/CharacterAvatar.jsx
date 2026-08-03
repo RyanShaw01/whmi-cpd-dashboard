@@ -1,14 +1,29 @@
-import { CHARACTERS, AVATAR_COLORS } from "../data/mockData";
+import { useAvatarIcons, resolveColorHex, iconImageUrl, BUILTIN_ICONS } from "../lib/avatarRegistry";
 
 export default function CharacterAvatar({ avatarId, size = 32, color }) {
-  const idx = Math.max(0, CHARACTERS.findIndex(c => c.id === avatarId));
-  const char = CHARACTERS[idx] || CHARACTERS[0];
+  const icons = useAvatarIcons();
+  const idx = Math.max(0, icons.findIndex(c => c.id === avatarId));
+  const char = icons[idx] || icons[0];
   const fallbackColors = ["var(--accent-primary)", "var(--accent-secondary)", "var(--accent-success)"];
-  const resolvedColor = AVATAR_COLORS[color] || color || fallbackColors[idx % fallbackColors.length];
-  const Icon = char.icon;
+  const resolvedColor = resolveColorHex(color) || color || fallbackColors[idx % fallbackColors.length];
+
+  if (!char) {
+    return <div className="rounded-full shrink-0" style={{ width: size, height: size, background: resolvedColor }} />;
+  }
+
+  const imgUrl = iconImageUrl(char);
+  const iconSizePx = Math.round(size * ((char.iconScale ?? 55) / 100));
+
   return (
-    <div className="rounded-full flex items-center justify-center shrink-0" style={{ width: size, height: size, background: resolvedColor }} title={char.label}>
-      <Icon size={Math.round(size * 0.55)} color="white" />
+    <div className="rounded-full flex items-center justify-center shrink-0 overflow-hidden" style={{ width: size, height: size, background: resolvedColor }} title={char.label}>
+      {imgUrl ? (
+        <img src={imgUrl} alt="" style={{ width: iconSizePx, height: iconSizePx, objectFit: "contain" }} />
+      ) : (
+        (() => {
+          const Icon = BUILTIN_ICONS[char.iconKey] || Object.values(BUILTIN_ICONS)[0];
+          return <Icon size={iconSizePx} color="white" />;
+        })()
+      )}
     </div>
   );
 }

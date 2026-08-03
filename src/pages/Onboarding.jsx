@@ -4,8 +4,8 @@ import AvatarPicker from "../components/AvatarPicker";
 import { CHARACTERS } from "../data/mockData";
 
 export default function Onboarding({ session, onComplete, rootVars }) {
-  const [firstName, setFirstName] = useState(session.name?.split(" ")[0] || "");
-  const [lastName, setLastName] = useState(session.name?.split(" ").slice(1).join(" ") || "");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [avatarId, setAvatarId] = useState(session.avatarId || CHARACTERS[0].id);
   const [avatarColor, setAvatarColor] = useState(session.avatarColor || "blue");
   const [saving, setSaving] = useState(false);

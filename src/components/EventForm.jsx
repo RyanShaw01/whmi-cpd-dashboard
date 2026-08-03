@@ -24,7 +24,7 @@ const field = "text-[11px] font-semibold block mb-1";
 // DB rows use null for "not set"; text/number inputs need "" so they stay controlled.
 const nullsToEmpty = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v == null ? "" : v]));
 
-export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange, files, onUpdateBannerFocal, onRemoveBanner }) {
+export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner }) {
   const [form, setForm] = useState(event
     ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [] }
     : { ...emptyEvent, status: initialStatus || emptyEvent.status });
@@ -243,8 +243,8 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
             <div className="mt-3">
               <BannerPositionEditor
                 bannerUrl={eventBannerUrl(files, event.id)}
-                focalX={event.bannerFocalX ?? 50} focalY={event.bannerFocalY ?? 50}
-                onChangeFocal={(x, y) => onUpdateBannerFocal(event, x, y)}
+                focalX={event.bannerFocalX ?? 50} focalY={event.bannerFocalY ?? 50} zoom={event.bannerZoom ?? 1}
+                onChangeCrop={(x, y, z) => onUpdateBannerCrop(event, x, y, z)}
                 onRemove={() => onRemoveBanner(event)}
               />
             </div>

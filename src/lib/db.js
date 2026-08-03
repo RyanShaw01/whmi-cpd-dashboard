@@ -60,6 +60,7 @@ const eventFromRow = (r) => ({
   cpdTypeId: r.cpd_type_id || null, openToExternal: r.open_to_external == null ? true : !!r.open_to_external,
   reflectionAutoEmail: r.reflection_auto_email !== false, showRegCountExternal: !!r.show_reg_count_external,
   bannerFocalX: r.banner_focal_x == null ? 50 : Number(r.banner_focal_x), bannerFocalY: r.banner_focal_y == null ? 50 : Number(r.banner_focal_y),
+  bannerZoom: r.banner_zoom == null ? 1 : Number(r.banner_zoom),
 });
 const eventToRow = (e) => ({
   title: e.title, topic: e.topic, date: e.date, start_time: e.start, end_time: e.end,
@@ -74,7 +75,7 @@ const eventToRow = (e) => ({
   recording_url: e.recordingUrl || null,
   cpd_type_id: e.cpdTypeId || null, open_to_external: e.openToExternal ?? true,
   reflection_auto_email: e.reflectionAutoEmail !== false, show_reg_count_external: e.showRegCountExternal ?? false,
-  banner_focal_x: e.bannerFocalX ?? 50, banner_focal_y: e.bannerFocalY ?? 50,
+  banner_focal_x: e.bannerFocalX ?? 50, banner_focal_y: e.bannerFocalY ?? 50, banner_zoom: e.bannerZoom ?? 1,
 });
 
 const certFromRow = (r) => ({
@@ -276,7 +277,7 @@ export async function updateCertificateStatus(id, status) {
 /* ---------------------------------------------------------------------- */
 /* CPD types (appellation codes)                                          */
 /* ---------------------------------------------------------------------- */
-const cpdTypeFromRow = (r) => ({ id: r.id, name: r.name, appellationCode: r.appellation_code });
+const cpdTypeFromRow = (r) => ({ id: r.id, name: r.name, appellationCode: r.appellation_code, category: r.category || "" });
 
 export async function fetchCpdTypes() {
   if (!supabaseConfigured) return [];
@@ -286,7 +287,7 @@ export async function fetchCpdTypes() {
 }
 export async function insertCpdType(cpdType) {
   if (!supabaseConfigured) return;
-  const { error } = await supabase.from("cpd_types").insert({ id: cpdType.id, name: cpdType.name, appellation_code: cpdType.appellationCode });
+  const { error } = await supabase.from("cpd_types").insert({ id: cpdType.id, name: cpdType.name, appellation_code: cpdType.appellationCode, category: cpdType.category || null });
   if (error) console.error("insertCpdType", error);
 }
 export async function updateCpdType(id, patch) {
@@ -294,6 +295,7 @@ export async function updateCpdType(id, patch) {
   const row = {};
   if ("name" in patch) row.name = patch.name;
   if ("appellationCode" in patch) row.appellation_code = patch.appellationCode;
+  if ("category" in patch) row.category = patch.category || null;
   const { error } = await supabase.from("cpd_types").update(row).eq("id", id);
   if (error) console.error("updateCpdType", error);
 }
@@ -330,6 +332,79 @@ export async function deleteTag(id) {
   if (!supabaseConfigured) return;
   const { error } = await supabase.from("tags").delete().eq("id", id);
   if (error) console.error("deleteTag", error);
+}
+
+/* ---------------------------------------------------------------------- */
+/* avatar icons + colours (admin-managed)                                 */
+/* ---------------------------------------------------------------------- */
+const avatarIconFromRow = (r) => ({
+  id: r.id, kind: r.kind, iconKey: r.icon_key, imagePath: r.image_path,
+  label: r.label, iconScale: r.icon_scale, sortOrder: r.sort_order,
+});
+
+export async function fetchAvatarIcons() {
+  if (!supabaseConfigured) return [];
+  const { data, error } = await supabase.from("avatar_icons").select("*").order("sort_order");
+  if (error) { console.error("fetchAvatarIcons", error); return []; }
+  return data.map(avatarIconFromRow);
+}
+export async function insertAvatarIcon(icon) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("avatar_icons").insert({
+    id: icon.id, kind: icon.kind, icon_key: icon.iconKey || null, image_path: icon.imagePath || null,
+    label: icon.label, icon_scale: icon.iconScale ?? 55, sort_order: icon.sortOrder ?? 0,
+  });
+  if (error) console.error("insertAvatarIcon", error);
+}
+export async function updateAvatarIcon(id, patch) {
+  if (!supabaseConfigured) return;
+  const row = {};
+  if ("label" in patch) row.label = patch.label;
+  if ("iconScale" in patch) row.icon_scale = patch.iconScale;
+  if ("sortOrder" in patch) row.sort_order = patch.sortOrder;
+  if ("imagePath" in patch) row.image_path = patch.imagePath;
+  const { error } = await supabase.from("avatar_icons").update(row).eq("id", id);
+  if (error) console.error("updateAvatarIcon", error);
+}
+export async function deleteAvatarIcon(id) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("avatar_icons").delete().eq("id", id);
+  if (error) console.error("deleteAvatarIcon", error);
+}
+export async function uploadAvatarIconImage(file) {
+  if (!supabaseConfigured) return null;
+  const path = `${Date.now()}-${file.name}`;
+  const { error } = await supabase.storage.from("avatar-icons").upload(path, file);
+  if (error) { console.error("uploadAvatarIconImage", error); return null; }
+  return path;
+}
+
+const avatarColorFromRow = (r) => ({ id: r.id, name: r.name, hex: r.hex, sortOrder: r.sort_order });
+
+export async function fetchAvatarColors() {
+  if (!supabaseConfigured) return [];
+  const { data, error } = await supabase.from("avatar_colors").select("*").order("sort_order");
+  if (error) { console.error("fetchAvatarColors", error); return []; }
+  return data.map(avatarColorFromRow);
+}
+export async function insertAvatarColor(color) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("avatar_colors").insert({ id: color.id, name: color.name, hex: color.hex, sort_order: color.sortOrder ?? 0 });
+  if (error) console.error("insertAvatarColor", error);
+}
+export async function updateAvatarColor(id, patch) {
+  if (!supabaseConfigured) return;
+  const row = {};
+  if ("name" in patch) row.name = patch.name;
+  if ("hex" in patch) row.hex = patch.hex;
+  if ("sortOrder" in patch) row.sort_order = patch.sortOrder;
+  const { error } = await supabase.from("avatar_colors").update(row).eq("id", id);
+  if (error) console.error("updateAvatarColor", error);
+}
+export async function deleteAvatarColor(id) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("avatar_colors").delete().eq("id", id);
+  if (error) console.error("deleteAvatarColor", error);
 }
 
 export async function deleteCertificate(id) {

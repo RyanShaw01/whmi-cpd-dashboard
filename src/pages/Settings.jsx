@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
-import { Sun, Moon, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye } from "lucide-react";
+import { Sun, Moon, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload } from "lucide-react";
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS } from "../data/mockData";
 import { relativeTime, ACTION_LABELS } from "../lib/helpers";
+
+const CPD_CATEGORIES = [
+  "Audit & QA", "Skill Development/ Workplace Learning", "Skill Development",
+  "Professional Activity/ Organised Program", "Organised Program", "Self-Directed Learning",
+];
 
 export default function Settings({
   dark, setDark, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
   redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
   tags = [], onSaveTag, onDeleteTag, onReorderTags, onBackfillStaffLinks, auditLog = [],
+  avatarIcons = [], onSaveAvatarIcon, onDeleteAvatarIcon, onReorderAvatarIcons, onUploadAvatarIconImage,
+  avatarColors = [], onSaveAvatarColor, onDeleteAvatarColor, onReorderAvatarColors,
 }) {
   const [toggles, setToggles] = useState({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: true });
   const [devMode, setDevMode] = useState(false);
@@ -43,19 +50,84 @@ export default function Settings({
     onReorderTags(next);
   };
   const alphabetizeTags = () => onReorderTags([...tags].sort((a, b) => a.name.localeCompare(b.name)));
+
+  const [avatarIconsExpanded, setAvatarIconsExpanded] = useState(false);
+  const [editingAvatarIconId, setEditingAvatarIconId] = useState(null); // null | "new" | <id>
+  const [avatarIconLabel, setAvatarIconLabel] = useState("");
+  const [avatarIconScale, setAvatarIconScale] = useState(55);
+  const [avatarIconFile, setAvatarIconFile] = useState(null);
+  const [avatarIconError, setAvatarIconError] = useState("");
+  const [avatarIconUploading, setAvatarIconUploading] = useState(false);
+
+  const startAddAvatarIcon = () => { setEditingAvatarIconId("new"); setAvatarIconLabel(""); setAvatarIconScale(55); setAvatarIconFile(null); setAvatarIconError(""); };
+  const startEditAvatarIcon = (icon) => { setEditingAvatarIconId(icon.id); setAvatarIconLabel(icon.label); setAvatarIconScale(icon.iconScale); setAvatarIconFile(null); setAvatarIconError(""); };
+  const cancelAvatarIconEdit = () => { setEditingAvatarIconId(null); setAvatarIconError(""); };
+  const saveAvatarIcon = async () => {
+    if (!avatarIconLabel.trim()) { setAvatarIconError("Please add a label."); return; }
+    const isNew = editingAvatarIconId === "new";
+    if (isNew && !avatarIconFile) { setAvatarIconError("Please choose a PNG image."); return; }
+    const existing = !isNew ? avatarIcons.find(i => i.id === editingAvatarIconId) : null;
+    let imagePath = existing?.imagePath || null;
+    let kind = existing?.kind || "image";
+    let iconKey = existing?.iconKey || null;
+    if (avatarIconFile) {
+      setAvatarIconUploading(true);
+      const uploaded = await onUploadAvatarIconImage(avatarIconFile);
+      setAvatarIconUploading(false);
+      if (!uploaded) { setAvatarIconError("Upload failed, please try again."); return; }
+      imagePath = uploaded; kind = "image"; iconKey = null;
+    }
+    const icon = { id: isNew ? "avicon" + Date.now() : editingAvatarIconId, kind, iconKey, imagePath, label: avatarIconLabel.trim(), iconScale: avatarIconScale };
+    onSaveAvatarIcon(icon, isNew);
+    setEditingAvatarIconId(null);
+    setAvatarIconError("");
+  };
+  const moveAvatarIcon = (index, dir) => {
+    const next = [...avatarIcons];
+    const swapWith = index + dir;
+    if (swapWith < 0 || swapWith >= next.length) return;
+    [next[index], next[swapWith]] = [next[swapWith], next[index]];
+    onReorderAvatarIcons(next);
+  };
+
+  const [avatarColorsExpanded, setAvatarColorsExpanded] = useState(false);
+  const [editingAvatarColorId, setEditingAvatarColorId] = useState(null); // null | "new" | <id>
+  const [avatarColorName, setAvatarColorName] = useState("");
+  const [avatarColorHex, setAvatarColorHex] = useState("#35A8DD");
+  const [avatarColorError, setAvatarColorError] = useState("");
+
+  const startAddAvatarColor = () => { setEditingAvatarColorId("new"); setAvatarColorName(""); setAvatarColorHex("#35A8DD"); setAvatarColorError(""); };
+  const startEditAvatarColor = (c) => { setEditingAvatarColorId(c.id); setAvatarColorName(c.name); setAvatarColorHex(c.hex); setAvatarColorError(""); };
+  const cancelAvatarColorEdit = () => { setEditingAvatarColorId(null); setAvatarColorError(""); };
+  const saveAvatarColor = () => {
+    if (!avatarColorName.trim() || !avatarColorHex.trim()) { setAvatarColorError("Please add both a name and a colour."); return; }
+    const isNew = editingAvatarColorId === "new";
+    const color = { id: isNew ? "avcolor" + Date.now() : editingAvatarColorId, name: avatarColorName.trim(), hex: avatarColorHex.trim() };
+    onSaveAvatarColor(color, isNew);
+    setEditingAvatarColorId(null);
+    setAvatarColorError("");
+  };
+  const moveAvatarColor = (index, dir) => {
+    const next = [...avatarColors];
+    const swapWith = index + dir;
+    if (swapWith < 0 || swapWith >= next.length) return;
+    [next[index], next[swapWith]] = [next[swapWith], next[index]];
+    onReorderAvatarColors(next);
+  };
   const [expandedUserId, setExpandedUserId] = useState(null);
   const [sessionActionStatus, setSessionActionStatus] = useState({});
   const [editingCpdTypeId, setEditingCpdTypeId] = useState(null); // null | "new" | <id>
   const [cpdTypeName, setCpdTypeName] = useState("");
   const [cpdTypeCode, setCpdTypeCode] = useState("");
+  const [cpdTypeCategory, setCpdTypeCategory] = useState("");
   const [cpdTypeError, setCpdTypeError] = useState("");
   const [emailDrafts, setEmailDrafts] = useState({}); // { [userId]: { email, secondaryEmail } }
 
   const visibleUsers = users.filter(u => !u.isTest);
   const testAccounts = users.filter(u => u.isTest);
 
-  const startAddCpdType = () => { setEditingCpdTypeId("new"); setCpdTypeName(""); setCpdTypeCode(""); setCpdTypeError(""); };
-  const startEditCpdType = (t) => { setEditingCpdTypeId(t.id); setCpdTypeName(t.name); setCpdTypeCode(t.appellationCode); setCpdTypeError(""); };
+  const startAddCpdType = () => { setEditingCpdTypeId("new"); setCpdTypeName(""); setCpdTypeCode(""); setCpdTypeCategory(""); setCpdTypeError(""); };
+  const startEditCpdType = (t) => { setEditingCpdTypeId(t.id); setCpdTypeName(t.name); setCpdTypeCode(t.appellationCode); setCpdTypeCategory(t.category || ""); setCpdTypeError(""); };
   const cancelCpdTypeEdit = () => { setEditingCpdTypeId(null); setCpdTypeError(""); };
   const saveCpdType = () => {
     if (!cpdTypeName.trim() || !cpdTypeCode.trim()) {
@@ -63,7 +135,7 @@ export default function Settings({
       return;
     }
     const isNew = editingCpdTypeId === "new";
-    const cpdType = { id: isNew ? "cpd" + Date.now() : editingCpdTypeId, name: cpdTypeName.trim(), appellationCode: cpdTypeCode.trim() };
+    const cpdType = { id: isNew ? "cpd" + Date.now() : editingCpdTypeId, name: cpdTypeName.trim(), appellationCode: cpdTypeCode.trim(), category: cpdTypeCategory.trim() };
     onSaveCpdType(cpdType, isNew);
     setEditingCpdTypeId(null);
     setCpdTypeError("");
@@ -196,9 +268,9 @@ export default function Settings({
 
       <div className="whmi-card overflow-hidden">
         {t("emailReminders", "Automated Email Reminders", "One-week, one-day, and one-hour reminders before events")}
-        {t("autoWaitlist", "Automatic Waitlist Promotion", "Move waitlisted staff to confirmed when a place opens")}
+        {canManageUsers && t("autoWaitlist", "Automatic Waitlist Promotion", "Move waitlisted staff to confirmed when a place opens")}
         {t("autoApproveCerts", "Auto-approve Certificates", "Skip manual approval once reflection is confirmed")}
-        {t("weeklyDigest", "Weekly Digest", "Summary email of CPD activity every Monday")}
+        {canManageUsers && t("weeklyDigest", "Weekly Digest", "Summary email of CPD activity every Monday")}
       </div>
 
       {canManageUsers && (
@@ -395,6 +467,9 @@ export default function Settings({
             )}
           </div>
           <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Used on the event form to select which ASMIRT-endorsed certificate applies. Adding, editing, and deleting is restricted to admins and owners, and asks for confirmation.</div>
+          <datalist id="cpd-categories">
+            {CPD_CATEGORIES.map(c => <option key={c} value={c} />)}
+          </datalist>
 
           <div className="space-y-1.5">
             {cpdTypes.map(t => (
@@ -404,6 +479,7 @@ export default function Settings({
                     <input value={cpdTypeName} onChange={e => setCpdTypeName(e.target.value)} placeholder="CPD type name" className="whmi-input px-2.5 py-1.5 text-[12px]" />
                     <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code (required)" className="whmi-input px-2.5 py-1.5 text-[12px]" />
                   </div>
+                  <input list="cpd-categories" value={cpdTypeCategory} onChange={e => setCpdTypeCategory(e.target.value)} placeholder="Category" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
                   {cpdTypeError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{cpdTypeError}</div>}
                   <div className="flex gap-1.5 justify-end">
                     <button onClick={cancelCpdTypeEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
@@ -414,7 +490,7 @@ export default function Settings({
                 <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
                   <div className="min-w-0">
                     <div className="text-[12.5px] font-semibold truncate">{t.name}</div>
-                    <div className="text-[10.5px] truncate" style={{ color: "var(--text-faint)" }}>{t.appellationCode}</div>
+                    <div className="text-[10.5px] truncate" style={{ color: "var(--text-faint)" }}>{t.appellationCode}{t.category ? ` · ${t.category}` : ""}</div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button onClick={() => startEditCpdType(t)} className="whmi-btn-ghost !p-1.5"><Pencil size={13} /></button>
@@ -430,6 +506,7 @@ export default function Settings({
                   <input autoFocus value={cpdTypeName} onChange={e => setCpdTypeName(e.target.value)} placeholder="CPD type name" className="whmi-input px-2.5 py-1.5 text-[12px]" />
                   <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code (required)" className="whmi-input px-2.5 py-1.5 text-[12px]" />
                 </div>
+                <input list="cpd-categories" value={cpdTypeCategory} onChange={e => setCpdTypeCategory(e.target.value)} placeholder="Category" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
                 {cpdTypeError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{cpdTypeError}</div>}
                 <div className="flex gap-1.5 justify-end">
                   <button onClick={cancelCpdTypeEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
@@ -490,6 +567,147 @@ export default function Settings({
                     <div className="flex gap-1.5 justify-end">
                       <button onClick={cancelTagEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
                       <button onClick={saveTag} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Add</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {canManageUsers && (
+        <div className="whmi-card p-4">
+          <button onClick={() => setAvatarIconsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              {avatarIconsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <Image size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Avatar Icons</div>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{avatarIcons.length}</span>
+          </button>
+          {avatarIconsExpanded && (
+            <>
+              <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>The pictures people can choose for their profile avatar. Upload a PNG and adjust its size within the circle.</div>
+              {editingAvatarIconId === null && (
+                <button onClick={startAddAvatarIcon} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px] mb-2"><Plus size={13} />Add Icon</button>
+              )}
+              <div className="space-y-1.5">
+                {avatarIcons.map((icon, i) => (
+                  editingAvatarIconId === icon.id ? (
+                    <div key={icon.id} className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
+                      <div className="flex items-center gap-2.5">
+                        <CharacterAvatar avatarId={icon.id} color="grey" size={40} />
+                        <input autoFocus value={avatarIconLabel} onChange={e => setAvatarIconLabel(e.target.value)} placeholder="Label" className="whmi-input flex-1 px-2.5 py-1.5 text-[12px]" />
+                      </div>
+                      <div>
+                        <label className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Size in circle ({avatarIconScale}%)</label>
+                        <input type="range" min="20" max="100" value={avatarIconScale} onChange={e => setAvatarIconScale(Number(e.target.value))} className="w-full" />
+                      </div>
+                      <label className="whmi-btn-ghost !py-1.5 !px-2.5 text-[11.5px] flex items-center gap-1.5 w-fit cursor-pointer">
+                        <Upload size={12} />{avatarIconFile ? avatarIconFile.name : "Replace image (optional)"}
+                        <input type="file" accept="image/png,image/*" className="hidden" onChange={e => setAvatarIconFile(e.target.files?.[0] || null)} />
+                      </label>
+                      {avatarIconError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{avatarIconError}</div>}
+                      <div className="flex gap-1.5 justify-end">
+                        <button onClick={cancelAvatarIconEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
+                        <button onClick={saveAvatarIcon} disabled={avatarIconUploading} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />{avatarIconUploading ? "Uploading…" : "Save"}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={icon.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <CharacterAvatar avatarId={icon.id} color="grey" size={32} />
+                        <div className="text-[12.5px] font-semibold truncate">{icon.label}</div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => moveAvatarIcon(i, -1)} disabled={i === 0} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === 0 ? 0.4 : 1 }}><ArrowUp size={13} /></button>
+                        <button onClick={() => moveAvatarIcon(i, 1)} disabled={i === avatarIcons.length - 1} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === avatarIcons.length - 1 ? 0.4 : 1 }}><ArrowDown size={13} /></button>
+                        <button onClick={() => startEditAvatarIcon(icon)} className="whmi-btn-ghost !p-1.5"><Pencil size={13} /></button>
+                        <button onClick={() => onDeleteAvatarIcon(icon)} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
+                      </div>
+                    </div>
+                  )
+                ))}
+                {editingAvatarIconId === "new" && (
+                  <div className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
+                    <input autoFocus value={avatarIconLabel} onChange={e => setAvatarIconLabel(e.target.value)} placeholder="Label" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
+                    <div>
+                      <label className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Size in circle ({avatarIconScale}%)</label>
+                      <input type="range" min="20" max="100" value={avatarIconScale} onChange={e => setAvatarIconScale(Number(e.target.value))} className="w-full" />
+                    </div>
+                    <label className="whmi-btn-ghost !py-1.5 !px-2.5 text-[11.5px] flex items-center gap-1.5 w-fit cursor-pointer">
+                      <Upload size={12} />{avatarIconFile ? avatarIconFile.name : "Choose PNG image"}
+                      <input type="file" accept="image/png,image/*" className="hidden" onChange={e => setAvatarIconFile(e.target.files?.[0] || null)} />
+                    </label>
+                    {avatarIconError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{avatarIconError}</div>}
+                    <div className="flex gap-1.5 justify-end">
+                      <button onClick={cancelAvatarIconEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
+                      <button onClick={saveAvatarIcon} disabled={avatarIconUploading} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />{avatarIconUploading ? "Uploading…" : "Add"}</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {canManageUsers && (
+        <div className="whmi-card p-4">
+          <button onClick={() => setAvatarColorsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              {avatarColorsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <Palette size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Avatar Colours</div>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{avatarColors.length}</span>
+          </button>
+          {avatarColorsExpanded && (
+            <>
+              <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>The background colour options people can choose for their profile avatar.</div>
+              {editingAvatarColorId === null && (
+                <button onClick={startAddAvatarColor} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px] mb-2"><Plus size={13} />Add Colour</button>
+              )}
+              <div className="space-y-1.5">
+                {avatarColors.map((c, i) => (
+                  editingAvatarColorId === c.id ? (
+                    <div key={c.id} className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} className="w-8 h-8 rounded shrink-0" />
+                        <input autoFocus value={avatarColorName} onChange={e => setAvatarColorName(e.target.value)} placeholder="Colour name" className="whmi-input flex-1 px-2.5 py-1.5 text-[12px]" />
+                        <input value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} placeholder="#35A8DD" className="whmi-input w-24 px-2.5 py-1.5 text-[12px]" />
+                      </div>
+                      {avatarColorError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{avatarColorError}</div>}
+                      <div className="flex gap-1.5 justify-end">
+                        <button onClick={cancelAvatarColorEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
+                        <button onClick={saveAvatarColor} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={c.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-full shrink-0" style={{ background: c.hex, border: "1px solid var(--border)" }} />
+                        <div className="text-[12.5px] font-semibold truncate">{c.name}</div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => moveAvatarColor(i, -1)} disabled={i === 0} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === 0 ? 0.4 : 1 }}><ArrowUp size={13} /></button>
+                        <button onClick={() => moveAvatarColor(i, 1)} disabled={i === avatarColors.length - 1} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === avatarColors.length - 1 ? 0.4 : 1 }}><ArrowDown size={13} /></button>
+                        <button onClick={() => startEditAvatarColor(c)} className="whmi-btn-ghost !p-1.5"><Pencil size={13} /></button>
+                        <button onClick={() => onDeleteAvatarColor(c)} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
+                      </div>
+                    </div>
+                  )
+                ))}
+                {editingAvatarColorId === "new" && (
+                  <div className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
+                    <div className="flex items-center gap-2">
+                      <input type="color" value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} className="w-8 h-8 rounded shrink-0" />
+                      <input autoFocus value={avatarColorName} onChange={e => setAvatarColorName(e.target.value)} placeholder="Colour name" className="whmi-input flex-1 px-2.5 py-1.5 text-[12px]" />
+                      <input value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} placeholder="#35A8DD" className="whmi-input w-24 px-2.5 py-1.5 text-[12px]" />
+                    </div>
+                    {avatarColorError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{avatarColorError}</div>}
+                    <div className="flex gap-1.5 justify-end">
+                      <button onClick={cancelAvatarColorEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
+                      <button onClick={saveAvatarColor} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Add</button>
                     </div>
                   </div>
                 )}
