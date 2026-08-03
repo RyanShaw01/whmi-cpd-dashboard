@@ -48,5 +48,5 @@ export default function Turnstile({ siteKey, onVerify, onExpire, resetKey }) {
     return <p className="text-[11px]" style={{ color: "#D9534F" }}>Turnstile isn't configured; set VITE_TURNSTILE_SITE_KEY.</p>;
   }
 
-  return <div ref={containerRef} />;
+  return <div className="flex justify-center" ref={containerRef} />;
 }

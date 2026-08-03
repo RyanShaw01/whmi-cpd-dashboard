@@ -138,6 +138,7 @@ export default function Settings({
         <div className="flex gap-2 mt-3">
           <button
             onClick={() => onProfileSave({ name: profileName, avatarId: profileAvatarId, avatarColor: profileAvatarColor })}
+            disabled={profileName === (session?.name || "")}
             className="whmi-btn-primary flex items-center justify-center gap-1.5"
           >
             <Save size={13} />Save Profile

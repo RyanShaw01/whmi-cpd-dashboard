@@ -27,7 +27,13 @@ export default function ProfileMenu({ user, onClose, onLogout, onSave }) {
             onChangeColor={color => { setAvatarColor(color); onSave({ avatarId, avatarColor: color }); }}
           />
         </div>
-        <button onClick={() => { onSave({ name, avatarId, avatarColor }); onClose(); }} className="whmi-btn-primary w-full flex items-center justify-center gap-1.5 mb-2"><Save size={13} />Save Changes</button>
+        <button
+          onClick={() => { onSave({ name, avatarId, avatarColor }); onClose(); }}
+          disabled={name === user.name}
+          className="whmi-btn-primary w-full flex items-center justify-center gap-1.5 mb-2"
+        >
+          <Save size={13} />Save Changes
+        </button>
         <button onClick={onLogout} className="whmi-btn-ghost w-full flex items-center justify-center gap-1.5" style={{ color: "#D9534F" }}><LogOut size={13} />Log Out</button>
       </div>
     </div>

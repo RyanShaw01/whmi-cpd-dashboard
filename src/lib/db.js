@@ -78,6 +78,7 @@ const certFromRow = (r) => ({
   recipientEmail: r.recipient_email, cpdHours: r.cpd_hours == null ? null : Number(r.cpd_hours),
   pdfUrl: r.pdf_path && supabase ? supabase.storage.from("certificates").getPublicUrl(r.pdf_path).data.publicUrl : null,
   sentAt: r.sent_at, isManual: !!r.is_manual, cpdTypeId: r.cpd_type_id || null,
+  resendCount: r.resend_count || 0, lastResentAt: r.last_resent_at || null,
 });
 const certToRow = (c) => ({
   staff_name: c.staff, event_id: c.eventId ?? null, event_title: c.event, status: c.status, date: c.date,
@@ -421,6 +422,13 @@ export async function createManualCertificate({ name, email, sessionName, date, 
   });
   if (error) { console.error("createManualCertificate", error); return { ok: false }; }
   return { ok: true, ...data };
+}
+
+export async function sendCertificateEmail(certificateId, isResend = false) {
+  if (!supabaseConfigured) return { ok: false };
+  const { data, error } = await supabase.functions.invoke("send-certificate-email", { body: { certificateId, isResend } });
+  if (error) { console.error("sendCertificateEmail", error); return { ok: false }; }
+  return { ok: data?.ok ?? true, ...data };
 }
 
 /* ---------------------------------------------------------------------- */

@@ -6,11 +6,13 @@
 
 export function SkullIcon({ size = 24, color = "currentColor" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M7 10a5 5 0 0 1 10 0v5l-1 1-1-2-1 2-1-2-1 2-1-2-1 2-1-1z" />
-      <circle cx="9.3" cy="10.3" r="1.5" />
-      <circle cx="14.7" cy="10.3" r="1.5" />
-      <path d="M12 12.2l-.9 1.6h1.8z" fill={color} stroke="none" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      {/* small full-body skeleton */}
+      <circle cx="12" cy="4.2" r="2.2" />
+      <path d="M9.3 9.5h5.4M12 6.4v5.3M12 11.7l-3.2 2M12 11.7l3.2 2" strokeDasharray="1.3 1.3" />
+      <path d="M9 11.7a3 2 0 0 1 6 0" />
+      <path d="M12 13.7v3.3" />
+      <path d="M12 15.2l-2.6 3.3M12 15.2l2.6 3.3" strokeDasharray="1.3 1.3" />
     </svg>
   );
 }
@@ -32,26 +34,6 @@ export function PlusOutlineIcon({ size = 24, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round">
       <path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z" />
-    </svg>
-  );
-}
-
-export function FootballIcon({ size = 24, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7.2l2.6 1.9-1 3H10.4l-1-3z" fill={color} stroke="none" />
-      <path d="M12 7.2V4M15 9.1l2.7-1.9M14 12.1l1.8 2.8M10 12.1l-1.8 2.8M9 9.1L6.3 7.2" />
-    </svg>
-  );
-}
-
-export function TacoIcon({ size = 24, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 14.5a8 5.5 0 0 1 16 0" />
-      <path d="M4 14.5c0 2 3.6 3.5 8 3.5s8-1.5 8-3.5" />
-      <path d="M6.5 11.5l.8-2M9.7 10.3l.4-2.2M12.3 10l0-2.3M15 10.3l.6-2.1M17.6 11.5l1-1.9" />
     </svg>
   );
 }

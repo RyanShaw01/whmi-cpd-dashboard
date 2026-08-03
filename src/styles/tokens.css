@@ -142,6 +142,7 @@
   transition: opacity .15s;
 }
 .whmi-btn-primary:hover { opacity: .85; }
+.whmi-btn-primary:disabled { opacity: .4; pointer-events: none; cursor: not-allowed; }
 .whmi-btn-ghost {
   background: var(--surface-2);
   color: var(--text);

@@ -37,7 +37,7 @@ import {
   updateCertificateStatus, deleteCertificate as deleteCertificateRow, insertRegistration, updateRegistration, deleteRegistration, insertExternalParticipant,
   fetchReflections, insertReflection, deleteReflection, fetchDismissedPairs, insertDismissedPair,
   fetchAllFiles, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
-  fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType,
+  fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType, sendCertificateEmail,
 } from "./lib/db";
 
 const WH_DOMAIN = "@wh.org.au";
@@ -266,6 +266,23 @@ export default function App() {
     setCertificates(prev => prev.map(c => c.id === cert.id ? { ...c, status: "Sent" } : c));
     updateCertificateStatus(cert.id, "Sent");
     logAudit({ actorId: session?.id, action: "certificate.approved", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
+  };
+  const handleApproveAndSendAll = async () => {
+    const awaiting = certificates.filter(c => c.status === "Awaiting Approval");
+    for (const cert of awaiting) {
+      const res = await sendCertificateEmail(cert.id, false);
+      if (res.ok) {
+        setCertificates(prev => prev.map(c => c.id === cert.id ? { ...c, status: "Sent", sentAt: new Date().toISOString() } : c));
+        logAudit({ actorId: session?.id, action: "certificate.approved", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
+      }
+    }
+  };
+  const handleResendCertificate = async (cert) => {
+    const res = await sendCertificateEmail(cert.id, true);
+    if (res.ok) {
+      setCertificates(prev => prev.map(c => c.id === cert.id ? { ...c, resendCount: (c.resendCount || 0) + 1, lastResentAt: new Date().toISOString() } : c));
+      logAudit({ actorId: session?.id, action: "certificate.resent", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
+    }
   };
   const handleManualCertificateCreated = async () => {
     const certList = await fetchCertificates();
@@ -590,6 +607,7 @@ export default function App() {
               onNavigateNotification={navigateToNotification} onAcknowledgeGroup={acknowledgeGroup} onAcknowledgeAll={acknowledgeAllNotifications}
               showSearch={viewSession.role !== "viewer"}
               previewSession={previewSession} onExitPreview={() => setPreviewSession(null)}
+              testAccounts={users.filter(u => u.isTest)} onPreviewAs={setPreviewSession}
             />
 
             <div data-tour="main-content">
@@ -610,7 +628,13 @@ export default function App() {
             {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} />}
             {page === "staff" && <StaffDirectory openStaff={openStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} />}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} />}
-            {page === "certificates" && <Certificates certificates={certificates} canManage={canManage} onRequestDelete={requestDeleteCertificate} onApprove={handleApproveCertificate} highlightId={page === "certificates" ? highlightId : null} onCreateCertificate={() => setCreateCertificateOpen(true)} />}
+            {page === "certificates" && (
+              <Certificates
+                certificates={certificates} canManage={canManage} onRequestDelete={requestDeleteCertificate} onApprove={handleApproveCertificate}
+                highlightId={page === "certificates" ? highlightId : null} onCreateCertificate={() => setCreateCertificateOpen(true)}
+                onApproveAndSendAll={handleApproveAndSendAll} onResend={handleResendCertificate} requestConfirm={requestConfirm}
+              />
+            )}
             {page === "help" && <HelpCentre />}
             {page === "settings" && (
               <Settings

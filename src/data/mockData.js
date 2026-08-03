@@ -2,9 +2,9 @@ import {
   Calendar, Users, Award, BarChart3, Archive, HelpCircle,
   LayoutDashboard, Settings as SettingsIcon,
   Bone, Waves, Magnet, Radiation, Stethoscope, Ghost,
-  Building2, Syringe, Pill, Thermometer, Microscope, Brain, Eye, Briefcase, ClipboardList, Sun, Donut,
+  Building2, Syringe, Pill, Thermometer, Microscope, Brain, Eye, Briefcase, ClipboardList, Sun, Donut, Bandage, Cookie,
 } from "lucide-react";
-import { SkullIcon, HandBonesIcon, PlusOutlineIcon, FootballIcon, TacoIcon } from "../components/customIcons";
+import { SkullIcon, HandBonesIcon, PlusOutlineIcon } from "../components/customIcons";
 import { daysFromNow } from "../lib/helpers";
 
 /* ---------------------------------------------------------------------- */
@@ -119,7 +119,7 @@ export const CHARACTERS = [
   { id: "radiation", label: "Ray the Safety Officer", icon: Radiation },
   { id: "stetho", label: "Doc Stetho", icon: Stethoscope },
   { id: "ghost", label: "Boo the Bone Ghost", icon: Ghost },
-  { id: "skull", label: "Sherlock the Skull", icon: SkullIcon },
+  { id: "skull", label: "Sherlock the Skeleton", icon: SkullIcon },
   { id: "hand", label: "Handy the Hand Bones", icon: HandBonesIcon },
   { id: "cross", label: "Addy the Health Cross", icon: PlusOutlineIcon },
   { id: "hospital", label: "Hank the Hospital", icon: Building2 },
@@ -133,8 +133,8 @@ export const CHARACTERS = [
   { id: "clipboard", label: "Claire the Clipboard", icon: ClipboardList },
   { id: "sun", label: "Sunny", icon: Sun },
   { id: "donut", label: "Dot the Doughnut", icon: Donut },
-  { id: "football", label: "Freddy Football", icon: FootballIcon },
-  { id: "taco", label: "Tia the Taco", icon: TacoIcon },
+  { id: "bandage", label: "Bandy the Band-Aid", icon: Bandage },
+  { id: "cookie", label: "Cookie the Crumb", icon: Cookie },
 ];
 
 export const SEED_USERS = [

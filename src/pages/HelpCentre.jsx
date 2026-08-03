@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, ChevronRight, Search, Video, Info, ImageOff } from "lucide-react";
+import { BookOpen, ChevronRight, Search, Info, ImageOff } from "lucide-react";
 import { HELP_CATEGORIES, HELP_ARTICLES } from "../data/helpContent";
 
 // Lightweight **bold** markup, no markdown library needed — just wraps matched
@@ -19,17 +19,11 @@ function ArticleItem({ article, open, onToggle }) {
         <span className="font-semibold text-[13px] flex items-center gap-2 min-w-0">
           <BookOpen size={14} style={{ color: "var(--accent-secondary)" }} className="shrink-0" />
           <span className="break-words">{article.title}</span>
-          {article.video && <Video size={12} style={{ color: "var(--text-faint)" }} className="shrink-0" title="Video walkthrough coming soon" />}
         </span>
         <ChevronRight size={15} style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform .15s", color: "var(--text-faint)" }} className="shrink-0" />
       </button>
       {open && (
         <div className="px-4 pb-4 text-[12.5px] leading-relaxed space-y-2" style={{ color: "var(--text-dim)" }}>
-          {article.video && (
-            <div className="flex items-center gap-1.5 text-[11.5px] italic" style={{ color: "var(--text-faint)" }}>
-              <Video size={12} />Video walkthrough coming soon
-            </div>
-          )}
           {article.image ? (
             <img src={article.image.src} alt={article.image.alt || ""} className="w-full rounded-lg" style={{ border: "1px solid var(--border)" }} />
           ) : article.imagePending && (

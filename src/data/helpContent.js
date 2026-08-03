@@ -1,7 +1,5 @@
 /*
  * Written guides for the Help Centre, grounded in how the app actually behaves.
- * `video: true` marks articles worth a walkthrough recording later; no video hosting is
- * wired up yet, so the UI shows a "coming soon" note instead of a real player.
  * `imagePending: true` marks articles slated for an annotated screenshot once one's
  * captured and dropped into src/assets/help/ (set `image: { src, alt }` at that point).
  */
@@ -55,7 +53,6 @@ export const HELP_ARTICLES = [
     id: "create-event",
     category: "events",
     title: "Creating a new event",
-    video: true,
     steps: [
       "From the Dashboard, click **Add/Edit Event** (or **New Event** on the Upcoming Events page).",
       "Fill in the **title**, description, and learning objectives.",
@@ -180,7 +177,6 @@ export const HELP_ARTICLES = [
     id: "auto-certificates",
     category: "certificates",
     title: "How automatic certificates work",
-    video: true,
     steps: [
       "Once an event has finished, a registered attendee sees a **\"Leave Feedback & Get Certificate\"** button on the event, or in their My CPD **\"Needs Your Feedback\"** section.",
       "They fill in and submit the **reflection form**.",
@@ -240,7 +236,6 @@ export const HELP_ARTICLES = [
     id: "previous-events-calendar",
     category: "reports",
     title: "Using the Previous Events calendar view",
-    video: true,
     steps: [
       "On the **Previous Events** page, switch from Table to **Calendar** view.",
       "Pick a **year** to see every completed event laid out across a 12-month calendar.",

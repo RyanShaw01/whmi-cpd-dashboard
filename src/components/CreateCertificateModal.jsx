@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { X, Award, Download } from "lucide-react";
 import { createManualCertificate } from "../lib/db";
 
-// For someone with no account in the system: an admin/owner types the details directly and
-// gets a downloadable certificate PDF immediately. Skips email entirely (see
-// supabase/functions/create-manual-certificate) since this is a one-off admin action.
+// For someone with no account in the system: an admin/owner types the details directly, the
+// certificate is generated and emailed to the recipient automatically, and a matching staff or
+// external-participant record is created for them if one doesn't already exist.
 export default function CreateCertificateModal({ open, onClose, cpdTypes = [], onCreated }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -50,7 +50,9 @@ export default function CreateCertificateModal({ open, onClose, cpdTypes = [], o
 
         {status === "done" && result ? (
           <div className="p-5 space-y-3">
-            <p className="text-[13px]" style={{ color: "var(--accent-success)" }}>Certificate created for {name}.</p>
+            <p className="text-[13px]" style={{ color: "var(--accent-success)" }}>
+              {result.emailed ? `Certificate created and emailed to ${name}.` : `Certificate created for ${name}, but the email couldn't be sent — download and send it manually.`}
+            </p>
             {result.pdfUrl && (
               <a href={result.pdfUrl} target="_blank" rel="noreferrer" className="whmi-btn-primary w-full flex items-center justify-center gap-1.5"><Download size={14} />Download PDF</a>
             )}
