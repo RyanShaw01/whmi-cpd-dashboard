@@ -31,6 +31,7 @@ function exportAttendeesCsv(event, regs) {
 
 export default function EventDetailModal({
   event, onClose, registrations, canManage, onDelete, onStatusChange, onEdit, uploadedBy, session, cpdTypes, files, tags, onSaveTag, viewerUserType, onFilesChange,
+  onUpdateBannerFocal, onRemoveBanner,
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
@@ -65,6 +66,9 @@ export default function EventDetailModal({
               tags={tags}
               onSaveTag={onSaveTag}
               onFilesChange={onFilesChange}
+              files={files}
+              onUpdateBannerFocal={onUpdateBannerFocal}
+              onRemoveBanner={onRemoveBanner}
             />
           </div>
         </div>
@@ -78,7 +82,7 @@ export default function EventDetailModal({
         <div
           className={bannerUrl ? "min-h-[180px] relative flex items-end p-5" : "min-h-[92px] relative flex items-end p-5"}
           style={bannerUrl
-            ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,.15)), url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+            ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,.15)), url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: `${event.bannerFocalX ?? 50}% ${event.bannerFocalY ?? 50}%` }
             : { background: "var(--accent-primary)" }}
         >
           <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }}>

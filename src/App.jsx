@@ -32,13 +32,14 @@ import { TOUR_STEPS } from "./data/tourSteps";
 import { loadPersonal, savePersonal } from "./lib/storage";
 import { buildNotificationGroups } from "./lib/notifications";
 import { eventAttendedCount, eventAvgRating } from "./lib/analytics";
+import { eventBannerFile } from "./lib/helpers";
 import { supabase, supabaseConfigured } from "./lib/supabaseClient";
 import {
   fetchUsers, fetchStaff, fetchEvents, fetchPreviousEvents, fetchCertificates, fetchRegistrations, fetchExternalParticipants,
   insertUser, updateUser, deleteUser, insertStaff, updateStaff, deleteStaff, updateEventStatus, insertEvent, updateEvent, deleteEvent as deleteEventRow,
   updateCertificateStatus, deleteCertificate as deleteCertificateRow, insertRegistration, updateRegistration, deleteRegistration, insertExternalParticipant,
   fetchReflections, insertReflection, deleteReflection, fetchDismissedPairs, insertDismissedPair,
-  fetchAllFiles, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
+  fetchAllFiles, deleteEventFile, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
   fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType, sendCertificateEmail,
   fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog,
 } from "./lib/db";
@@ -359,6 +360,18 @@ export default function App() {
     pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
   const refreshFiles = () => { fetchAllFiles().then(setFiles); };
+  const handleUpdateBannerFocal = (event, bannerFocalX, bannerFocalY) => {
+    const patched = { ...event, bannerFocalX, bannerFocalY };
+    setEvents(prev => prev.map(e => e.id === event.id ? { ...e, bannerFocalX, bannerFocalY } : e));
+    setPreviousEvents(prev => prev.map(e => e.id === event.id ? { ...e, bannerFocalX, bannerFocalY } : e));
+    updateEvent(event.id, patched);
+  };
+  const handleRemoveBanner = (event) => {
+    const file = eventBannerFile(files, event.id);
+    if (!file) return;
+    setFiles(prev => prev.filter(f => f.id !== file.id));
+    deleteEventFile(file, session?.id);
+  };
   const handleUpdateEvent = (payload) => {
     setEvents(prev => prev.map(e => e.id === payload.id ? payload : e));
     setSelectedEvent(payload);
@@ -774,6 +787,7 @@ export default function App() {
           reflections={reflections} onDeleteReflection={requestDeleteReflection}
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}
           cpdTypes={cpdTypes} files={files} tags={tags} onSaveTag={handleAddTag} viewerUserType={viewSession.userType} onFilesChange={refreshFiles}
+          onUpdateBannerFocal={handleUpdateBannerFocal} onRemoveBanner={handleRemoveBanner}
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}
@@ -783,7 +797,8 @@ export default function App() {
           onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField}
           onUpdateAttendanceStatus={handleUpdateAttendanceStatus}
           dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
-          cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag} onFilesChange={refreshFiles}
+          cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag} onFilesChange={refreshFiles} files={files}
+          onUpdateBannerFocal={handleUpdateBannerFocal} onRemoveBanner={handleRemoveBanner}
         />
         <EventFormModal
           open={createEventOpen} onClose={() => setCreateEventOpen(false)} event={null}

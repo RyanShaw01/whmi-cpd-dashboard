@@ -59,6 +59,7 @@ const eventFromRow = (r) => ({
   recordingUrl: r.recording_url || "",
   cpdTypeId: r.cpd_type_id || null, openToExternal: r.open_to_external == null ? true : !!r.open_to_external,
   reflectionAutoEmail: r.reflection_auto_email !== false, showRegCountExternal: !!r.show_reg_count_external,
+  bannerFocalX: r.banner_focal_x == null ? 50 : Number(r.banner_focal_x), bannerFocalY: r.banner_focal_y == null ? 50 : Number(r.banner_focal_y),
 });
 const eventToRow = (e) => ({
   title: e.title, topic: e.topic, date: e.date, start_time: e.start, end_time: e.end,
@@ -73,6 +74,7 @@ const eventToRow = (e) => ({
   recording_url: e.recordingUrl || null,
   cpd_type_id: e.cpdTypeId || null, open_to_external: e.openToExternal ?? true,
   reflection_auto_email: e.reflectionAutoEmail !== false, show_reg_count_external: e.showRegCountExternal ?? false,
+  banner_focal_x: e.bannerFocalX ?? 50, banner_focal_y: e.bannerFocalY ?? 50,
 });
 
 const certFromRow = (r) => ({

@@ -3,8 +3,10 @@ import { Save, X, Plus } from "lucide-react";
 import { CAMPUS_OPTIONS, LOCATION_OPTIONS } from "../data/mockData";
 import { formatDuration } from "../lib/helpers";
 import EventFilesPanel from "./EventFilesPanel";
+import BannerPositionEditor from "./BannerPositionEditor";
 import InfoTooltip from "./InfoTooltip";
 import TimeInput12h from "./TimeInput12h";
+import { eventBannerUrl } from "../lib/helpers";
 
 const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
 
@@ -22,7 +24,7 @@ const field = "text-[11px] font-semibold block mb-1";
 // DB rows use null for "not set"; text/number inputs need "" so they stay controlled.
 const nullsToEmpty = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v == null ? "" : v]));
 
-export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange }) {
+export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange, files, onUpdateBannerFocal, onRemoveBanner }) {
   const [form, setForm] = useState(event
     ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [] }
     : { ...emptyEvent, status: initialStatus || emptyEvent.status });
@@ -237,6 +239,16 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
         <div className="pt-2 border-t" style={{ borderColor: "var(--border)" }}>
           <div className="text-[11px] font-semibold mb-2 mt-3" style={{ color: "var(--text-faint)" }}>FILES</div>
           <EventFilesPanel eventId={form.id} uploadedBy={uploadedBy} onFilesChange={onFilesChange} />
+          {eventBannerUrl(files, event.id) && (
+            <div className="mt-3">
+              <BannerPositionEditor
+                bannerUrl={eventBannerUrl(files, event.id)}
+                focalX={event.bannerFocalX ?? 50} focalY={event.bannerFocalY ?? 50}
+                onChangeFocal={(x, y) => onUpdateBannerFocal(event, x, y)}
+                onRemove={() => onRemoveBanner(event)}
+              />
+            </div>
+          )}
         </div>
       )}
 

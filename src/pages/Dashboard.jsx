@@ -88,7 +88,7 @@ export default function Dashboard({ events, previousEvents, registrations, refle
             const bannerUrl = eventBannerUrl(files, ev.id);
             return (
               <button key={ev.id} onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col p-3 rounded-xl text-left transition" style={{ border: "1px solid var(--border)" }}>
-                {bannerUrl && <img src={bannerUrl} alt="" className="w-full h-20 object-cover rounded-lg mb-3" />}
+                {bannerUrl && <img src={bannerUrl} alt="" className="w-full h-20 object-cover rounded-lg mb-3" style={{ objectPosition: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%` }} />}
                 <div className="w-full flex items-center gap-4">
                   <div className="w-14 h-14 rounded-lg shrink-0 flex flex-col items-center justify-center" style={{ background: primaryHex }}>
                     <span className="text-white text-[10px] font-bold uppercase">{fmtDate(ev.date).split(" ")[2]}</span>

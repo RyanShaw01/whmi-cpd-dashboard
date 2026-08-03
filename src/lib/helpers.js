@@ -167,11 +167,13 @@ export function outstandingReflectionsForUser(events, registrations, reflections
 
 /* The event's "Promotional Flyer" file, if one's been uploaded and it's an image
  * (PDFs etc. have no visual banner to show). */
-export function eventBannerUrl(files, eventId) {
-  const flyer = (files || []).find(f =>
+export function eventBannerFile(files, eventId) {
+  return (files || []).find(f =>
     f.eventId === eventId && f.kind === "flyer" && f.url && /\.(jpe?g|png|webp|gif)$/i.test(f.storagePath || "")
-  );
-  return flyer?.url || null;
+  ) || null;
+}
+export function eventBannerUrl(files, eventId) {
+  return eventBannerFile(files, eventId)?.url || null;
 }
 
 /* Exact CPD hours from event start/end, e.g. "09:00"-"12:30" -> 3.5. */
