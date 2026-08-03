@@ -1,0 +1,156 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap');
+
+.whmi-root {
+  --green: #9CCB3B;
+  --blue: #35A8DD;
+  --purple: #7B3FE4;
+  --accent-primary: var(--blue);
+  --accent-secondary: var(--purple);
+  --accent-success: var(--green);
+  --font-display: 'Manrope', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+.whmi-root.light {
+  --bg: #F7F8FA;
+  --surface: #FFFFFF;
+  --surface-2: #F0F2F5;
+  --border: #E4E7EC;
+  --text: #1A1D23;
+  --text-dim: #6B7280;
+  --text-faint: #9CA3AF;
+  --logo-color: var(--accent-primary);
+}
+.whmi-root.dark {
+  --bg: #0E1013;
+  --surface: #16181D;
+  --surface-2: #1D2027;
+  --border: #2A2D35;
+  --text: #F2F3F5;
+  --text-dim: #A3A8B4;
+  --text-faint: #6B7280;
+  --logo-color: #FFFFFF;
+}
+.whmi-root {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100%;
+}
+.whmi-root h1, .whmi-root h2, .whmi-root h3, .whmi-root .disp {
+  font-family: var(--font-display);
+}
+.whmi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.whmi-event-card { background: var(--surface); }
+.whmi-root.dark .whmi-event-card { background: var(--surface-2); }
+.whmi-quick-actions-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 8px 8px;
+}
+.whmi-accent-bar { background: var(--accent-primary); }
+.whmi-logo-icon, .whmi-logo-full {
+  background-color: var(--logo-color);
+  -webkit-mask-size: contain; mask-size: contain;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+}
+.whmi-logo-icon {
+  -webkit-mask-image: url('../assets/logo-icon.png');
+  mask-image: url('../assets/logo-icon.png');
+}
+.whmi-logo-full {
+  -webkit-mask-image: url('../assets/logo-full.png');
+  mask-image: url('../assets/logo-full.png');
+}
+.whmi-sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  transition: width .18s ease;
+}
+.whmi-nav-btn {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 7px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.whmi-nav-btn:hover { background: var(--surface-2); color: var(--text); }
+.whmi-nav-btn.active { background: var(--surface-2); color: var(--text); }
+.whmi-side-btn {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+  width: 100%;
+}
+.whmi-side-btn:hover { background: var(--surface-2); color: var(--text); }
+.whmi-side-btn.active { background: var(--surface-2); color: var(--accent-primary); }
+.whmi-quick-action {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 7px 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: background .15s, border-color .15s;
+  text-align: left;
+}
+.whmi-quick-action:hover { background: var(--surface-2); border-color: var(--accent-primary); }
+.whmi-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+.whmi-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+.whmi-input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 9px;
+  font-size: 13px;
+}
+.whmi-input::placeholder { color: var(--text-faint); }
+.whmi-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.whmi-btn-primary {
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 9px;
+  padding: 8px 14px;
+  transition: opacity .15s;
+}
+.whmi-btn-primary:hover { opacity: .85; }
+.whmi-btn-ghost {
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 9px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+}
+.whmi-row-hover:hover { background: var(--surface-2); }
+.whmi-fade-in { animation: whmiFade .25s ease; }
+@keyframes whmiFade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }
