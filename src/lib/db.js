@@ -58,6 +58,7 @@ const eventFromRow = (r) => ({
   tags: r.tags || [], reflectionMethod: r.reflection_method || "link", asmirtCode: r.asmirt_code || "",
   recordingUrl: r.recording_url || "",
   cpdTypeId: r.cpd_type_id || null, openToExternal: r.open_to_external == null ? true : !!r.open_to_external,
+  reflectionAutoEmail: r.reflection_auto_email !== false,
 });
 const eventToRow = (e) => ({
   title: e.title, topic: e.topic, date: e.date, start_time: e.start, end_time: e.end,
@@ -71,6 +72,7 @@ const eventToRow = (e) => ({
   tags: e.tags || [], reflection_method: e.reflectionMethod || "link", asmirt_code: e.asmirtCode || null,
   recording_url: e.recordingUrl || null,
   cpd_type_id: e.cpdTypeId || null, open_to_external: e.openToExternal ?? true,
+  reflection_auto_email: e.reflectionAutoEmail !== false,
 });
 
 const certFromRow = (r) => ({

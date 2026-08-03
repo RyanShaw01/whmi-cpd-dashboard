@@ -613,7 +613,7 @@ export default function App() {
             <div data-tour="main-content">
             {page === "dashboard" && viewSession.role !== "viewer" && (
               <Dashboard
-                events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} certificates={certificates}
+                events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} certificates={certificates} files={files}
                 openEvent={openEvent} setPage={changePage} layoutOrder={layoutOrder} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} userName={viewSession.name.split(" ")[0]}
                 onCreateCertificate={() => { changePage("certificates"); setCreateCertificateOpen(true); }}
               />
@@ -668,7 +668,7 @@ export default function App() {
           dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
           reflections={reflections} onDeleteReflection={requestDeleteReflection}
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}
-          cpdTypes={cpdTypes}
+          cpdTypes={cpdTypes} files={files}
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}

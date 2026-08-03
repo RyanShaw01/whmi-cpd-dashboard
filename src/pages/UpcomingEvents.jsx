@@ -89,11 +89,13 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
                 <div className="mt-3">
                   <div className="flex justify-between text-[11px] mb-1" style={{ color: "var(--text-faint)" }}>
                     <span>{ev.registered} registered{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
-                    <span>{Math.round((ev.registered / ev.capacity) * 100)}%</span>
+                    <span>{ev.capacity == null ? "Unlimited" : `${Math.round((ev.registered / ev.capacity) * 100)}%`}</span>
                   </div>
-                  <div className="h-1.5 rounded-full" style={{ background: "var(--surface-2)" }}>
-                    <div className="h-1.5 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (ev.registered / ev.capacity) * 100)}%` }} />
-                  </div>
+                  {ev.capacity != null && (
+                    <div className="h-1.5 rounded-full" style={{ background: "var(--surface-2)" }}>
+                      <div className="h-1.5 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (ev.registered / ev.capacity) * 100)}%` }} />
+                    </div>
+                  )}
                 </div>
               </button>
               <div className="flex items-center justify-between gap-2 mt-2">

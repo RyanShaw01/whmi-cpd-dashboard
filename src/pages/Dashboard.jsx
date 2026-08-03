@@ -10,7 +10,7 @@ import {
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 import { ACTIVITY_FEED } from "../data/mockData";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h } from "../lib/helpers";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
 const QUICK_ACTIONS = [
@@ -20,7 +20,7 @@ const QUICK_ACTIONS = [
   { id: "reports", label: "Export Reports", icon: Download, color: "var(--accent-primary)" },
 ];
 
-export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate }) {
+export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, files, openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate }) {
   // Re-render every minute so countdowns (and join-meeting availability) stay fresh.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -64,27 +64,33 @@ export default function Dashboard({ events, previousEvents, registrations, refle
           <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{events.length} upcoming</span>
         </div>
         <div className="space-y-3">
-          {events.slice(0, 4).map(ev => (
-            <button key={ev.id} onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex items-center gap-4 p-3 rounded-xl text-left transition" style={{ border: "1px solid var(--border)" }}>
-              <div className="w-14 h-14 rounded-lg shrink-0 flex flex-col items-center justify-center" style={{ background: primaryHex }}>
-                <span className="text-white text-[10px] font-bold uppercase">{fmtDate(ev.date).split(" ")[2]}</span>
-                <span className="text-white text-[16px] font-extrabold leading-none">{fmtDate(ev.date).split(" ")[1]}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-[13.5px] break-words">{ev.title}</div>
-                <div className="flex items-center gap-3 mt-1 text-[11.5px] flex-wrap" style={{ color: "var(--text-dim)" }}>
-                  <span className="flex items-center gap-1"><Clock size={11} />{fmtTimeRange12h(ev.start, ev.end)}</span>
-                  <span className="flex items-center gap-1"><MapPin size={11} />{ev.location.split(",")[0]}</span>
-                  <span>{ev.presenter}</span>
+          {events.slice(0, 4).map(ev => {
+            const bannerUrl = eventBannerUrl(files, ev.id);
+            return (
+              <button key={ev.id} onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col p-3 rounded-xl text-left transition" style={{ border: "1px solid var(--border)" }}>
+                {bannerUrl && <img src={bannerUrl} alt="" className="w-full h-20 object-cover rounded-lg mb-3" />}
+                <div className="w-full flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-lg shrink-0 flex flex-col items-center justify-center" style={{ background: primaryHex }}>
+                    <span className="text-white text-[10px] font-bold uppercase">{fmtDate(ev.date).split(" ")[2]}</span>
+                    <span className="text-white text-[16px] font-extrabold leading-none">{fmtDate(ev.date).split(" ")[1]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-[13.5px] break-words">{ev.title}</div>
+                    <div className="flex items-center gap-3 mt-1 text-[11.5px] flex-wrap" style={{ color: "var(--text-dim)" }}>
+                      <span className="flex items-center gap-1"><Clock size={11} />{fmtTimeRange12h(ev.start, ev.end)}</span>
+                      <span className="flex items-center gap-1"><MapPin size={11} />{ev.location.split(",")[0]}</span>
+                      <span>{ev.presenter}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 hidden sm:block">
+                    <div className="text-[12px] font-bold">{ev.registered}/{ev.capacity ?? "∞"}</div>
+                    <StatusBadge status={ev.status} />
+                  </div>
+                  <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />
                 </div>
-              </div>
-              <div className="text-right shrink-0 hidden sm:block">
-                <div className="text-[12px] font-bold">{ev.registered}/{ev.capacity}</div>
-                <StatusBadge status={ev.status} />
-              </div>
-              <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
     ),

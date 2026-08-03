@@ -67,6 +67,7 @@ export const CAMPUS_OPTIONS = [
   { code: "WTN", label: "Williamstown" },
   { code: "SDH", label: "Sunbury" },
 ];
+export const LOCATION_OPTIONS = ["Footscray Hospital", "Sunshine Hospital", "Williamstown Hospital", "Sunbury Day Hospital"];
 export const MODALITY_OPTIONS = ["General XR", "CT", "MRI", "Ultrasound", "Mammography", "Nuclear Medicine", "Angiography"];
 export const GRADE_OPTIONS = ["Student", "Grade 1", "Grade 2", "Senior", "Clinical Educator", "Manager"];
 

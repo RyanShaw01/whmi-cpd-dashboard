@@ -52,20 +52,25 @@ export default function Settings({
   const [editingCpdTypeId, setEditingCpdTypeId] = useState(null); // null | "new" | <id>
   const [cpdTypeName, setCpdTypeName] = useState("");
   const [cpdTypeCode, setCpdTypeCode] = useState("");
+  const [cpdTypeError, setCpdTypeError] = useState("");
   const [emailDrafts, setEmailDrafts] = useState({}); // { [userId]: { email, secondaryEmail } }
 
   const visibleUsers = users.filter(u => !u.isTest);
   const testAccounts = users.filter(u => u.isTest);
 
-  const startAddCpdType = () => { setEditingCpdTypeId("new"); setCpdTypeName(""); setCpdTypeCode(""); };
-  const startEditCpdType = (t) => { setEditingCpdTypeId(t.id); setCpdTypeName(t.name); setCpdTypeCode(t.appellationCode); };
-  const cancelCpdTypeEdit = () => setEditingCpdTypeId(null);
+  const startAddCpdType = () => { setEditingCpdTypeId("new"); setCpdTypeName(""); setCpdTypeCode(""); setCpdTypeError(""); };
+  const startEditCpdType = (t) => { setEditingCpdTypeId(t.id); setCpdTypeName(t.name); setCpdTypeCode(t.appellationCode); setCpdTypeError(""); };
+  const cancelCpdTypeEdit = () => { setEditingCpdTypeId(null); setCpdTypeError(""); };
   const saveCpdType = () => {
-    if (!cpdTypeName.trim() || !cpdTypeCode.trim()) return;
+    if (!cpdTypeName.trim() || !cpdTypeCode.trim()) {
+      setCpdTypeError("Please add both a name and an appellation code for this CPD type.");
+      return;
+    }
     const isNew = editingCpdTypeId === "new";
     const cpdType = { id: isNew ? "cpd" + Date.now() : editingCpdTypeId, name: cpdTypeName.trim(), appellationCode: cpdTypeCode.trim() };
     onSaveCpdType(cpdType, isNew);
     setEditingCpdTypeId(null);
+    setCpdTypeError("");
   };
 
   useEffect(() => {
@@ -396,8 +401,9 @@ export default function Settings({
                 <div key={t.id} className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
                   <div className="grid grid-cols-2 gap-1.5">
                     <input value={cpdTypeName} onChange={e => setCpdTypeName(e.target.value)} placeholder="CPD type name" className="whmi-input px-2.5 py-1.5 text-[12px]" />
-                    <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code" className="whmi-input px-2.5 py-1.5 text-[12px]" />
+                    <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code (required)" className="whmi-input px-2.5 py-1.5 text-[12px]" />
                   </div>
+                  {cpdTypeError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{cpdTypeError}</div>}
                   <div className="flex gap-1.5 justify-end">
                     <button onClick={cancelCpdTypeEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
                     <button onClick={saveCpdType} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Save</button>
@@ -421,8 +427,9 @@ export default function Settings({
               <div className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
                 <div className="grid grid-cols-2 gap-1.5">
                   <input autoFocus value={cpdTypeName} onChange={e => setCpdTypeName(e.target.value)} placeholder="CPD type name" className="whmi-input px-2.5 py-1.5 text-[12px]" />
-                  <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code" className="whmi-input px-2.5 py-1.5 text-[12px]" />
+                  <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code (required)" className="whmi-input px-2.5 py-1.5 text-[12px]" />
                 </div>
+                {cpdTypeError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{cpdTypeError}</div>}
                 <div className="flex gap-1.5 justify-end">
                   <button onClick={cancelCpdTypeEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
                   <button onClick={saveCpdType} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Add</button>

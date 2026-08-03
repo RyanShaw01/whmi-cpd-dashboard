@@ -11,7 +11,7 @@ import InfoTooltip from "./InfoTooltip";
 import EventForm from "./EventForm";
 import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
-import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl } from "../lib/helpers";
 
 const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
 
@@ -30,7 +30,7 @@ function exportAttendeesCsv(event, regs) {
 }
 
 export default function EventDetailModal({
-  event, onClose, registrations, canManage, onDelete, onStatusChange, onEdit, uploadedBy, session, cpdTypes,
+  event, onClose, registrations, canManage, onDelete, onStatusChange, onEdit, uploadedBy, session, cpdTypes, files,
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
@@ -39,6 +39,7 @@ export default function EventDetailModal({
   const [editing, setEditing] = useState(false);
   if (!event) return null;
   const joinable = event.meetingUrl && canJoinMeeting(event.date, event.start, event.end);
+  const bannerUrl = eventBannerUrl(files, event.id);
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
   const eventReflections = (reflections || []).filter(r => r.eventId === event.id);
   const myReflection = session ? eventReflections.find(r => r.email?.toLowerCase() === session.email.toLowerCase()) : null;
@@ -70,7 +71,12 @@ export default function EventDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
       <div className="whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
-        <div className="min-h-[92px] relative flex items-end p-5" style={{ background: "var(--accent-primary)" }}>
+        <div
+          className={bannerUrl ? "min-h-[180px] relative flex items-end p-5" : "min-h-[92px] relative flex items-end p-5"}
+          style={bannerUrl
+            ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,.15)), url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+            : { background: "var(--accent-primary)" }}
+        >
           <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }}>
             <X size={15} color="white" />
           </button>
@@ -118,17 +124,10 @@ export default function EventDetailModal({
             <div className="flex items-center gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{event.presenter}</span></div>
           </div>
 
-          {(event.description || event.learningObjectives || event.organisers || event.supportingStaff) && (
+          {(event.description || event.organisers) && (
             <div className="whmi-card p-3 space-y-2 text-[12.5px]">
               {event.description && <p style={{ color: "var(--text-dim)" }}>{event.description}</p>}
-              {event.learningObjectives && (
-                <div>
-                  <div className="text-[10.5px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--text-faint)" }}>Learning Objectives</div>
-                  <p className="whitespace-pre-line" style={{ color: "var(--text-dim)" }}>{event.learningObjectives}</p>
-                </div>
-              )}
               {event.organisers && <div><span className="font-semibold">Organisers:</span> <span style={{ color: "var(--text-dim)" }}>{event.organisers}</span></div>}
-              {event.supportingStaff && <div><span className="font-semibold">Supporting Staff:</span> <span style={{ color: "var(--text-dim)" }}>{event.supportingStaff}</span></div>}
               {event.tags?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {event.tags.map(t => <span key={t} className="whmi-badge" style={{ background: "var(--surface-2)", color: "var(--text-dim)" }}>{t}</span>)}
@@ -167,12 +166,14 @@ export default function EventDetailModal({
             <div className="space-y-3">
               <div className="whmi-card p-3">
                 <div className="flex justify-between text-[12px] mb-1.5" style={{ color: "var(--text-dim)" }}>
-                  <span>{event.registered} of {event.capacity} registered</span>
+                  <span>{event.capacity == null ? `${event.registered} registered · Unlimited capacity` : `${event.registered} of ${event.capacity} registered`}</span>
                   {event.waitlist > 0 && <span>{event.waitlist} on waitlist</span>}
                 </div>
-                <div className="h-2 rounded-full" style={{ background: "var(--surface-2)" }}>
-                  <div className="h-2 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (event.registered / event.capacity) * 100)}%` }} />
-                </div>
+                {event.capacity != null && (
+                  <div className="h-2 rounded-full" style={{ background: "var(--surface-2)" }}>
+                    <div className="h-2 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (event.registered / event.capacity) * 100)}%` }} />
+                  </div>
+                )}
               </div>
               {canLeaveFeedback && (
                 <Link to={`/event/${event.id}/reflect`} className="whmi-btn-primary flex items-center justify-center gap-1.5 w-full"><MessageSquareText size={14} />Leave Feedback & Get Certificate</Link>
@@ -194,7 +195,7 @@ export default function EventDetailModal({
 
           {regTab === "reflections" && (
             <div className="space-y-3">
-              {event.reflectionMethod === "qr" && canManage && (
+              {canManage && (
                 <div className="max-w-[200px] mx-auto">
                   <EventQRCode event={event} path="/reflect" filenameSuffix="reflection-qr" />
                 </div>
