@@ -54,24 +54,25 @@ export default function BannerPositionEditor({ bannerUrl, focalX = 50, focalY = 
   }, []);
 
   const commit = (next) => onChangeCrop(Math.round(next.focalX), Math.round(next.focalY), Math.round(next.zoom * 100) / 100);
+  const activeListenersRef = useRef(null);
 
-  const startMove = (e) => {
+  // Listeners are attached fresh on every drag start (rather than once via a useEffect keyed
+  // on rarely-changing values) so they always close over the current wide/baseDimPct/onChangeCrop
+  // — a stale, mount-time-frozen closure here would keep committing against outdated data on
+  // every drag after the first.
+  const beginDrag = (mode) => (e) => {
     e.preventDefault();
-    dragRef.current = { mode: "move" };
-    const p = pctFromEvent(e);
-    setLocal(l => ({ ...l, focalX: p.x, focalY: p.y }));
-  };
-
-  const startResize = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragRef.current = { mode: "resize" };
-  };
-
-  useEffect(() => {
-    const handleMove = (e) => {
-      if (!dragRef.current || !naturalAspect) return;
+    if (mode === "resize") e.stopPropagation();
+    if (!naturalAspect) return;
+    dragRef.current = { mode };
+    if (mode === "move") {
       const p = pctFromEvent(e);
+      setLocal(l => ({ ...l, focalX: p.x, focalY: p.y }));
+    }
+
+    const handleMove = (ev) => {
+      if (!dragRef.current) return;
+      const p = pctFromEvent(ev);
       if (dragRef.current.mode === "move") {
         setLocal(l => ({ ...l, focalX: p.x, focalY: p.y }));
       } else {
@@ -86,18 +87,25 @@ export default function BannerPositionEditor({ bannerUrl, focalX = 50, focalY = 
       }
     };
     const handleUp = () => {
-      if (!dragRef.current) return;
       dragRef.current = null;
-      commit(localRef.current);
-    };
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
-    return () => {
+      activeListenersRef.current = null;
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("pointerup", handleUp);
+      commit(localRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [naturalAspect, wide, baseDimPct]);
+    activeListenersRef.current = { handleMove, handleUp };
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+  };
+
+  // If the component unmounts mid-drag (e.g. the modal is closed while dragging), remove the
+  // listeners without committing — there's no longer anywhere to commit to.
+  useEffect(() => () => {
+    if (activeListenersRef.current) {
+      window.removeEventListener("pointermove", activeListenersRef.current.handleMove);
+      window.removeEventListener("pointerup", activeListenersRef.current.handleUp);
+    }
+  }, []);
 
   const resetView = () => {
     const next = { focalX: 50, focalY: 50, zoom: 1 };
@@ -121,7 +129,7 @@ export default function BannerPositionEditor({ bannerUrl, focalX = 50, focalY = 
           />
           {naturalAspect && (
             <div
-              onPointerDown={startMove}
+              onPointerDown={beginDrag("move")}
               className="absolute rounded-md cursor-move"
               style={{
                 left: `${box.left}%`, top: `${box.top}%`, width: `${box.width}%`, height: `${box.height}%`,
@@ -129,7 +137,7 @@ export default function BannerPositionEditor({ bannerUrl, focalX = 50, focalY = 
               }}
             >
               <div
-                onPointerDown={startResize}
+                onPointerDown={beginDrag("resize")}
                 className="absolute -bottom-1.5 -right-1.5 w-4 h-4 rounded-full cursor-nwse-resize"
                 style={{ background: "white", border: "2px solid var(--accent-primary)" }}
                 title="Drag to resize"
