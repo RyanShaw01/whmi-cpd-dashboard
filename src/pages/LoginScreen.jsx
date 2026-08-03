@@ -69,6 +69,7 @@ export default function LoginScreen({ rootVars }) {
         ) : (
           <form onSubmit={verifyCode} className="space-y-3">
             <p className="text-[12px]" style={{ color: "var(--text-dim)" }}>We sent a verification code to <strong>{email}</strong>.</p>
+            <p className="text-[11px]" style={{ color: "var(--text-faint)" }}>It can take a minute or two to arrive; if you don't see it, check your junk/spam folder.</p>
             <div>
               <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Code</label>
               <input required value={code} onChange={e => setCode(e.target.value)} className="whmi-input w-full px-3 py-2 mt-1 text-center tracking-[0.3em] text-[16px]" placeholder="000000" maxLength={10} autoFocus />
