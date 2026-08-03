@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Paperclip, Upload, Trash2, FileText } from "lucide-react";
 import { fetchEventFiles, uploadEventFile, deleteEventFile } from "../lib/db";
 import { supabaseConfigured } from "../lib/supabaseClient";
+import { pdfFirstPageToPngFile } from "../lib/pdfPreview";
 
 const KINDS = [
   { id: "flyer", label: "Promotional Flyer" },
@@ -10,7 +11,7 @@ const KINDS = [
   { id: "supporting", label: "Supporting File" },
 ];
 
-export default function EventFilesPanel({ eventId, uploadedBy }) {
+export default function EventFilesPanel({ eventId, uploadedBy, onFilesChange }) {
   const [files, setFiles] = useState([]);
   const [busyKind, setBusyKind] = useState(null);
   const inputRefs = useRef({});
@@ -29,12 +30,28 @@ export default function EventFilesPanel({ eventId, uploadedBy }) {
     setBusyKind(kind);
     const saved = await uploadEventFile({ eventId, kind, file, uploadedBy });
     if (saved) setFiles(prev => [...prev, saved]);
+    // A PDF flyer can't be used as an image banner as-is; auto-render its first page to a
+    // PNG and upload that alongside, so admins don't have to separately create/upload an
+    // image version themselves just to get the banner.
+    if (kind === "flyer" && file.type === "application/pdf") {
+      try {
+        const pngFile = await pdfFirstPageToPngFile(file);
+        if (pngFile) {
+          const savedPreview = await uploadEventFile({ eventId, kind, file: pngFile, uploadedBy });
+          if (savedPreview) setFiles(prev => [...prev, savedPreview]);
+        }
+      } catch (err) {
+        console.error("PDF preview render failed", err);
+      }
+    }
     setBusyKind(null);
+    onFilesChange?.();
   };
 
   const handleDelete = async (file) => {
     setFiles(prev => prev.filter(f => f.id !== file.id));
     await deleteEventFile(file, uploadedBy);
+    onFilesChange?.();
   };
 
   if (!eventId) {

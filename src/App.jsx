@@ -358,6 +358,7 @@ export default function App() {
     insertEvent(payload);
     pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
+  const refreshFiles = () => { fetchAllFiles().then(setFiles); };
   const handleUpdateEvent = (payload) => {
     setEvents(prev => prev.map(e => e.id === payload.id ? payload : e));
     setSelectedEvent(payload);
@@ -772,7 +773,7 @@ export default function App() {
           dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
           reflections={reflections} onDeleteReflection={requestDeleteReflection}
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}
-          cpdTypes={cpdTypes} files={files} tags={tags} onSaveTag={handleAddTag} viewerUserType={viewSession.userType}
+          cpdTypes={cpdTypes} files={files} tags={tags} onSaveTag={handleAddTag} viewerUserType={viewSession.userType} onFilesChange={refreshFiles}
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}
@@ -782,7 +783,7 @@ export default function App() {
           onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField}
           onUpdateAttendanceStatus={handleUpdateAttendanceStatus}
           dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
-          cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag}
+          cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag} onFilesChange={refreshFiles}
         />
         <EventFormModal
           open={createEventOpen} onClose={() => setCreateEventOpen(false)} event={null}

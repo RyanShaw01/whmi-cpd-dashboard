@@ -30,7 +30,7 @@ function exportAttendeesCsv(event, regs) {
 }
 
 export default function EventDetailModal({
-  event, onClose, registrations, canManage, onDelete, onStatusChange, onEdit, uploadedBy, session, cpdTypes, files, tags, onSaveTag, viewerUserType,
+  event, onClose, registrations, canManage, onDelete, onStatusChange, onEdit, uploadedBy, session, cpdTypes, files, tags, onSaveTag, viewerUserType, onFilesChange,
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
@@ -64,6 +64,7 @@ export default function EventDetailModal({
               cpdTypes={cpdTypes}
               tags={tags}
               onSaveTag={onSaveTag}
+              onFilesChange={onFilesChange}
             />
           </div>
         </div>

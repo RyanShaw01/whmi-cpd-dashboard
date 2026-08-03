@@ -22,7 +22,7 @@ const field = "text-[11px] font-semibold block mb-1";
 // DB rows use null for "not set"; text/number inputs need "" so they stay controlled.
 const nullsToEmpty = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v == null ? "" : v]));
 
-export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus }) {
+export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange }) {
   const [form, setForm] = useState(event
     ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [] }
     : { ...emptyEvent, status: initialStatus || emptyEvent.status });
@@ -236,7 +236,7 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       {isEdit && (
         <div className="pt-2 border-t" style={{ borderColor: "var(--border)" }}>
           <div className="text-[11px] font-semibold mb-2 mt-3" style={{ color: "var(--text-faint)" }}>FILES</div>
-          <EventFilesPanel eventId={form.id} uploadedBy={uploadedBy} />
+          <EventFilesPanel eventId={form.id} uploadedBy={uploadedBy} onFilesChange={onFilesChange} />
         </div>
       )}
 

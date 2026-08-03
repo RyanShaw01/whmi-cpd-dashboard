@@ -21,7 +21,7 @@ export default function PreviousEventDetailModal({
   dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair, onDeleteReflection,
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
-  cpdTypes, tags, onSaveTag,
+  cpdTypes, tags, onSaveTag, onFilesChange,
 }) {
   const [tab, setTab] = useState("overview");
   const [recordingUrl, setRecordingUrl] = useState(event?.recordingUrl || "");
@@ -46,6 +46,7 @@ export default function PreviousEventDetailModal({
               cpdTypes={cpdTypes}
               tags={tags}
               onSaveTag={onSaveTag}
+              onFilesChange={onFilesChange}
             />
           </div>
         </div>
@@ -159,7 +160,7 @@ export default function PreviousEventDetailModal({
             />
           )}
 
-          {tab === "files" && <EventFilesPanel eventId={event.id} uploadedBy={session?.id} />}
+          {tab === "files" && <EventFilesPanel eventId={event.id} uploadedBy={session?.id} onFilesChange={onFilesChange} />}
 
           {tab === "recording" && (
             <div className="space-y-2">
