@@ -76,24 +76,8 @@ export default function EventDetailModal({
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
-      <div className="whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
-        <div
-          className={bannerUrl ? "min-h-[180px] relative flex items-end p-5" : "min-h-[92px] relative flex items-end p-5"}
-          style={bannerUrl
-            ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,.15)), url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: `${event.bannerFocalX ?? 50}% ${event.bannerFocalY ?? 50}%` }
-            : { background: "var(--accent-primary)" }}
-        >
-          <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }}>
-            <X size={15} color="white" />
-          </button>
-          <div className="min-w-0 pr-8">
-            <span className="text-white/80 text-[11px] font-semibold uppercase tracking-wide">{event.topic}</span>
-            <h2 className="disp text-white text-[19px] font-extrabold leading-tight break-words">{event.title}</h2>
-          </div>
-        </div>
-        <div className="p-5 space-y-4">
+  const infoBody = (
+    <div className="p-5 space-y-4 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
               {canManage && onStatusChange ? (
@@ -176,7 +160,7 @@ export default function EventDetailModal({
                 || (viewerUserType === "external" ? event.showRegCountExternal : event.capacity != null)) && (
                 <div className="whmi-card p-3">
                   <div className="flex justify-between text-[12px] mb-1.5" style={{ color: "var(--text-dim)" }}>
-                    <span>{event.capacity == null ? `${event.registered} registered · Unlimited capacity` : `${event.registered} of ${event.capacity} registered`}</span>
+                    <span>{event.capacity == null ? `Registered: ${event.registered}` : `Registered ${event.registered}/${event.capacity}`}</span>
                     {event.waitlist > 0 && <span>{event.waitlist} on waitlist</span>}
                   </div>
                   {event.capacity != null && (
@@ -272,7 +256,45 @@ export default function EventDetailModal({
               </div>
             </div>
           )}
-        </div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
+      <div className={bannerUrl ? "whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" : "whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in"} onClick={e => e.stopPropagation()}>
+        {bannerUrl ? (
+          <div className="grid grid-cols-1 md:grid-cols-[300px_1fr]">
+            <div className="relative">
+              <img
+                src={bannerUrl} alt="" className="w-full h-56 md:h-full object-cover"
+                style={{ objectPosition: `${event.bannerFocalX ?? 50}% ${event.bannerFocalY ?? 50}%` }}
+              />
+              <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,.4)" }}>
+                <X size={15} color="white" />
+              </button>
+            </div>
+            <div className="min-w-0">
+              <div className="px-5 pt-5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--accent-secondary)" }}>{event.topic}</span>
+                <h2 className="disp text-[19px] font-extrabold leading-tight break-words">{event.title}</h2>
+              </div>
+              {infoBody}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="min-h-[92px] relative flex items-end p-5" style={{ background: "var(--accent-primary)" }}>
+              <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }}>
+                <X size={15} color="white" />
+              </button>
+              <div className="min-w-0 pr-8">
+                <span className="text-white/80 text-[11px] font-semibold uppercase tracking-wide">{event.topic}</span>
+                <h2 className="disp text-white text-[19px] font-extrabold leading-tight break-words">{event.title}</h2>
+              </div>
+            </div>
+            {infoBody}
+          </>
+        )}
       </div>
     </div>
   );

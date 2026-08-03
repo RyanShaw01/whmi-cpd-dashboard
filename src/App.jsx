@@ -32,7 +32,7 @@ import { TOUR_STEPS } from "./data/tourSteps";
 import { loadPersonal, savePersonal } from "./lib/storage";
 import { buildNotificationGroups } from "./lib/notifications";
 import { eventAttendedCount, eventAvgRating } from "./lib/analytics";
-import { eventBannerFile } from "./lib/helpers";
+import { eventBannerFile, eventCpdHours } from "./lib/helpers";
 import { supabase, supabaseConfigured } from "./lib/supabaseClient";
 import {
   fetchUsers, fetchStaff, fetchEvents, fetchPreviousEvents, fetchCertificates, fetchRegistrations, fetchExternalParticipants,
@@ -41,7 +41,7 @@ import {
   fetchReflections, insertReflection, deleteReflection, fetchDismissedPairs, insertDismissedPair,
   fetchAllFiles, deleteEventFile, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
   fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType, sendCertificateEmail,
-  fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog,
+  fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog, sendReflectionReminder,
 } from "./lib/db";
 
 const WH_DOMAIN = "@wh.org.au";
@@ -93,6 +93,7 @@ export default function App() {
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [createPreviousEventOpen, setCreatePreviousEventOpen] = useState(false);
   const [createCertificateOpen, setCreateCertificateOpen] = useState(false);
+  const [certificatePrefill, setCertificatePrefill] = useState(null);
   const [showTour, setShowTour] = useState(false);
   const [previewSession, setPreviewSession] = useState(null);
 
@@ -349,6 +350,22 @@ export default function App() {
     setCertificates(certList);
     pushAudit({ actorId: session?.id, action: "certificate.created_manual" });
   };
+  const handleCreateCertificateForRegistrant = (registration, event) => {
+    setCertificatePrefill({
+      name: registration.name, email: registration.email, sessionName: event.title,
+      date: event.date, cpdHours: eventCpdHours(event.start, event.end) || 1, cpdTypeId: event.cpdTypeId || "",
+    });
+    setCreateCertificateOpen(true);
+  };
+  const handleSendReflectionReminder = (registration, event) => requestConfirm({
+    title: "Send reflection reminder?",
+    message: `Email ${registration.name} (${registration.email}) a reminder to submit their reflection for "${event.title}"?`,
+    confirmLabel: "Send",
+    onConfirm: async () => {
+      const res = await sendReflectionReminder({ name: registration.name, email: registration.email, eventId: event.id, eventTitle: event.title });
+      if (res.ok) pushAudit({ actorId: session?.id, action: "reflection.reminder_sent", entityType: "event", entityId: event.id, details: { email: registration.email } });
+    },
+  });
   const handleCreateEvent = (payload) => {
     setEvents(prev => [...prev, payload]);
     insertEvent(payload);
@@ -364,6 +381,8 @@ export default function App() {
     const patched = { ...event, bannerFocalX, bannerFocalY };
     setEvents(prev => prev.map(e => e.id === event.id ? { ...e, bannerFocalX, bannerFocalY } : e));
     setPreviousEvents(prev => prev.map(e => e.id === event.id ? { ...e, bannerFocalX, bannerFocalY } : e));
+    setSelectedEvent(ev => ev && ev.id === event.id ? { ...ev, bannerFocalX, bannerFocalY } : ev);
+    setSelectedArchiveEvent(ev => ev && ev.id === event.id ? { ...ev, bannerFocalX, bannerFocalY } : ev);
     updateEvent(event.id, patched);
   };
   const handleRemoveBanner = (event) => {
@@ -799,6 +818,7 @@ export default function App() {
           dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
           cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag} onFilesChange={refreshFiles} files={files}
           onUpdateBannerFocal={handleUpdateBannerFocal} onRemoveBanner={handleRemoveBanner}
+          onCreateCertificateFor={handleCreateCertificateForRegistrant} onSendReflectionReminder={handleSendReflectionReminder}
         />
         <EventFormModal
           open={createEventOpen} onClose={() => setCreateEventOpen(false)} event={null}
@@ -810,8 +830,8 @@ export default function App() {
           initialStatus="Completed"
         />
         <CreateCertificateModal
-          open={createCertificateOpen} onClose={() => setCreateCertificateOpen(false)}
-          cpdTypes={cpdTypes} onCreated={handleManualCertificateCreated}
+          open={createCertificateOpen} onClose={() => { setCreateCertificateOpen(false); setCertificatePrefill(null); }}
+          cpdTypes={cpdTypes} onCreated={handleManualCertificateCreated} prefill={certificatePrefill}
         />
         <StaffModal
           staff={selectedStaff} onClose={() => setSelectedStaff(null)} canEdit={canManage} onSave={handleStaffSave} onCreate={handleStaffCreate} onRequestDelete={requestDeleteStaff}

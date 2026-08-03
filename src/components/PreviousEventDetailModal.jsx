@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil } from "lucide-react";
+import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Mail, Award } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
 import EventFilesPanel from "./EventFilesPanel";
@@ -22,6 +22,7 @@ export default function PreviousEventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerFocal, onRemoveBanner,
+  onCreateCertificateFor, onSendReflectionReminder,
 }) {
   const [tab, setTab] = useState("overview");
   const [recordingUrl, setRecordingUrl] = useState(event?.recordingUrl || "");
@@ -130,7 +131,7 @@ export default function PreviousEventDetailModal({
           </div>
 
           <div className="whmi-card p-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatButton value={`${attended}/${event.capacity ?? "—"}`} label="Attended" onClick={() => setTab("attendance")} />
+            <StatButton value={event.capacity == null ? attended : `${attended}/${event.capacity}`} label="Attendees" onClick={() => setTab("attendance")} />
             <StatButton value={noShow} label="No-show" onClick={() => setTab("attendance")} />
             <StatButton
               value={event.feedback != null ? <><Star size={14} fill="#F59E0B" color="#F59E0B" />{event.feedback}</> : "—"}
@@ -252,10 +253,22 @@ export default function PreviousEventDetailModal({
                 {awaitingReflection.length === 0 && <div className="text-[12px] pb-2" style={{ color: "var(--text-faint)" }}>Everyone's reflected.</div>}
                 <div className="space-y-1.5">
                   {awaitingReflection.map(r => (
-                    <div key={r.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
+                    <div key={r.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg flex-wrap" style={{ background: "var(--surface-2)" }}>
                       <div className="min-w-0">
                         <div className="text-[12.5px] font-semibold truncate">{r.name}</div>
                         <div className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>{r.email}</div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {onSendReflectionReminder && (
+                          <button onClick={() => onSendReflectionReminder(r, event)} className="whmi-btn-ghost !py-1 !px-2 text-[11px] flex items-center gap-1" title="Email a follow-up reminder">
+                            <Mail size={12} />Follow Up
+                          </button>
+                        )}
+                        {onCreateCertificateFor && (
+                          <button onClick={() => onCreateCertificateFor(r, event)} className="whmi-btn-ghost !py-1 !px-2 text-[11px] flex items-center gap-1" title="Create a certificate for them regardless of reflection status">
+                            <Award size={12} />Certify Anyway
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

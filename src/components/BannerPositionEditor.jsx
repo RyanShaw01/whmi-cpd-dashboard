@@ -1,11 +1,20 @@
-import { useRef } from "react";
-import { Crosshair, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
 
-// Lets an admin click anywhere on the banner preview to re-centre the crop (stored as a
-// 0-100% focal point per event), matching the same wide-strip crop used everywhere the
-// banner actually renders (event detail hero, Up Next, Upcoming Events cards).
+// A representative "wide strip" ratio for the crop-box preview — the shortest/most
+// crop-sensitive banner placements (Up Next, Upcoming Events cards) are all this shape.
+// It's an approximate guide, not pixel-exact for every placement the banner appears in.
+const TARGET_ASPECT = 3.4;
+
+// Shows the FULL, uncropped flyer image (so nothing is hidden) with an overlay box showing
+// roughly what will stay visible once it's cropped to a banner strip. Click anywhere to move
+// the box there. Replaces the old approach of clicking on an already-cropped preview, whose
+// click coordinates didn't correspond to a correct focal point.
 export default function BannerPositionEditor({ bannerUrl, focalX = 50, focalY = 50, onChangeFocal, onRemove }) {
   const containerRef = useRef(null);
+  const [naturalAspect, setNaturalAspect] = useState(null);
+
+  const handleLoad = (e) => setNaturalAspect(e.target.naturalWidth / e.target.naturalHeight);
 
   const handleClick = (e) => {
     const rect = containerRef.current.getBoundingClientRect();
@@ -13,6 +22,17 @@ export default function BannerPositionEditor({ bannerUrl, focalX = 50, focalY = 
     const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
     onChangeFocal(Math.min(100, Math.max(0, x)), Math.min(100, Math.max(0, y)));
   };
+
+  let box = { left: 0, top: 0, width: 100, height: 100 };
+  if (naturalAspect) {
+    if (naturalAspect >= TARGET_ASPECT) {
+      const widthPct = Math.min(100, (TARGET_ASPECT / naturalAspect) * 100);
+      box = { width: widthPct, height: 100, top: 0, left: Math.min(Math.max(focalX - widthPct / 2, 0), 100 - widthPct) };
+    } else {
+      const heightPct = Math.min(100, (naturalAspect / TARGET_ASPECT) * 100);
+      box = { width: 100, height: heightPct, left: 0, top: Math.min(Math.max(focalY - heightPct / 2, 0), 100 - heightPct) };
+    }
+  }
 
   return (
     <div className="space-y-2">
@@ -22,23 +42,25 @@ export default function BannerPositionEditor({ bannerUrl, focalX = 50, focalY = 
           <Trash2 size={11} />Remove Banner
         </button>
       </div>
-      <div
-        ref={containerRef}
-        onClick={handleClick}
-        className="relative w-full h-24 rounded-lg overflow-hidden cursor-crosshair"
-        style={{ border: "1px solid var(--border)" }}
-        title="Click to set the banner's focal point"
-      >
-        <img src={bannerUrl} alt="" className="w-full h-full object-cover" style={{ objectPosition: `${focalX}% ${focalY}%` }} draggable={false} />
-        <div
-          className="absolute w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center pointer-events-none"
-          style={{ left: `${focalX}%`, top: `${focalY}%`, background: "rgba(0,0,0,.45)", border: "1.5px solid white" }}
-        >
-          <Crosshair size={9} color="white" />
+      <div className="flex justify-center p-2 rounded-lg" style={{ background: "var(--surface-2)" }}>
+        <div ref={containerRef} onClick={handleClick} className="relative inline-block cursor-crosshair overflow-hidden rounded-lg" title="Click to move the crop box">
+          <img
+            src={bannerUrl} alt="" onLoad={handleLoad} draggable={false}
+            style={{ display: "block", maxWidth: "100%", maxHeight: 320, borderRadius: 8 }}
+          />
+          {naturalAspect && (
+            <div
+              className="absolute pointer-events-none rounded-md"
+              style={{
+                left: `${box.left}%`, top: `${box.top}%`, width: `${box.width}%`, height: `${box.height}%`,
+                border: "2px solid white", boxShadow: "0 0 0 1px rgba(0,0,0,.4), 0 0 0 2000px rgba(0,0,0,.35)",
+              }}
+            />
+          )}
         </div>
       </div>
       <div className="flex items-center justify-between">
-        <p className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Click the preview to set what stays visible when the banner is cropped.</p>
+        <p className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>The boxed area is roughly what stays visible on the dashboard/event cards. Click to move it.</p>
         {(focalX !== 50 || focalY !== 50) && (
           <button type="button" onClick={() => onChangeFocal(50, 50)} className="whmi-btn-ghost !py-1 !px-2 text-[10.5px] shrink-0">Reset to Center</button>
         )}

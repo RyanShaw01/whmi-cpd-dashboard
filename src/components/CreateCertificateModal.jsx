@@ -5,7 +5,7 @@ import { createManualCertificate } from "../lib/db";
 // For someone with no account in the system: an admin/owner types the details directly, the
 // certificate is generated and emailed to the recipient automatically, and a matching staff or
 // external-participant record is created for them if one doesn't already exist.
-export default function CreateCertificateModal({ open, onClose, cpdTypes = [], onCreated }) {
+export default function CreateCertificateModal({ open, onClose, cpdTypes = [], onCreated, prefill }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [sessionName, setSessionName] = useState("");
@@ -17,9 +17,10 @@ export default function CreateCertificateModal({ open, onClose, cpdTypes = [], o
 
   useEffect(() => {
     if (!open) return;
-    setName(""); setEmail(""); setSessionName(""); setDate(""); setCpdHours("1"); setCpdTypeId("");
+    setName(prefill?.name || ""); setEmail(prefill?.email || ""); setSessionName(prefill?.sessionName || "");
+    setDate(prefill?.date || ""); setCpdHours(prefill?.cpdHours ? String(prefill.cpdHours) : "1"); setCpdTypeId(prefill?.cpdTypeId || "");
     setStatus("idle"); setResult(null);
-  }, [open]);
+  }, [open, prefill]);
 
   if (!open) return null;
 

@@ -463,6 +463,15 @@ export async function createManualCertificate({ name, email, sessionName, date, 
   return { ok: true, ...data };
 }
 
+export async function sendReflectionReminder({ name, email, eventId, eventTitle }) {
+  if (!supabaseConfigured) return { ok: false };
+  const { data, error } = await supabase.functions.invoke("send-reflection-reminder", {
+    body: { name, email, eventId, eventTitle },
+  });
+  if (error) { console.error("sendReflectionReminder", error); return { ok: false }; }
+  return { ok: true, ...data };
+}
+
 export async function sendCertificateEmail(certificateId, isResend = false) {
   if (!supabaseConfigured) return { ok: false };
   const { data, error } = await supabase.functions.invoke("send-certificate-email", { body: { certificateId, isResend } });

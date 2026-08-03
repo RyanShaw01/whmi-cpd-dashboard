@@ -103,7 +103,7 @@ export default function Dashboard({ events, previousEvents, registrations, refle
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0 hidden sm:flex">
-                    <div className="text-[12px] font-bold whitespace-nowrap">{ev.capacity == null ? `${ev.registered} attendees` : `${ev.registered}/${ev.capacity} registered`}</div>
+                    <div className="text-[12px] font-bold whitespace-nowrap">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</div>
                     <StatusBadge status={ev.status} />
                   </div>
                   <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />

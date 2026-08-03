@@ -125,6 +125,7 @@ export const ACTION_LABELS = {
   "tag.created": "added a tag",
   "tag.updated": "updated a tag",
   "tag.deleted": "deleted a tag",
+  "reflection.reminder_sent": "sent a reflection reminder",
   "file.uploaded": "uploaded a file",
   "file.deleted": "deleted a file",
 };
