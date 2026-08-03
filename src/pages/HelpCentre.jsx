@@ -49,7 +49,7 @@ function ArticleItem({ article, open, onToggle }) {
   );
 }
 
-export default function HelpCentre() {
+export default function HelpCentre({ role }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [openId, setOpenId] = useState(null);
@@ -61,7 +61,8 @@ export default function HelpCentre() {
     return haystack.includes(q);
   };
 
-  const filtered = HELP_ARTICLES.filter(a => matchesQuery(a) && (q || category === "all" || a.category === category));
+  const visibleArticles = role === "viewer" ? HELP_ARTICLES.filter(a => !a.adminOnly) : HELP_ARTICLES;
+  const filtered = visibleArticles.filter(a => matchesQuery(a) && (q || category === "all" || a.category === category));
 
   return (
     <div className="whmi-fade-in p-6 max-w-[800px] mx-auto space-y-5">

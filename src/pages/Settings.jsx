@@ -33,7 +33,7 @@ function relativeTime(iso) {
 }
 
 export default function Settings({
-  dark, setDark, role, session, onProfileSave, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
+  dark, setDark, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
   redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
 }) {
@@ -142,7 +142,7 @@ export default function Settings({
         />
         <div className="flex gap-2 mt-3">
           <button
-            onClick={() => onProfileSave({ name: profileName, avatarId: profileAvatarId, avatarColor: profileAvatarColor })}
+            onClick={() => { onProfileSave({ name: profileName, avatarId: profileAvatarId, avatarColor: profileAvatarColor }); showToast?.("Profile saved"); }}
             disabled={profileName === (session?.name || "")}
             className="whmi-btn-primary flex items-center justify-center gap-1.5"
           >
@@ -462,15 +462,17 @@ export default function Settings({
         </div>
       )}
 
-      <div className="whmi-card p-4 flex items-center justify-between gap-3">
-        <div>
-          <div className="font-semibold text-[13px]">Developer Mode</div>
-          <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>{role === "admin" ? "Admin-only access to code-level configuration." : "Admins only, owners cannot change code."}</div>
+      {canManageUsers && (
+        <div className="whmi-card p-4 flex items-center justify-between gap-3">
+          <div>
+            <div className="font-semibold text-[13px]">Developer Mode</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>{role === "admin" ? "Admin-only access to code-level configuration." : "Admins only, owners cannot change code."}</div>
+          </div>
+          <button onClick={() => role === "admin" && setDevMode(d => !d)} disabled={role !== "admin"} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: devMode ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)", opacity: role === "admin" ? 1 : 0.5, cursor: role === "admin" ? "pointer" : "not-allowed" }}>
+            <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: devMode ? "20px" : "3px", width: 18, height: 18 }} />
+          </button>
         </div>
-        <button onClick={() => role === "admin" && setDevMode(d => !d)} disabled={role !== "admin"} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: devMode ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)", opacity: role === "admin" ? 1 : 0.5, cursor: role === "admin" ? "pointer" : "not-allowed" }}>
-          <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: devMode ? "20px" : "3px", width: 18, height: 18 }} />
-        </button>
-      </div>
+      )}
 
       <div className="whmi-card p-4">
         <div className="font-semibold text-[13px] mb-1">Role</div>

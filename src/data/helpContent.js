@@ -2,6 +2,8 @@
  * Written guides for the Help Centre, grounded in how the app actually behaves.
  * `imagePending: true` marks articles slated for an annotated screenshot once one's
  * captured and dropped into src/assets/help/ (set `image: { src, alt }` at that point).
+ * `adminOnly: true` marks articles describing an admin/owner-only action; HelpCentre.jsx
+ * hides these from viewer-role sessions.
  */
 export const HELP_CATEGORIES = [
   { id: "getting-started", label: "Getting Started" },
@@ -52,6 +54,7 @@ export const HELP_ARTICLES = [
   {
     id: "create-event",
     category: "events",
+    adminOnly: true,
     title: "Creating a new event",
     steps: [
       "From the Dashboard, click **Add/Edit Event** (or **New Event** on the Upcoming Events page).",
@@ -70,6 +73,7 @@ export const HELP_ARTICLES = [
   {
     id: "event-status",
     category: "events",
+    adminOnly: true,
     title: "Understanding event statuses",
     steps: [
       "**Draft**: not visible to staff.",
@@ -84,6 +88,7 @@ export const HELP_ARTICLES = [
   {
     id: "event-files",
     category: "events",
+    adminOnly: true,
     title: "Uploading flyers, slides, handouts & supporting files",
     steps: [
       "Open the event and click the **edit (pencil) icon**, or go to its Files tab if it's a past event.",
@@ -96,6 +101,7 @@ export const HELP_ARTICLES = [
   {
     id: "reflection-method",
     category: "events",
+    adminOnly: true,
     title: "Choosing how reflections are collected",
     steps: [
       "On the event form, set **\"Reflection Collection Method\"** to Direct web link, QR code on slides, or Automatic email after event.",
@@ -106,6 +112,7 @@ export const HELP_ARTICLES = [
   {
     id: "share-event",
     category: "events",
+    adminOnly: true,
     title: "Sharing an event with a QR code or link",
     imagePending: true,
     steps: [
@@ -142,6 +149,7 @@ export const HELP_ARTICLES = [
   {
     id: "marking-attendance",
     category: "registrations",
+    adminOnly: true,
     title: "Marking attendance",
     steps: [
       "Open the event and go to its **Registrations** (or Attendance, for past events) tab.",
@@ -153,6 +161,7 @@ export const HELP_ARTICLES = [
   {
     id: "duplicate-detection",
     category: "registrations",
+    adminOnly: true,
     title: "Resolving duplicate registration or reflection warnings",
     steps: [
       "A warning banner appears when two registrations (or reflections) look like the **same person**: a matching email, or a very similar name.",
@@ -188,6 +197,7 @@ export const HELP_ARTICLES = [
   {
     id: "manual-certificates",
     category: "certificates",
+    adminOnly: true,
     title: "Approving certificates, or creating one for someone with no account",
     steps: [
       "Go to the **Certificates** page from the sidebar.",
@@ -200,6 +210,7 @@ export const HELP_ARTICLES = [
   {
     id: "find-event-certificates",
     category: "certificates",
+    adminOnly: true,
     title: "Finding all certificates and feedback for an event",
     steps: [
       "Go to **Previous Events** and open the event.",
@@ -212,6 +223,7 @@ export const HELP_ARTICLES = [
   {
     id: "dashboard-stats",
     category: "reports",
+    adminOnly: true,
     title: "Reading the Dashboard",
     imagePending: true,
     steps: [
@@ -225,6 +237,7 @@ export const HELP_ARTICLES = [
   {
     id: "exporting-reports",
     category: "reports",
+    adminOnly: true,
     title: "Exporting reports",
     steps: [
       "Go to **Reports & Analytics**.",
@@ -235,6 +248,7 @@ export const HELP_ARTICLES = [
   {
     id: "previous-events-calendar",
     category: "reports",
+    adminOnly: true,
     title: "Using the Previous Events calendar view",
     steps: [
       "On the **Previous Events** page, switch from Table to **Calendar** view.",

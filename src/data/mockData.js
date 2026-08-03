@@ -2,7 +2,7 @@ import {
   Calendar, Users, Award, BarChart3, Archive, HelpCircle,
   LayoutDashboard, Settings as SettingsIcon,
   Bone, Waves, Magnet, Radiation, Stethoscope, Ghost,
-  Building2, Syringe, Pill, Thermometer, Microscope, Brain, Eye, Briefcase, ClipboardList, Sun, Donut, Bandage, Cookie,
+  Building2, Syringe, Pill, Thermometer, Microscope, Brain, Eye, Briefcase, ClipboardList, Sun, Donut, Bandage, Cookie, BadgeCheck,
 } from "lucide-react";
 import { SkullIcon, HandBonesIcon, PlusOutlineIcon } from "../components/customIcons";
 import { daysFromNow } from "../lib/helpers";
@@ -156,6 +156,7 @@ export const NAV_FULL = [
 ];
 export const NAV_VIEWER = [
   { id: "mycpd", label: "My CPD", icon: Award },
+  { id: "mycertificates", label: "My Certificates", icon: BadgeCheck },
   { id: "help", label: "Help Centre", icon: HelpCircle },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];

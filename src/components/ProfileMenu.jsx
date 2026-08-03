@@ -3,7 +3,7 @@ import { Save, LogOut } from "lucide-react";
 import CharacterAvatar from "./CharacterAvatar";
 import AvatarPicker from "./AvatarPicker";
 
-export default function ProfileMenu({ user, onClose, onLogout, onSave }) {
+export default function ProfileMenu({ user, onClose, onLogout, onSave, showToast }) {
   const [name, setName] = useState(user.name);
   const [avatarId, setAvatarId] = useState(user.avatarId);
   const [avatarColor, setAvatarColor] = useState(user.avatarColor || "blue");
@@ -28,7 +28,7 @@ export default function ProfileMenu({ user, onClose, onLogout, onSave }) {
           />
         </div>
         <button
-          onClick={() => { onSave({ name, avatarId, avatarColor }); onClose(); }}
+          onClick={() => { onSave({ name, avatarId, avatarColor }); showToast?.("Profile saved"); onClose(); }}
           disabled={name === user.name}
           className="whmi-btn-primary w-full flex items-center justify-center gap-1.5 mb-2"
         >

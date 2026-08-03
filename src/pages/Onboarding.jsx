@@ -4,16 +4,17 @@ import AvatarPicker from "../components/AvatarPicker";
 import { CHARACTERS } from "../data/mockData";
 
 export default function Onboarding({ session, onComplete, rootVars }) {
-  const [name, setName] = useState(session.name || "");
+  const [firstName, setFirstName] = useState(session.name?.split(" ")[0] || "");
+  const [lastName, setLastName] = useState(session.name?.split(" ").slice(1).join(" ") || "");
   const [avatarId, setAvatarId] = useState(session.avatarId || CHARACTERS[0].id);
   const [avatarColor, setAvatarColor] = useState(session.avatarColor || "blue");
   const [saving, setSaving] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || saving) return;
+    if (!firstName.trim() || !lastName.trim() || saving) return;
     setSaving(true);
-    await onComplete({ name: name.trim(), avatarId, avatarColor });
+    await onComplete({ name: `${firstName.trim()} ${lastName.trim()}`, avatarId, avatarColor });
   };
 
   return (
@@ -28,9 +29,15 @@ export default function Onboarding({ session, onComplete, rootVars }) {
           Let's set up your profile before you get started.
         </p>
         <form onSubmit={submit} className="space-y-3">
-          <div>
-            <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Your name</label>
-            <input required value={name} onChange={e => setName(e.target.value)} className="whmi-input w-full px-3 py-2 mt-1" placeholder="Jane Smith" />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>First name</label>
+              <input required value={firstName} onChange={e => setFirstName(e.target.value)} className="whmi-input w-full px-3 py-2 mt-1" placeholder="Jane" />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Last name</label>
+              <input required value={lastName} onChange={e => setLastName(e.target.value)} className="whmi-input w-full px-3 py-2 mt-1" placeholder="Smith" />
+            </div>
           </div>
           <AvatarPicker avatarId={avatarId} avatarColor={avatarColor} onChangeAvatar={setAvatarId} onChangeColor={setAvatarColor} defaultOpen />
           <button type="submit" disabled={saving} className="whmi-btn-primary w-full flex items-center justify-center gap-1.5" style={{ opacity: saving ? 0.7 : 1 }}>

@@ -4,6 +4,7 @@ import LoginScreen from "./pages/LoginScreen";
 import Dashboard from "./pages/Dashboard";
 import MyCpd from "./pages/MyCpd";
 import ExternalDashboard from "./pages/ExternalDashboard";
+import MyCertificates from "./pages/MyCertificates";
 import UpcomingEvents from "./pages/UpcomingEvents";
 import PreviousEvents from "./pages/PreviousEvents";
 import StaffDirectory from "./pages/StaffDirectory";
@@ -22,6 +23,7 @@ import EventDetailModal from "./components/EventDetailModal";
 import PreviousEventDetailModal from "./components/PreviousEventDetailModal";
 import StaffModal from "./components/StaffModal";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
+import Toast from "./components/Toast";
 import RegisterEventModal from "./components/RegisterEventModal";
 import EventFormModal from "./components/EventFormModal";
 import CreateCertificateModal from "./components/CreateCertificateModal";
@@ -33,7 +35,7 @@ import { eventAttendedCount, eventAvgRating } from "./lib/analytics";
 import { supabase, supabaseConfigured } from "./lib/supabaseClient";
 import {
   fetchUsers, fetchStaff, fetchEvents, fetchPreviousEvents, fetchCertificates, fetchRegistrations, fetchExternalParticipants,
-  insertUser, updateUser, deleteUser, updateStaff, deleteStaff, updateEventStatus, insertEvent, updateEvent, deleteEvent as deleteEventRow,
+  insertUser, updateUser, deleteUser, insertStaff, updateStaff, deleteStaff, updateEventStatus, insertEvent, updateEvent, deleteEvent as deleteEventRow,
   updateCertificateStatus, deleteCertificate as deleteCertificateRow, insertRegistration, updateRegistration, deleteRegistration, insertExternalParticipant,
   fetchReflections, insertReflection, deleteReflection, fetchDismissedPairs, insertDismissedPair,
   fetchAllFiles, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
@@ -71,6 +73,8 @@ export default function App() {
   const [selectedArchiveEvent, setSelectedArchiveEvent] = useState(null);
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
+  const [toast, setToast] = useState(null);
+  const showToast = (message) => setToast(message);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [registerDefaultEventId, setRegisterDefaultEventId] = useState(null);
   const [createEventOpen, setCreateEventOpen] = useState(false);
@@ -253,6 +257,17 @@ export default function App() {
     setStaffDirectory(prev => prev.map(s => s.id === rec.id ? rec : s));
     updateStaff(rec.id, rec);
     setSelectedStaff(rec);
+    logAudit({ actorId: session?.id, action: "staff.updated", entityType: "staff", entityId: rec.id, details: { name: rec.name } });
+  };
+  const handleStaffCreate = (rec, linkedUserId) => {
+    setStaffDirectory(prev => [...prev, rec]);
+    insertStaff(rec);
+    setSelectedStaff(rec);
+    logAudit({ actorId: session?.id, action: "staff.created", entityType: "staff", entityId: rec.id, details: { name: rec.name } });
+    if (linkedUserId) {
+      setUsers(prev => prev.map(u => u.id === linkedUserId ? { ...u, staffId: rec.id } : u));
+      updateUser(linkedUserId, { staffId: rec.id });
+    }
   };
   const handleStatusChange = (newStatus) => {
     if (!selectedEvent) return;
@@ -624,6 +639,7 @@ export default function App() {
             {page === "mycpd" && viewSession.userType !== "external" && (
               <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} />
             )}
+            {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
             {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} />}
             {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} />}
             {page === "staff" && <StaffDirectory openStaff={openStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} />}
@@ -635,18 +651,18 @@ export default function App() {
                 onApproveAndSendAll={handleApproveAndSendAll} onResend={handleResendCertificate} requestConfirm={requestConfirm}
               />
             )}
-            {page === "help" && <HelpCentre />}
+            {page === "help" && <HelpCentre role={viewSession.role} />}
             {page === "settings" && (
               <Settings
                 dark={dark} setDark={handleSetDark}
                 role={session.role}
-                session={session} onProfileSave={handleProfileSave}
+                session={session} onProfileSave={handleProfileSave} showToast={showToast}
                 users={users} onUsersChange={handleUsersChange}
                 colorPrefs={colorPrefs} onColorChange={handleColorChange}
                 layoutOrder={layoutOrder} onLayoutChange={handleLayoutChange}
                 onRequestDelete={requestDeleteUser}
                 redDotsEnabled={redDotsEnabled} onToggleRedDots={handleToggleRedDots}
-                onReplayTour={() => setShowTour(true)}
+                onReplayTour={() => { changePage(homePage); setShowTour(true); }}
                 onRevokeSession={handleRevokeSession}
                 cpdTypes={cpdTypes} onSaveCpdType={requestSaveCpdType} onDeleteCpdType={requestDeleteCpdType}
                 previewSession={previewSession} onPreviewAs={setPreviewSession} onCreateTestAccount={handleCreateTestAccount}
@@ -687,13 +703,17 @@ export default function App() {
           open={createCertificateOpen} onClose={() => setCreateCertificateOpen(false)}
           cpdTypes={cpdTypes} onCreated={handleManualCertificateCreated}
         />
-        <StaffModal staff={selectedStaff} onClose={() => setSelectedStaff(null)} canEdit={canManage} onSave={handleStaffSave} onRequestDelete={requestDeleteStaff} />
-        {profileOpen && <ProfileMenu user={session} onClose={() => setProfileOpen(false)} onLogout={handleLogout} onSave={handleProfileSave} />}
+        <StaffModal
+          staff={selectedStaff} onClose={() => setSelectedStaff(null)} canEdit={canManage} onSave={handleStaffSave} onCreate={handleStaffCreate} onRequestDelete={requestDeleteStaff}
+          linkableUsers={users.filter(u => ["admin", "owner"].includes(u.role) && !u.staffId)}
+        />
+        {profileOpen && <ProfileMenu user={session} onClose={() => setProfileOpen(false)} onLogout={handleLogout} onSave={handleProfileSave} showToast={showToast} />}
         <RegisterEventModal
           open={registerModalOpen} onClose={() => setRegisterModalOpen(false)} session={session} events={eventsWithLiveCounts}
           defaultEventId={registerDefaultEventId} onSubmit={handleSubmitRegistration}
         />
         <ConfirmDeleteModal request={confirmModal} onCancel={closeConfirm} onConfirm={() => { confirmModal?.onConfirm(); closeConfirm(); }} />
+        <Toast message={toast} onDone={() => setToast(null)} />
       </div>
     );
   }

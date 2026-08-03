@@ -1,10 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Download, Lock } from "lucide-react";
+import { Download, Lock, Link2, Copy, Check } from "lucide-react";
 
 export default function EventQRCode({ event, path = "", filenameSuffix = "qr", url: urlOverride, disabled = false, disabledMessage }) {
   const canvasRef = useRef(null);
   const url = urlOverride || `${window.location.origin}/event/${event.id}${path}`;
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedImage, setCopiedImage] = useState(false);
 
   useEffect(() => {
     if (canvasRef.current && !disabled) {
@@ -12,9 +14,9 @@ export default function EventQRCode({ event, path = "", filenameSuffix = "qr", u
     }
   }, [url, disabled]);
 
-  const downloadJpeg = () => {
+  const flattenedCanvas = () => {
     const canvas = canvasRef.current;
-    if (!canvas || disabled) return;
+    if (!canvas) return null;
     const flat = document.createElement("canvas");
     flat.width = canvas.width;
     flat.height = canvas.height;
@@ -22,10 +24,34 @@ export default function EventQRCode({ event, path = "", filenameSuffix = "qr", u
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, flat.width, flat.height);
     ctx.drawImage(canvas, 0, 0);
+    return flat;
+  };
+
+  const downloadJpeg = () => {
+    const flat = flattenedCanvas();
+    if (!flat || disabled) return;
     const link = document.createElement("a");
     link.download = `${event.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${filenameSuffix}.jpg`;
     link.href = flat.toDataURL("image/jpeg", 0.95);
     link.click();
+  };
+
+  const copyLink = () => {
+    navigator.clipboard?.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const copyImage = () => {
+    const flat = flattenedCanvas();
+    if (!flat || disabled || !navigator.clipboard?.write) return;
+    flat.toBlob(blob => {
+      if (!blob) return;
+      navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]).then(() => {
+        setCopiedImage(true);
+        setTimeout(() => setCopiedImage(false), 2000);
+      });
+    }, "image/png");
   };
 
   if (disabled) {
@@ -46,9 +72,19 @@ export default function EventQRCode({ event, path = "", filenameSuffix = "qr", u
     <div className="whmi-card p-4 flex flex-col items-center gap-3">
       <canvas ref={canvasRef} />
       <p className="text-[11px] text-center break-all" style={{ color: "var(--text-faint)" }}>{url}</p>
-      <button onClick={downloadJpeg} className="whmi-btn-ghost flex items-center gap-1.5 w-full justify-center">
-        <Download size={13} />Download JPEG
-      </button>
+      <div className="w-full grid grid-cols-1 gap-1.5">
+        <button onClick={copyLink} className="whmi-btn-ghost flex items-center gap-1.5 w-full justify-center">
+          {copiedLink ? <><Check size={13} />Copied!</> : <><Link2 size={13} />Copy Link</>}
+        </button>
+        {!!navigator.clipboard?.write && (
+          <button onClick={copyImage} className="whmi-btn-ghost flex items-center gap-1.5 w-full justify-center">
+            {copiedImage ? <><Check size={13} />Copied!</> : <><Copy size={13} />Copy QR Code</>}
+          </button>
+        )}
+        <button onClick={downloadJpeg} className="whmi-btn-ghost flex items-center gap-1.5 w-full justify-center">
+          <Download size={13} />Download JPEG
+        </button>
+      </div>
     </div>
   );
 }

@@ -79,9 +79,11 @@ export default function HeaderBar({
             )}
           </div>
         )}
-        <button onClick={() => setDark(!dark)} className="whmi-btn-ghost !p-2" title="Toggle theme">
-          {dark ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
+        {!canManage && (
+          <button onClick={() => setDark(!dark)} className="whmi-btn-ghost !p-2" title="Toggle theme">
+            {dark ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+        )}
         <button data-tour="header-profile" onClick={onAvatarClick} title="Your profile" className="flex items-center gap-1.5">
           <span className="text-[10px] font-semibold hidden sm:inline" style={{ color: "var(--text-faint)" }}>
             {user.userType === "external" ? "External" : user.role === "admin" ? "Admin" : user.role === "owner" ? "Owner" : "Viewer"}

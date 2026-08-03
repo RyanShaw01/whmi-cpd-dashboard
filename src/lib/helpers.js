@@ -93,6 +93,15 @@ export function hasEventEnded(dateStr, endTime) {
   return new Date() > end;
 }
 
+/* A user's own certificates — externals match by recipient email (or name, for
+ * manually-created certs before an account existed), internal viewers by name. */
+export function myCertificates(certificates, user) {
+  if (user.userType === "external") {
+    return certificates.filter(c => c.recipientEmail?.toLowerCase() === user.email.toLowerCase() || c.staff === user.name);
+  }
+  return certificates.filter(c => c.staff === user.name);
+}
+
 /* The event's "Promotional Flyer" file, if one's been uploaded and it's an image
  * (PDFs etc. have no visual banner to show). */
 export function eventBannerUrl(files, eventId) {

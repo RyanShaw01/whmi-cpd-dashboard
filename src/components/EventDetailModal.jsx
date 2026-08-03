@@ -179,7 +179,7 @@ export default function EventDetailModal({
                 <Link to={`/event/${event.id}/reflect`} className="whmi-btn-primary flex items-center justify-center gap-1.5 w-full"><MessageSquareText size={14} />Leave Feedback & Get Certificate</Link>
               )}
               <div className="flex gap-2 flex-wrap">
-                <button onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/event/${event.id}`)} className="whmi-btn-ghost flex items-center gap-1.5"><ArrowUpRight size={14} />Copy Link</button>
+                <button onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/event/${event.id}`); if (canManage) setRegTab("qr"); }} className="whmi-btn-ghost flex items-center gap-1.5"><ArrowUpRight size={14} />Copy Registration Link</button>
                 <button onClick={() => exportAttendeesCsv(event, eventRegistrations)} disabled={eventRegistrations.length === 0} className="whmi-btn-ghost flex items-center gap-1.5" style={{ opacity: eventRegistrations.length === 0 ? 0.5 : 1 }}><Download size={14} />Export Attendees</button>
               </div>
             </div>

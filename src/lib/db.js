@@ -228,6 +228,11 @@ export async function revokeUserSession(authId, action = "revoke") {
   return { ok: true, data };
 }
 
+export async function insertStaff(rec) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("staff").insert({ id: rec.id, ...staffToRow(rec) });
+  if (error) console.error("insertStaff", error);
+}
 export async function updateStaff(id, rec) {
   if (!supabaseConfigured) return;
   const { error } = await supabase.from("staff").update(staffToRow(rec)).eq("id", id);

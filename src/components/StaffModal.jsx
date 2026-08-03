@@ -2,37 +2,68 @@ import { useState, useEffect } from "react";
 import { X, Save, Download, Trash2 } from "lucide-react";
 import { CAMPUS_OPTIONS, MODALITY_OPTIONS, GRADE_OPTIONS } from "../data/mockData";
 
-export default function StaffModal({ staff, onClose, canEdit, onSave, onRequestDelete }) {
+export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, onRequestDelete, linkableUsers = [] }) {
+  const isNew = !!staff?.isNew;
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(staff);
-  useEffect(() => { setForm(staff); setEditing(false); }, [staff]);
+  const [linkedUserId, setLinkedUserId] = useState("");
+  useEffect(() => { setForm(staff); setEditing(isNew); setLinkedUserId(""); }, [staff]);
   if (!staff) return null;
 
   const toggleCampus = (code) => setForm(f => ({ ...f, campuses: f.campuses.includes(code) ? f.campuses.filter(c => c !== code) : [...f.campuses, code] }));
+
+  const handleLinkUser = (userId) => {
+    setLinkedUserId(userId);
+    const u = linkableUsers.find(u => u.id === userId);
+    if (u) setForm(f => ({ ...f, name: u.name }));
+  };
+
+  const save = () => {
+    if (isNew) {
+      if (!form.name.trim() || !form.profession.trim()) return;
+      onCreate({ ...form, id: "s" + Date.now() }, linkedUserId || null);
+    } else {
+      onSave(form);
+      setEditing(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
       <div className="whmi-card w-full max-w-md max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
         <div className="p-5 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-[15px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
-            {staff.name.split(" ").map(n => n[0]).join("")}
+            {(form.name || staff.name || "?").split(" ").filter(Boolean).map(n => n[0]).join("")}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-bold text-[15px] break-words">{staff.name}</div>
-            <div className="text-[12px]" style={{ color: "var(--text-dim)" }}>{staff.profession}</div>
+            <div className="font-bold text-[15px] break-words">{isNew ? "New Staff Member" : staff.name}</div>
+            <div className="text-[12px]" style={{ color: "var(--text-dim)" }}>{isNew ? "Add a record" : staff.profession}</div>
           </div>
           <button onClick={onClose} className="whmi-btn-ghost !p-2 shrink-0"><X size={14} /></button>
         </div>
-        <div className="p-5 grid grid-cols-3 gap-3">
-          <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.hours}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>CPD Hours</div></div>
-          <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.attended}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Attended</div></div>
-          <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.certificates}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Certificates</div></div>
-        </div>
 
-        <div className="px-5 pb-3">
+        {isNew && linkableUsers.length > 0 && (
+          <div className="px-5 pt-4">
+            <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Link to an existing admin/owner account (optional)</label>
+            <select value={linkedUserId} onChange={e => handleLinkUser(e.target.value)} className="whmi-input w-full px-2.5 py-1.5 mt-1">
+              <option value="">No account, standalone staff record</option>
+              {linkableUsers.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
+            </select>
+          </div>
+        )}
+
+        {!isNew && (
+          <div className="p-5 grid grid-cols-3 gap-3">
+            <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.hours}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>CPD Hours</div></div>
+            <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.attended}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Attended</div></div>
+            <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.certificates}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Certificates</div></div>
+          </div>
+        )}
+
+        <div className="px-5 pb-3 pt-3">
           <div className="flex items-center justify-between mb-2">
             <div className="font-semibold text-[12.5px]">Record Details</div>
-            {canEdit && !editing && <button onClick={() => setEditing(true)} className="whmi-btn-ghost !py-1 !px-2.5 text-[11.5px]">Edit</button>}
+            {canEdit && !isNew && !editing && <button onClick={() => setEditing(true)} className="whmi-btn-ghost !py-1 !px-2.5 text-[11.5px]">Edit</button>}
           </div>
 
           {!editing ? (
@@ -44,6 +75,52 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onRequestD
             </div>
           ) : (
             <div className="space-y-2.5">
+              {isNew && (
+                <>
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Name</label>
+                    <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} disabled={!!linkedUserId} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Profession</label>
+                    <input required value={form.profession} onChange={e => setForm(f => ({ ...f, profession: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Department</label>
+                    <input value={form.department || ""} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>CPD Hours</label>
+                      <input type="number" min="0" value={form.hours} onChange={e => setForm(f => ({ ...f, hours: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Attended</label>
+                      <input type="number" min="0" value={form.attended} onChange={e => setForm(f => ({ ...f, attended: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Certificates</label>
+                      <input type="number" min="0" value={form.certificates} onChange={e => setForm(f => ({ ...f, certificates: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                    </div>
+                  </div>
+                </>
+              )}
+              {!isNew && (
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>CPD Hours</label>
+                    <input type="number" min="0" value={form.hours} onChange={e => setForm(f => ({ ...f, hours: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Attended</label>
+                    <input type="number" min="0" value={form.attended} onChange={e => setForm(f => ({ ...f, attended: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Certificates</label>
+                    <input type="number" min="0" value={form.certificates} onChange={e => setForm(f => ({ ...f, certificates: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Qualified Year</label>
                 <input type="number" value={form.qualifiedYear || ""} onChange={e => setForm(f => ({ ...f, qualifiedYear: e.target.value ? Number(e.target.value) : null }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
@@ -71,10 +148,10 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onRequestD
                 </div>
               </div>
               <div className="flex gap-2 pt-1">
-                <button onClick={() => { onSave(form); setEditing(false); }} className="whmi-btn-primary flex-1 flex items-center justify-center gap-1.5"><Save size={13} />Save</button>
-                <button onClick={() => { setForm(staff); setEditing(false); }} className="whmi-btn-ghost flex-1">Cancel</button>
+                <button onClick={save} className="whmi-btn-primary flex-1 flex items-center justify-center gap-1.5"><Save size={13} />{isNew ? "Add Staff" : "Save"}</button>
+                <button onClick={() => { if (isNew) { onClose(); } else { setForm(staff); setEditing(false); } }} className="whmi-btn-ghost flex-1">Cancel</button>
               </div>
-              {canEdit && onRequestDelete && (
+              {canEdit && !isNew && onRequestDelete && (
                 <button onClick={() => onRequestDelete(staff)} className="whmi-btn-ghost w-full flex items-center justify-center gap-1.5 mt-2" style={{ color: "#D9534F" }}>
                   <Trash2 size={13} />Delete Staff Record
                 </button>
@@ -83,9 +160,11 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onRequestD
           )}
         </div>
 
-        <div className="px-5 pb-5">
-          <button className="whmi-btn-ghost w-full flex items-center justify-center gap-1.5"><Download size={14} />Download Certificate History</button>
-        </div>
+        {!isNew && (
+          <div className="px-5 pb-5">
+            <button className="whmi-btn-ghost w-full flex items-center justify-center gap-1.5"><Download size={14} />Download Certificate History</button>
+          </div>
+        )}
       </div>
     </div>
   );
