@@ -6,6 +6,8 @@ import { CHARACTERS } from "../data/mockData";
 export default function Onboarding({ session, onComplete, rootVars }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [profession, setProfession] = useState("");
+  const [department, setDepartment] = useState("");
   const [avatarId, setAvatarId] = useState(session.avatarId || CHARACTERS[0].id);
   const [avatarColor, setAvatarColor] = useState(session.avatarColor || "blue");
   const [saving, setSaving] = useState(false);
@@ -14,7 +16,7 @@ export default function Onboarding({ session, onComplete, rootVars }) {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || saving) return;
     setSaving(true);
-    await onComplete({ name: `${firstName.trim()} ${lastName.trim()}`, avatarId, avatarColor });
+    await onComplete({ name: `${firstName.trim()} ${lastName.trim()}`, profession: profession.trim(), department: department.trim(), avatarId, avatarColor });
   };
 
   return (
@@ -37,6 +39,16 @@ export default function Onboarding({ session, onComplete, rootVars }) {
             <div>
               <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Last name</label>
               <input required value={lastName} onChange={e => setLastName(e.target.value)} className="whmi-input w-full px-3 py-2 mt-1" placeholder="Smith" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Profession</label>
+              <input required value={profession} onChange={e => setProfession(e.target.value)} className="whmi-input w-full px-3 py-2 mt-1" placeholder="Radiographer" />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Department</label>
+              <input required value={department} onChange={e => setDepartment(e.target.value)} className="whmi-input w-full px-3 py-2 mt-1" placeholder="Medical Imaging" />
             </div>
           </div>
           <AvatarPicker avatarId={avatarId} avatarColor={avatarColor} onChangeAvatar={setAvatarId} onChangeColor={setAvatarColor} defaultOpen />

@@ -20,6 +20,7 @@ const userFromRow = (r) => ({
   secondaryEmail: r.secondary_email, certEmailPreference: r.cert_email_preference || "primary",
   onboarded: r.onboarded == null ? true : !!r.onboarded,
   darkMode: !!r.dark_mode, isTest: !!r.is_test, createdAt: r.created_at,
+  profession: r.profession, department: r.department,
 });
 const userToRow = (u) => ({
   id: u.id, name: u.name, email: u.email, role: u.role,
@@ -29,6 +30,7 @@ const userToRow = (u) => ({
   secondary_email: u.secondaryEmail ?? null, cert_email_preference: u.certEmailPreference || "primary",
   onboarded: u.onboarded ?? false,
   dark_mode: u.darkMode ?? false, is_test: u.isTest ?? false,
+  profession: u.profession ?? null, department: u.department ?? null,
 });
 
 const staffFromRow = (r) => ({
@@ -189,6 +191,8 @@ export async function updateUser(id, patch) {
   if ("onboarded" in patch) row.onboarded = patch.onboarded;
   if ("darkMode" in patch) row.dark_mode = patch.darkMode;
   if ("isTest" in patch) row.is_test = patch.isTest;
+  if ("profession" in patch) row.profession = patch.profession;
+  if ("department" in patch) row.department = patch.department;
   const { error } = await supabase.from("users").update(row).eq("id", id);
   if (error) console.error("updateUser", error);
 }
