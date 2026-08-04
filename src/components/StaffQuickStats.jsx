@@ -13,7 +13,7 @@ const SORT_OPTIONS = [
 function firstName(s) { return s.name.split(" ")[0]; }
 function lastName(s) { return s.name.split(" ").slice(-1)[0]; }
 
-export default function StaffQuickStats({ staffDirectory }) {
+export default function StaffQuickStats({ staffDirectory, onSelectStaff }) {
   const [sortBy, setSortBy] = useState("lastName");
   const [desc, setDesc] = useState(false);
 
@@ -58,7 +58,12 @@ export default function StaffQuickStats({ staffDirectory }) {
           </thead>
           <tbody>
             {sorted.map(s => (
-              <tr key={s.id} className="whmi-row-hover" style={{ borderBottom: "1px solid var(--border)" }}>
+              <tr
+                key={s.id}
+                onClick={onSelectStaff ? () => onSelectStaff(s) : undefined}
+                className="whmi-row-hover"
+                style={{ borderBottom: "1px solid var(--border)", cursor: onSelectStaff ? "pointer" : "default" }}
+              >
                 <td className="px-2.5 py-1.5 font-semibold whitespace-nowrap">{s.name}</td>
                 <td className="px-2.5 py-1.5">{s.hours}</td>
                 <td className="px-2.5 py-1.5">{s.hoursLast3Years ?? "—"}</td>

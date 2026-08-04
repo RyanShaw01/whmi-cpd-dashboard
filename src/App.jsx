@@ -87,7 +87,22 @@ export default function App() {
   const [redDotsEnabled, setRedDotsEnabled] = useState(true);
   const [colorPrefs, setColorPrefs] = useState({ primary: "blue", secondary: "purple", success: "green" });
   const [layoutOrder, setLayoutOrder] = useState(DEFAULT_LAYOUT);
-  const [page, setPage] = useState("dashboard");
+  // sessionStorage (not localStorage) so a reload of the same tab stays put, but opening a
+  // fresh tab/window — a genuinely new visit — starts clean on the dashboard.
+  const [page, setPage] = useState(() => {
+    try { return sessionStorage.getItem("whmi_last_page") || "dashboard"; } catch { return "dashboard"; }
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem("whmi_last_page", page); } catch { /* ignore (private browsing etc) */ }
+  }, [page]);
+  // Validate the restored page against the signed-in role once login resolves — a page id
+  // restored from a previous session/role (e.g. "staff" for a viewer) would otherwise render blank.
+  useEffect(() => {
+    if (!session?.onboarded) return;
+    const validIds = new Set((session.role === "viewer" ? NAV_VIEWER : NAV_FULL).map(n => n.id));
+    if (!validIds.has(page)) setPage(session.role === "viewer" ? "mycpd" : "dashboard");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id, session?.onboarded]);
   const [highlightId, setHighlightId] = useState(null);
   const [dark, setDark] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -252,6 +267,15 @@ export default function App() {
   // standalone staff record the moment a user becomes admin/owner (creation or promotion)
   // if they don't already have one.
   const autoLinkStaffFor = (u) => {
+    // Prefer an existing staff record with a matching name (e.g. someone bulk-added as an
+    // Owner who was already a staff member under a separate record) over creating a new blank
+    // one — otherwise the same person ends up with two records/tiles in the Staff Directory.
+    const existing = staffDirectory.find(s => s.name.trim().toLowerCase() === u.name.trim().toLowerCase());
+    if (existing) {
+      updateUser(u.id, { staffId: existing.id });
+      pushAudit({ actorId: session?.id, action: "user.updated", entityType: "user", entityId: u.id, details: { staffId: existing.id } });
+      return existing;
+    }
     const staffRec = {
       id: "s" + Date.now() + Math.random().toString(36).slice(2, 6), name: u.name,
       profession: "", department: "", campuses: [], hours: 0, attended: 0, certificates: 0,

@@ -16,7 +16,7 @@ export const blankStaff = () => ({
   qualifiedYear: null, hoursLast3Years: null, eventsThisYear: null, lastAttended: null, attendedEventIds: [],
 });
 
-export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirectory, canManage, externalParticipants = [], certificates = [], users = [] }) {
+export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirectory: rawStaffDirectory, canManage, externalParticipants = [], certificates = [], users = [] }) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [desc, setDesc] = useState(false);
@@ -25,12 +25,31 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
   const [externalsExpanded, setExternalsExpanded] = useState(false);
   const [recipientsExpanded, setRecipientsExpanded] = useState(false);
 
+  // Defends against genuine duplicate rows in the underlying staff data (e.g. "Add to Staff"
+  // accidentally run twice for the same person before they had a staffId) — keep the first
+  // (oldest) record per name so Quick Stats and the Staff grid never show the same person twice.
+  const staffDirectory = useMemo(() => {
+    const seen = new Set();
+    return rawStaffDirectory.filter(s => {
+      const key = s.name.trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [rawStaffDirectory]);
+
   // Admins/owners already linked to a staff record just appear naturally via staffDirectory;
-  // only unlinked ones need a synthetic tile so every admin/owner shows up in the one combined list.
+  // only unlinked ones need a synthetic tile so every admin/owner shows up in the one combined
+  // list. Also skip anyone whose name already matches an existing staff record even if `staffId`
+  // isn't set — e.g. someone bulk-added as an Owner who was already a staff member under a
+  // separate record — otherwise they'd show up twice (their real card + a synthetic one).
   const unlinkedAdminOwnerUsers = useMemo(() => {
     const linkedStaffIds = new Set(staffDirectory.map(s => s.id));
+    const staffNames = new Set(staffDirectory.map(s => s.name.trim().toLowerCase()));
     return users
-      .filter(u => !u.isTest && (u.role === "admin" || u.role === "owner") && (!u.staffId || !linkedStaffIds.has(u.staffId)))
+      .filter(u => !u.isTest && (u.role === "admin" || u.role === "owner")
+        && (!u.staffId || !linkedStaffIds.has(u.staffId))
+        && !staffNames.has(u.name.trim().toLowerCase()))
       .map(u => ({
         id: `admin-${u.id}`, name: u.name, profession: u.role === "admin" ? "Admin" : "Owner", campuses: [],
         hours: 0, attended: 0, certificates: 0, isUnlinkedAdmin: true, user: u,
@@ -85,7 +104,7 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
               <BarChart3 size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Quick Stats</div>
             </div>
           </button>
-          {statsExpanded && <div className="mt-3"><StaffQuickStats staffDirectory={staffDirectory} /></div>}
+          {statsExpanded && <div className="mt-3"><StaffQuickStats staffDirectory={staffDirectory} onSelectStaff={openStaff} /></div>}
         </div>
       )}
 

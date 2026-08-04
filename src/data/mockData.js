@@ -62,10 +62,10 @@ export const PREVIOUS_EVENTS = [
 ];
 
 export const CAMPUS_OPTIONS = [
-  { code: "SH", label: "Sunshine" },
-  { code: "FH", label: "Footscray" },
-  { code: "WTN", label: "Williamstown" },
-  { code: "SDH", label: "Sunbury" },
+  { code: "Footscray Hospital", label: "Footscray Hospital" },
+  { code: "Sunshine Hospital", label: "Sunshine Hospital" },
+  { code: "Williamstown Hospital", label: "Williamstown Hospital" },
+  { code: "Sunbury Day Hospital", label: "Sunbury Day Hospital" },
 ];
 export const LOCATION_OPTIONS = ["Footscray Hospital", "Sunshine Hospital", "Williamstown Hospital", "Sunbury Day Hospital"];
 export const MODALITY_OPTIONS = ["General XR", "CT", "MRI", "Ultrasound", "Mammography", "Nuclear Medicine", "Angiography"];

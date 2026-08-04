@@ -14,7 +14,7 @@ const emptyEvent = {
   title: "", tags: [], description: "",
   presenter: "", organisers: "",
   date: "", start: "", end: "", location: "", campus: "", mode: "In-person",
-  meetingUrl: "", room: "", capacity: "", onlineCapacity: "", inPersonCapacity: "",
+  meetingUrl: "", room: "", level: "", capacity: "", onlineCapacity: "", inPersonCapacity: "",
   waitlist: 0, status: "Draft", registered: 0, reflectionAutoEmail: true, asmirtCode: "",
   cpdTypeId: null, openToExternal: true, showRegCountExternal: false,
 };
@@ -26,7 +26,7 @@ const nullsToEmpty = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]
 
 export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner }) {
   const [form, setForm] = useState(event
-    ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [], location: [event.location, event.room].filter(Boolean).join(", "), room: "" }
+    ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [] }
     : { ...emptyEvent, status: initialStatus || emptyEvent.status });
   const [newTag, setNewTag] = useState("");
   const isEdit = Boolean(event);
@@ -109,11 +109,11 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={field}>Presenter(s)</label>
-          <input value={form.presenter} onChange={e => set("presenter", e.target.value)} placeholder="Separate presenters by commas" className="whmi-input w-full px-2.5 py-2" />
+          <textarea value={form.presenter} onChange={e => set("presenter", e.target.value)} rows={2} placeholder="One per line, or separate with commas" className="whmi-input w-full px-2.5 py-2 resize-none" />
         </div>
         <div>
           <label className={field}>Organisers</label>
-          <input value={form.organisers} onChange={e => set("organisers", e.target.value)} placeholder="Separate organisers by commas" className="whmi-input w-full px-2.5 py-2" />
+          <textarea value={form.organisers} onChange={e => set("organisers", e.target.value)} rows={2} placeholder="One per line, or separate with commas" className="whmi-input w-full px-2.5 py-2 resize-none" />
         </div>
       </div>
 
@@ -153,10 +153,21 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
 
       <div>
         <label className={field}>Location</label>
-        <input value={form.location} onChange={e => set("location", e.target.value)} list="location-options" placeholder="e.g. Sunshine Hospital, Level 2 Room 204" className="whmi-input w-full px-2.5 py-2" />
+        <input value={form.location} onChange={e => set("location", e.target.value)} list="location-options" placeholder="e.g. Sunshine Hospital, Education Wing" className="whmi-input w-full px-2.5 py-2" />
         <datalist id="location-options">
           {LOCATION_OPTIONS.map(l => <option key={l} value={l} />)}
         </datalist>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={field}>Level (optional)</label>
+          <input value={form.level} onChange={e => set("level", e.target.value)} placeholder="e.g. Level 2" className="whmi-input w-full px-2.5 py-2" />
+        </div>
+        <div>
+          <label className={field}>Room Number (optional)</label>
+          <input value={form.room} onChange={e => set("room", e.target.value)} placeholder="e.g. Room 204" className="whmi-input w-full px-2.5 py-2" />
+        </div>
       </div>
 
       {form.mode !== "In-person" && (

@@ -147,7 +147,7 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
                 <div className="flex gap-1.5 flex-wrap mt-1">
                   {CAMPUS_OPTIONS.map(c => (
                     <button key={c.code} type="button" onClick={() => toggleCampus(c.code)} className="whmi-badge" style={{ background: form.campuses.includes(c.code) ? "var(--accent-primary)" : "var(--surface-2)", color: form.campuses.includes(c.code) ? "white" : "var(--text-dim)" }}>
-                      {c.code}
+                      {c.label}
                     </button>
                   ))}
                 </div>

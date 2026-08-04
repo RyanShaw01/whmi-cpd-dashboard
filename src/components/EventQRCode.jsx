@@ -36,10 +36,30 @@ export default function EventQRCode({ event, path = "", filenameSuffix = "qr", u
     link.click();
   };
 
+  // Falls back to a hidden textarea + execCommand for browsers/contexts where the async
+  // Clipboard API is unavailable or rejects (e.g. some older Safari versions, non-secure
+  // contexts) — writeText() failing silently was leaving the button saying "Copied!" with
+  // nothing actually on the clipboard.
   const copyLink = () => {
-    navigator.clipboard?.writeText(url);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+    const markCopied = () => { setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2000); };
+    const fallbackCopy = () => {
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        if (document.execCommand("copy")) markCopied();
+      } catch { /* give up silently, button just won't flip to "Copied!" */ }
+      document.body.removeChild(textarea);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(markCopied).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
   };
 
   const copyImage = () => {

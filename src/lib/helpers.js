@@ -184,6 +184,12 @@ export function eventBannerUrl(files, eventId) {
 }
 
 /* Exact CPD hours from event start/end, e.g. "09:00"-"12:30" -> 3.5. */
+/* Presenters/organisers are stored as one free-text field; entry supports either newlines
+ * (dot-pointed) or commas, so splitting on both keeps older comma-separated data working. */
+export function splitPeopleList(str) {
+  return (str || "").split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+}
+
 export function eventCpdHours(start, end) {
   if (!start || !end) return null;
   const [sh, sm] = start.split(":").map(Number);

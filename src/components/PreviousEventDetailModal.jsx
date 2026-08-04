@@ -158,8 +158,17 @@ export default function PreviousEventDetailModal({
           {tab === "overview" && (
             <div className="space-y-2 text-[12.5px]">
               {event.description && <p style={{ color: "var(--text-dim)" }}>{event.description}</p>}
-              {event.location && <div><span className="font-semibold">Location:</span> <span style={{ color: "var(--text-dim)" }}>{event.location}</span></div>}
-              {!event.description && !event.location && <p style={{ color: "var(--text-faint)" }}>No additional details recorded for this event.</p>}
+              {(event.campus || event.location) && (
+                <div>
+                  <span className="font-semibold">Location:</span>{" "}
+                  <span style={{ color: "var(--text-dim)" }}>
+                    {[event.campus, event.location].filter(Boolean).join(" · ")}
+                    {event.level ? ` · Level ${event.level}` : ""}
+                    {event.room ? ` · Room ${event.room}` : ""}
+                  </span>
+                </div>
+              )}
+              {!event.description && !event.campus && !event.location && <p style={{ color: "var(--text-faint)" }}>No additional details recorded for this event.</p>}
             </div>
           )}
 
