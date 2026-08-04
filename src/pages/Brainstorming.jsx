@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Lightbulb, Plus, Trash2, ChevronDown, ChevronRight, QrCode, User } from "lucide-react";
+import { Lightbulb, Plus, X, QrCode, User } from "lucide-react";
 import EventQRCode from "../components/EventQRCode";
 import { relativeTime } from "../lib/helpers";
 import { BRAINSTORM_CATEGORIES } from "../lib/brainstormCategories";
@@ -8,8 +8,6 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("topic");
   const [shareOpen, setShareOpen] = useState(false);
-  const [sectionsExpanded, setSectionsExpanded] = useState({ topic: true, delivery: true, presenter: true, location: true, other: true });
-  const toggleSection = (id) => setSectionsExpanded(s => ({ ...s, [id]: !s[id] }));
 
   const submit = (e) => {
     e.preventDefault();
@@ -57,43 +55,51 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
         </form>
       </div>
 
-      {BRAINSTORM_CATEGORIES.map(cat => {
-        const catIdeas = ideas.filter(idea => (idea.category || "other") === cat.id);
-        const Icon = cat.icon;
-        return (
-          <div key={cat.id} className="whmi-card p-4">
-            <button onClick={() => toggleSection(cat.id)} className="w-full flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                {sectionsExpanded[cat.id] ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
-                <Icon size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">{cat.label}</div>
-              </div>
-              <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{catIdeas.length}</span>
-            </button>
-            {sectionsExpanded[cat.id] && (
-              <div className="space-y-1.5 mt-2">
-                {catIdeas.map(idea => (
-                  <div key={idea.id} className="flex items-start justify-between gap-2 p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
-                    <div className="min-w-0 flex gap-2">
-                      <span style={{ color: "var(--text-faint)" }}>•</span>
-                      <div className="min-w-0">
-                        <div className="text-[12.5px] break-words">{idea.content}</div>
-                        <div className="text-[10.5px] flex items-center gap-1 mt-0.5 flex-wrap" style={{ color: "var(--text-faint)" }}>
-                          <User size={10} />{idea.addedByName}
-                          {idea.source === "public" && <span className="whmi-badge" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Public link submission</span>}
-                          {idea.source === "member" && <span className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>Team suggestion</span>}
-                          <span>· {relativeTime(idea.createdAt)}</span>
-                        </div>
+      <div className="whmi-card overflow-x-auto whmi-scroll">
+        <table className="w-full text-[13px]" style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--border)" }}>
+              <th className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide w-[170px]" style={{ color: "var(--text-faint)" }}>Category</th>
+              <th className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>Ideas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {BRAINSTORM_CATEGORIES.map(cat => {
+              const catIdeas = ideas.filter(idea => (idea.category || "other") === cat.id);
+              const Icon = cat.icon;
+              return (
+                <tr key={cat.id} className="align-top" style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5 font-semibold text-[12.5px]"><Icon size={14} style={{ color: "var(--accent-primary)" }} />{cat.label}</div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "var(--text-faint)" }}>{catIdeas.length} idea{catIdeas.length === 1 ? "" : "s"}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {catIdeas.length === 0 ? (
+                      <span className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>No ideas in this category yet.</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {catIdeas.map(idea => (
+                          <div key={idea.id} className="group relative rounded-2xl px-3 py-2 max-w-[280px]" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                            <button onClick={() => onRequestDeleteIdea(idea)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition" style={{ background: "#D9534F" }} title="Delete idea">
+                              <X size={11} color="white" />
+                            </button>
+                            <div className="text-[12px] break-words">{idea.content}</div>
+                            <div className="text-[10px] mt-1.5 flex items-center gap-1 flex-wrap" style={{ color: "var(--text-faint)" }}>
+                              <User size={9} />{idea.addedByName} · {relativeTime(idea.createdAt)}
+                            </div>
+                            {idea.source === "public" && <span className="whmi-badge mt-1" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Public link</span>}
+                            {idea.source === "member" && <span className="whmi-badge mt-1" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>Team suggestion</span>}
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                    <button onClick={() => onRequestDeleteIdea(idea)} className="whmi-btn-ghost !p-1.5 shrink-0" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
-                  </div>
-                ))}
-                {catIdeas.length === 0 && <div className="text-[12px]" style={{ color: "var(--text-faint)" }}>No ideas in this section yet.</div>}
-              </div>
-            )}
-          </div>
-        );
-      })}
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

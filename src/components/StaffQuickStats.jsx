@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ArrowUp, ArrowDown, BarChart3 } from "lucide-react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import { fmtDate } from "../lib/helpers";
 
 const SORT_OPTIONS = [
@@ -38,36 +38,33 @@ export default function StaffQuickStats({ staffDirectory }) {
   }, [staffDirectory, sortBy, desc]);
 
   return (
-    <div className="whmi-card p-5">
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-        <h2 className="disp text-[15px] font-bold flex items-center gap-2"><BarChart3 size={16} style={{ color: "var(--accent-primary)" }} />Staff Quick Stats</h2>
-        <div className="flex items-center gap-1.5">
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2 py-1.5 text-[12px]">
-            {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-          </select>
-          <button onClick={() => setDesc(d => !d)} className="whmi-btn-ghost !p-2" title={desc ? "Descending" : "Ascending"}>
-            {desc ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
-          </button>
-        </div>
+    <div>
+      <div className="flex items-center justify-end gap-1.5 mb-2">
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2 py-1 text-[11px]">
+          {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+        <button onClick={() => setDesc(d => !d)} className="whmi-btn-ghost !p-1.5" title={desc ? "Descending" : "Ascending"}>
+          {desc ? <ArrowDown size={13} /> : <ArrowUp size={13} />}
+        </button>
       </div>
-      <div className="overflow-x-auto whmi-scroll">
-        <table className="w-full text-[12.5px]">
-          <thead>
+      <div className="overflow-auto whmi-scroll max-h-[260px]">
+        <table className="w-full text-[11.5px]">
+          <thead className="sticky top-0" style={{ background: "var(--surface)" }}>
             <tr style={{ borderBottom: "1px solid var(--border)" }}>
               {["Name", "Total Hours", `Hours (${currentYear - 2}–${currentYear})`, "Events This Year", "Total Events", "Last Attended"].map(h => (
-                <th key={h} className="text-left px-3 py-2 font-semibold text-[10.5px] uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--text-faint)" }}>{h}</th>
+                <th key={h} className="text-left px-2.5 py-1.5 font-semibold text-[10px] uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--text-faint)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {sorted.map(s => (
               <tr key={s.id} className="whmi-row-hover" style={{ borderBottom: "1px solid var(--border)" }}>
-                <td className="px-3 py-2.5 font-semibold whitespace-nowrap">{s.name}</td>
-                <td className="px-3 py-2.5">{s.hours}</td>
-                <td className="px-3 py-2.5">{s.hoursLast3Years ?? "—"}</td>
-                <td className="px-3 py-2.5">{s.eventsThisYear ?? "—"}</td>
-                <td className="px-3 py-2.5">{s.attended}</td>
-                <td className="px-3 py-2.5 whitespace-nowrap">{s.lastAttended ? fmtDate(s.lastAttended) : "—"}</td>
+                <td className="px-2.5 py-1.5 font-semibold whitespace-nowrap">{s.name}</td>
+                <td className="px-2.5 py-1.5">{s.hours}</td>
+                <td className="px-2.5 py-1.5">{s.hoursLast3Years ?? "—"}</td>
+                <td className="px-2.5 py-1.5">{s.eventsThisYear ?? "—"}</td>
+                <td className="px-2.5 py-1.5">{s.attended}</td>
+                <td className="px-2.5 py-1.5 whitespace-nowrap">{s.lastAttended ? fmtDate(s.lastAttended) : "—"}</td>
               </tr>
             ))}
           </tbody>
