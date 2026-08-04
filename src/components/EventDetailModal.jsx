@@ -11,7 +11,7 @@ import InfoTooltip from "./InfoTooltip";
 import EventForm from "./EventForm";
 import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
-import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix, splitPeopleList } from "../lib/helpers";
 import { previewCertificateTemplate } from "../lib/db";
 
 const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
@@ -129,7 +129,16 @@ export default function EventDetailModal({
               {event.campus && eventLocationSuffix(event) ? " - " : ""}
               {eventLocationSuffix(event)}
             </span></div>
-            <div className="flex items-center gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{event.presenter}</span></div>
+            <div className="flex items-start gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" />
+              {(() => {
+                const presenters = splitPeopleList(event.presenter);
+                return presenters.length > 1 ? (
+                  <ul className="break-words" style={{ paddingLeft: 14, listStyleType: "disc" }}>
+                    {presenters.map((p, i) => <li key={i}>{p}</li>)}
+                  </ul>
+                ) : <span className="break-words">{event.presenter}</span>;
+              })()}
+            </div>
           </div>
 
           {(event.description || event.organisers) && (

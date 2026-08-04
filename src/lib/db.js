@@ -565,6 +565,41 @@ export async function deleteReflection(id) {
 }
 
 /* ---------------------------------------------------------------------- */
+/* personal reflections (self-authored, non-WH CPD activities)            */
+/* ---------------------------------------------------------------------- */
+const personalReflectionFromRow = (r) => ({
+  id: r.id, userId: r.user_id, activityName: r.activity_name, activityDate: r.activity_date,
+  mode: r.mode, answers: r.answers || {}, freeformText: r.freeform_text, createdAt: r.created_at,
+});
+const personalReflectionToRow = (r) => ({
+  id: r.id, user_id: r.userId, activity_name: r.activityName, activity_date: r.activityDate,
+  mode: r.mode || "full", answers: r.answers || {}, freeform_text: r.freeformText ?? null,
+});
+
+export async function fetchPersonalReflections() {
+  if (!supabaseConfigured) return [];
+  const { data, error } = await supabase.from("personal_reflections").select("*").order("activity_date", { ascending: false });
+  if (error) { console.error("fetchPersonalReflections", error); return []; }
+  return data.map(personalReflectionFromRow);
+}
+export async function insertPersonalReflection(reflection) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("personal_reflections").insert(personalReflectionToRow(reflection));
+  if (error) console.error("insertPersonalReflection", error);
+}
+export async function deletePersonalReflection(id) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("personal_reflections").delete().eq("id", id);
+  if (error) console.error("deletePersonalReflection", error);
+}
+export async function emailReflectionCopy(payload) {
+  if (!supabaseConfigured) return { ok: false };
+  const { error } = await supabase.functions.invoke("email-reflection-copy", { body: payload });
+  if (error) { console.error("emailReflectionCopy", error); return { ok: false }; }
+  return { ok: true };
+}
+
+/* ---------------------------------------------------------------------- */
 /* certificate + reminder Edge Functions                                  */
 /* ---------------------------------------------------------------------- */
 export async function sendReflectionCertificate(reflectionId) {

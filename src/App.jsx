@@ -15,6 +15,7 @@ import HelpCentre from "./pages/HelpCentre";
 import PublicEventPage from "./pages/PublicEventPage";
 import ReflectionPage from "./pages/ReflectionPage";
 import Brainstorming from "./pages/Brainstorming";
+import Reflection from "./pages/Reflection";
 import BrainstormSubmitPage from "./pages/BrainstormSubmitPage";
 import SuggestIdeaModal from "./components/SuggestIdeaModal";
 import Onboarding from "./pages/Onboarding";
@@ -49,6 +50,7 @@ import {
   fetchAvatarColors, insertAvatarColor, updateAvatarColor, deleteAvatarColor,
   fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea,
   fetchAppSetting, upsertAppSetting,
+  fetchPersonalReflections, insertPersonalReflection, deletePersonalReflection, emailReflectionCopy,
 } from "./lib/db";
 import { setAvatarIcons as setRegistryIcons, setAvatarColors as setRegistryColors } from "./lib/avatarRegistry";
 
@@ -72,6 +74,7 @@ export default function App() {
   const [avatarColors, setAvatarColors] = useState([]);
   const [brainstormIdeas, setBrainstormIdeas] = useState([]);
   const [staffFieldVisibility, setStaffFieldVisibility] = useState(DEFAULT_STAFF_FIELD_VISIBILITY);
+  const [personalReflections, setPersonalReflections] = useState([]);
   const [suggestIdeaOpen, setSuggestIdeaOpen] = useState(false);
   const [auditLog, setAuditLog] = useState([]);
   // Writes to the DB and optimistically prepends locally so the Dashboard's Recent Activity
@@ -175,12 +178,12 @@ export default function App() {
     const [
       userList, staffList, eventList, prevEventList, certList, regList, externalList, reflectionList, fileList,
       dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList, avatarIconList, avatarColorList, brainstormIdeaList,
-      staffFieldVisibilitySetting,
+      staffFieldVisibilitySetting, personalReflectionList,
     ] = await Promise.all([
       fetchUsers(), fetchStaff(), fetchEvents(), fetchPreviousEvents(), fetchCertificates(), fetchRegistrations(), fetchExternalParticipants(),
       fetchReflections(), fetchAllFiles(), fetchDismissedPairs("registration"), fetchDismissedPairs("reflection"), fetchCpdTypes(), fetchTags(),
       fetchAuditLog(50), fetchAvatarIcons(), fetchAvatarColors(), fetchBrainstormIdeas(),
-      fetchAppSetting("staff_field_visibility"),
+      fetchAppSetting("staff_field_visibility"), fetchPersonalReflections(),
     ]);
     setAvatarIcons(avatarIconList);
     setAvatarColors(avatarColorList);
@@ -202,12 +205,14 @@ export default function App() {
     setAuditLog(auditLogList);
     setBrainstormIdeas(brainstormIdeaList);
     setStaffFieldVisibility({ ...DEFAULT_STAFF_FIELD_VISIBILITY, ...(staffFieldVisibilitySetting || {}) });
+    setPersonalReflections(personalReflectionList);
   };
 
   const clearAppData = () => {
     setUsers([]); setStaffDirectory([]); setEvents([]); setPreviousEvents([]); setCertificates([]);
     setRegistrations([]); setExternalParticipants([]); setReflections([]); setFiles([]); setCpdTypes([]); setTags([]); setAuditLog([]);
     setAvatarIcons([]); setAvatarColors([]); setBrainstormIdeas([]); setStaffFieldVisibility(DEFAULT_STAFF_FIELD_VISIBILITY);
+    setPersonalReflections([]);
     setDismissedRegistrationPairs(new Set()); setDismissedReflectionPairs(new Set());
   };
 
@@ -629,6 +634,22 @@ export default function App() {
     upsertAppSetting("staff_field_visibility", next);
   };
 
+  const handleAddPersonalReflection = (payload) => {
+    const reflection = { id: "pr" + Date.now(), userId: session.id, ...payload };
+    setPersonalReflections(prev => [reflection, ...prev]);
+    insertPersonalReflection(reflection);
+    pushAudit({ actorId: session?.id, action: "reflection.created", entityType: "personal_reflection", entityId: reflection.id, details: { activityName: reflection.activityName } });
+    showToast("Reflection saved.");
+  };
+  const requestDeletePersonalReflection = (reflection) => requestDelete(`your reflection for "${reflection.activityName}"`, () => {
+    setPersonalReflections(prev => prev.filter(r => r.id !== reflection.id));
+    deletePersonalReflection(reflection.id);
+  });
+  const handleEmailReflectionCopy = async (payload) => {
+    const res = await emailReflectionCopy(payload);
+    showToast(res.ok ? "Emailed you a copy." : "Couldn't send that email — please try again.");
+  };
+
   const handleAddBrainstormIdea = (content, category) => {
     const idea = { id: "idea" + Date.now(), content, category, addedByName: session?.name || "Unknown", source: "admin", createdAt: new Date().toISOString() };
     setBrainstormIdeas(prev => [idea, ...prev]);
@@ -978,6 +999,16 @@ export default function App() {
                 certificates={certificates} canManage={canManage} onRequestDelete={requestDeleteCertificate} onApprove={handleApproveCertificate}
                 highlightId={page === "certificates" ? highlightId : null} onCreateCertificate={() => setCreateCertificateOpen(true)}
                 onApproveAndSendAll={handleApproveAndSendAll} onResend={handleResendCertificate} requestConfirm={requestConfirm}
+              />
+            )}
+            {page === "reflection" && (
+              <Reflection
+                session={session}
+                personalReflections={personalReflections}
+                whReflections={reflections}
+                onAddPersonalReflection={handleAddPersonalReflection}
+                onDeletePersonalReflection={requestDeletePersonalReflection}
+                onEmailCopy={handleEmailReflectionCopy}
               />
             )}
             {page === "brainstorm" && canManage && (
