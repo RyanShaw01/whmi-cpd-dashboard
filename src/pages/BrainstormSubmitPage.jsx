@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Lightbulb, CheckCircle2 } from "lucide-react";
+import { BRAINSTORM_CATEGORIES } from "./Brainstorming";
 
 export default function BrainstormSubmitPage({ session, onSubmit }) {
   const [name, setName] = useState(session?.name || "");
   const [content, setContent] = useState("");
+  const [category, setCategory] = useState("topic");
   const [submitted, setSubmitted] = useState(false);
 
   const submit = (e) => {
     e.preventDefault();
     if (!name.trim() || !content.trim()) return;
-    onSubmit(content.trim(), name.trim());
+    onSubmit(content.trim(), name.trim(), category);
     setSubmitted(true);
     setContent("");
   };
@@ -43,6 +45,13 @@ export default function BrainstormSubmitPage({ session, onSubmit }) {
                 <div>
                   <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Your Idea</label>
                   <textarea required value={content} onChange={e => setContent(e.target.value)} rows={4} placeholder="e.g. A hands-on workshop on ultrasound-guided procedures with Radiology" className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>What kind of idea is this?</label>
+                  <select value={category} onChange={e => setCategory(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1">
+                    {BRAINSTORM_CATEGORIES.filter(c => c.id !== "other").map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    <option value="other">Other</option>
+                  </select>
                 </div>
                 <button type="submit" className="whmi-btn-primary w-full">Submit Idea</button>
               </form>

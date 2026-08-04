@@ -1,17 +1,27 @@
 import { useState } from "react";
-import { Lightbulb, Plus, Trash2, ChevronDown, ChevronRight, QrCode, User } from "lucide-react";
+import { Lightbulb, Plus, Trash2, ChevronDown, ChevronRight, QrCode, User, Tag, Presentation, Mic2, MapPin, MoreHorizontal } from "lucide-react";
 import EventQRCode from "../components/EventQRCode";
 import { relativeTime } from "../lib/helpers";
 
+export const BRAINSTORM_CATEGORIES = [
+  { id: "topic", label: "Topics & CPD Types", icon: Tag },
+  { id: "delivery", label: "Event Delivery Types", icon: Presentation },
+  { id: "presenter", label: "Presenters", icon: Mic2 },
+  { id: "location", label: "Locations", icon: MapPin },
+  { id: "other", label: "Other", icon: MoreHorizontal },
+];
+
 export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea }) {
   const [content, setContent] = useState("");
-  const [listExpanded, setListExpanded] = useState(true);
+  const [category, setCategory] = useState("topic");
   const [shareOpen, setShareOpen] = useState(false);
+  const [sectionsExpanded, setSectionsExpanded] = useState({ topic: true, delivery: true, presenter: true, location: true, other: true });
+  const toggleSection = (id) => setSectionsExpanded(s => ({ ...s, [id]: !s[id] }));
 
   const submit = (e) => {
     e.preventDefault();
     if (!content.trim()) return;
-    onAddIdea(content.trim());
+    onAddIdea(content.trim(), category);
     setContent("");
   };
 
@@ -40,40 +50,56 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
       </div>
 
       <div className="whmi-card p-4">
-        <button onClick={() => setListExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            {listExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
-            <Lightbulb size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Idea List</div>
+        <div className="flex items-center gap-2 mb-3">
+          <Lightbulb size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Add an Idea</div>
+        </div>
+        <form onSubmit={submit} className="space-y-2">
+          <input value={content} onChange={e => setContent(e.target.value)} placeholder="e.g. Ultrasound-guided procedures workshop with Radiology" className="whmi-input w-full px-2.5 py-2 text-[12.5px]" />
+          <div className="flex gap-1.5 flex-wrap">
+            <select value={category} onChange={e => setCategory(e.target.value)} className="whmi-input px-2.5 py-2 text-[12.5px]">
+              {BRAINSTORM_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+            <button type="submit" className="whmi-btn-primary flex items-center gap-1.5"><Plus size={14} />Add Idea</button>
           </div>
-          <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{ideas.length}</span>
-        </button>
-        {listExpanded && (
-          <>
-            <form onSubmit={submit} className="flex gap-1.5 mb-3 mt-2">
-              <input value={content} onChange={e => setContent(e.target.value)} placeholder="e.g. Ultrasound-guided procedures workshop with Radiology" className="whmi-input flex-1 px-2.5 py-2 text-[12.5px]" />
-              <button type="submit" className="whmi-btn-primary flex items-center gap-1.5 shrink-0"><Plus size={14} />Add</button>
-            </form>
-            <div className="space-y-1.5">
-              {ideas.map(idea => (
-                <div key={idea.id} className="flex items-start justify-between gap-2 p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
-                  <div className="min-w-0 flex gap-2">
-                    <span style={{ color: "var(--text-faint)" }}>•</span>
-                    <div className="min-w-0">
-                      <div className="text-[12.5px] break-words">{idea.content}</div>
-                      <div className="text-[10.5px] flex items-center gap-1 mt-0.5" style={{ color: "var(--text-faint)" }}>
-                        <User size={10} />{idea.addedByName}{idea.source === "public" && <span className="whmi-badge" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Staff submission</span>}
-                        <span>· {relativeTime(idea.createdAt)}</span>
+        </form>
+      </div>
+
+      {BRAINSTORM_CATEGORIES.map(cat => {
+        const catIdeas = ideas.filter(idea => (idea.category || "other") === cat.id);
+        const Icon = cat.icon;
+        return (
+          <div key={cat.id} className="whmi-card p-4">
+            <button onClick={() => toggleSection(cat.id)} className="w-full flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                {sectionsExpanded[cat.id] ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+                <Icon size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">{cat.label}</div>
+              </div>
+              <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{catIdeas.length}</span>
+            </button>
+            {sectionsExpanded[cat.id] && (
+              <div className="space-y-1.5 mt-2">
+                {catIdeas.map(idea => (
+                  <div key={idea.id} className="flex items-start justify-between gap-2 p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
+                    <div className="min-w-0 flex gap-2">
+                      <span style={{ color: "var(--text-faint)" }}>•</span>
+                      <div className="min-w-0">
+                        <div className="text-[12.5px] break-words">{idea.content}</div>
+                        <div className="text-[10.5px] flex items-center gap-1 mt-0.5 flex-wrap" style={{ color: "var(--text-faint)" }}>
+                          <User size={10} />{idea.addedByName}
+                          {idea.source === "public" && <span className="whmi-badge" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Staff submission</span>}
+                          <span>· {relativeTime(idea.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
+                    <button onClick={() => onRequestDeleteIdea(idea)} className="whmi-btn-ghost !p-1.5 shrink-0" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
                   </div>
-                  <button onClick={() => onRequestDeleteIdea(idea)} className="whmi-btn-ghost !p-1.5 shrink-0" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
-                </div>
-              ))}
-              {ideas.length === 0 && <div className="text-[12px]" style={{ color: "var(--text-faint)" }}>No ideas yet — add one above, or share the staff submission link.</div>}
-            </div>
-          </>
-        )}
-      </div>
+                ))}
+                {catIdeas.length === 0 && <div className="text-[12px]" style={{ color: "var(--text-faint)" }}>No ideas in this section yet.</div>}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

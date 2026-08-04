@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { Search, ArrowUp, ArrowDown, Plus } from "lucide-react";
+import { Search, ArrowUp, ArrowDown, Plus, ChevronDown, ChevronRight, Shield } from "lucide-react";
 import StaffQuickStats from "../components/StaffQuickStats";
+import CharacterAvatar from "../components/CharacterAvatar";
 
 const SORT_OPTIONS = [
   { id: "name", label: "Name" },
@@ -15,10 +16,15 @@ export const blankStaff = () => ({
   qualifiedYear: null, hoursLast3Years: null, eventsThisYear: null, lastAttended: null, attendedEventIds: [],
 });
 
-export default function StaffDirectory({ openStaff, staffDirectory, canManage, externalParticipants = [], certificates = [] }) {
+export default function StaffDirectory({ openStaff, staffDirectory, canManage, externalParticipants = [], certificates = [], users = [] }) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [desc, setDesc] = useState(false);
+  const [adminsExpanded, setAdminsExpanded] = useState(true);
+  const adminOwnerUsers = useMemo(
+    () => users.filter(u => !u.isTest && (u.role === "admin" || u.role === "owner")).sort((a, b) => (a.name || "").localeCompare(b.name || "")),
+    [users]
+  );
   const filtered = useMemo(() => {
     const list = staffDirectory.filter(s => s.name.toLowerCase().includes(q.toLowerCase()));
     list.sort((a, b) => {
@@ -70,6 +76,32 @@ export default function StaffDirectory({ openStaff, staffDirectory, canManage, e
           </button>
         ))}
       </div>
+
+      {canManage && adminOwnerUsers.length > 0 && (
+        <div className="whmi-card p-4">
+          <button onClick={() => setAdminsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              {adminsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <Shield size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Admins &amp; Owners</div>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{adminOwnerUsers.length}</span>
+          </button>
+          {adminsExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+              {adminOwnerUsers.map(u => (
+                <div key={u.id} className="flex items-center gap-3 p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
+                  <CharacterAvatar avatarId={u.avatarId} color={u.avatarColor} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-[12.5px] truncate">{u.name}</div>
+                    <div className="text-[10.5px] truncate" style={{ color: "var(--text-faint)" }}>{u.email}</div>
+                  </div>
+                  <span className="whmi-badge shrink-0" style={{ background: "var(--surface)", color: "var(--text-dim)", textTransform: "capitalize" }}>{u.role}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {canManage && externalParticipants.length > 0 && (
         <div>

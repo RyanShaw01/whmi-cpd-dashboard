@@ -308,7 +308,7 @@ export async function deleteCpdType(id) {
 /* ---------------------------------------------------------------------- */
 /* brainstorm ideas (admin/owner shared idea list + public submissions)   */
 /* ---------------------------------------------------------------------- */
-const brainstormIdeaFromRow = (r) => ({ id: r.id, content: r.content, addedByName: r.added_by_name, source: r.source || "admin", createdAt: r.created_at });
+const brainstormIdeaFromRow = (r) => ({ id: r.id, content: r.content, category: r.category || "other", addedByName: r.added_by_name, source: r.source || "admin", createdAt: r.created_at });
 
 export async function fetchBrainstormIdeas() {
   if (!supabaseConfigured) return [];
@@ -318,7 +318,7 @@ export async function fetchBrainstormIdeas() {
 }
 export async function insertBrainstormIdea(idea) {
   if (!supabaseConfigured) return;
-  const { error } = await supabase.from("brainstorm_ideas").insert({ id: idea.id, content: idea.content, added_by_name: idea.addedByName, source: idea.source || "admin" });
+  const { error } = await supabase.from("brainstorm_ideas").insert({ id: idea.id, content: idea.content, category: idea.category || "other", added_by_name: idea.addedByName, source: idea.source || "admin" });
   if (error) console.error("insertBrainstormIdea", error);
 }
 export async function deleteBrainstormIdea(id) {

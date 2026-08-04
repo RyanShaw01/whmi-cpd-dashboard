@@ -50,7 +50,7 @@ export default function HeaderBar({
                         key={t.id}
                         onClick={() => { onPreviewAs(previewSession?.id === t.id ? null : t); setPreviewMenuOpen(false); }}
                         className="w-full flex items-center gap-2 p-2 rounded-lg text-left whmi-row-hover"
-                        style={{ background: previewSession?.id === t.id ? "var(--surface-2)" : "transparent" }}
+                        style={previewSession?.id === t.id ? { background: "var(--surface-2)" } : undefined}
                       >
                         <CharacterAvatar avatarId={t.avatarId} color={t.avatarColor} size={24} />
                         <div className="min-w-0 flex-1">
@@ -84,7 +84,7 @@ export default function HeaderBar({
             {dark ? <Sun size={15} /> : <Moon size={15} />}
           </button>
         )}
-        <button data-tour="header-profile" onClick={onAvatarClick} title="Your profile" className="flex items-center gap-1.5">
+        <button data-tour="header-profile" onClick={onAvatarClick} title="Your profile" className="flex items-center gap-1.5 whmi-row-hover rounded-full p-1 -m-1">
           <span className="text-[10px] font-semibold hidden sm:inline" style={{ color: "var(--text-faint)" }}>
             {user.userType === "external" ? "External" : user.role === "admin" ? "Admin" : user.role === "owner" ? "Owner" : "Viewer"}
           </span>

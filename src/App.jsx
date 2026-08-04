@@ -574,8 +574,8 @@ export default function App() {
     showToast("CPD type deleted.");
   });
 
-  const handleAddBrainstormIdea = (content) => {
-    const idea = { id: "idea" + Date.now(), content, addedByName: session?.name || "Unknown", source: "admin" };
+  const handleAddBrainstormIdea = (content, category) => {
+    const idea = { id: "idea" + Date.now(), content, category, addedByName: session?.name || "Unknown", source: "admin", createdAt: new Date().toISOString() };
     setBrainstormIdeas(prev => [idea, ...prev]);
     insertBrainstormIdea(idea);
     pushAudit({ actorId: session?.id, action: "brainstorm_idea.created", entityType: "brainstorm_idea", entityId: idea.id, details: { content } });
@@ -585,8 +585,8 @@ export default function App() {
     deleteBrainstormIdea(idea.id);
     pushAudit({ actorId: session?.id, action: "brainstorm_idea.deleted", entityType: "brainstorm_idea", entityId: idea.id, details: { content: idea.content } });
   });
-  const handlePublicBrainstormSubmit = (content, submitterName) => {
-    const idea = { id: "idea" + Date.now(), content, addedByName: submitterName || "Anonymous", source: "public" };
+  const handlePublicBrainstormSubmit = (content, submitterName, category) => {
+    const idea = { id: "idea" + Date.now(), content, category, addedByName: submitterName || "Anonymous", source: "public", createdAt: new Date().toISOString() };
     insertBrainstormIdea(idea);
   };
 
@@ -863,7 +863,7 @@ export default function App() {
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
             {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} />}
             {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} />}
-            {page === "staff" && <StaffDirectory openStaff={openStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} />}
+            {page === "staff" && <StaffDirectory openStaff={openStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} />}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} />}
             {page === "certificates" && (
               <Certificates

@@ -3,7 +3,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 export default function Sidebar({ page, setPage, collapsed, setCollapsed, navItems, homePage, width, badgePages = {} }) {
   return (
     <div className="whmi-sidebar shrink-0 flex flex-col h-screen sticky top-0" style={{ width }}>
-      <button onClick={() => setPage(homePage)} className="flex flex-col items-center gap-1 px-3 py-4 w-full" style={{ borderBottom: "1px solid var(--border)" }} title="Go to home">
+      <button onClick={() => setPage(homePage)} className="flex flex-col items-center gap-1 px-3 py-4 w-full whmi-row-hover" style={{ borderBottom: "1px solid var(--border)" }} title="Go to home">
         {collapsed
           ? <div className="whmi-logo-icon" style={{ width: 28, height: 16 }} />
           : (
