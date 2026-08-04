@@ -16,6 +16,7 @@ import PublicEventPage from "./pages/PublicEventPage";
 import ReflectionPage from "./pages/ReflectionPage";
 import Brainstorming from "./pages/Brainstorming";
 import BrainstormSubmitPage from "./pages/BrainstormSubmitPage";
+import SuggestIdeaModal from "./components/SuggestIdeaModal";
 import Onboarding from "./pages/Onboarding";
 import Sidebar from "./components/Sidebar";
 import HeaderBar from "./components/HeaderBar";
@@ -69,6 +70,7 @@ export default function App() {
   const [avatarIcons, setAvatarIcons] = useState([]);
   const [avatarColors, setAvatarColors] = useState([]);
   const [brainstormIdeas, setBrainstormIdeas] = useState([]);
+  const [suggestIdeaOpen, setSuggestIdeaOpen] = useState(false);
   const [auditLog, setAuditLog] = useState([]);
   // Writes to the DB and optimistically prepends locally so the Dashboard's Recent Activity
   // feed reflects actions immediately, without waiting for a reload.
@@ -260,7 +262,19 @@ export default function App() {
     setStaffDirectory(prev => [...prev, staffRec]);
     updateUser(u.id, { staffId: staffRec.id });
     pushAudit({ actorId: session?.id, action: "staff.created", entityType: "staff", entityId: staffRec.id, details: { name: staffRec.name } });
-    return staffRec.id;
+    return staffRec;
+  };
+  // Lets an admin/owner tile in the Staff Directory open the same stats modal as any other
+  // staff member — auto-creating and linking their staff record on first click if they don't
+  // have one yet, so "check admin/owner stats like other staff" works without a separate flow.
+  const handleOpenAdminStaff = (u) => {
+    if (u.staffId) {
+      const rec = staffDirectory.find(s => s.id === u.staffId);
+      if (rec) { openStaff(rec); return; }
+    }
+    const rec = autoLinkStaffFor(u);
+    setUsers(prev => prev.map(x => x.id === u.id ? { ...x, staffId: rec.id } : x));
+    openStaff(rec);
   };
   const handleUsersChange = (newList) => {
     const prevById = new Map(users.map(u => [u.id, u]));
@@ -278,7 +292,7 @@ export default function App() {
         });
       }
       if (["admin", "owner"].includes(u.role) && !u.staffId) {
-        return { ...u, staffId: autoLinkStaffFor(u) };
+        return { ...u, staffId: autoLinkStaffFor(u).id };
       }
       return u;
     });
@@ -289,7 +303,7 @@ export default function App() {
     if (unlinked.length === 0) return;
     setUsers(prev => prev.map(u => {
       const needsLink = unlinked.some(x => x.id === u.id);
-      return needsLink ? { ...u, staffId: autoLinkStaffFor(u) } : u;
+      return needsLink ? { ...u, staffId: autoLinkStaffFor(u).id } : u;
     }));
   };
   const requestSaveUserContact = (user, patch) => requestConfirm({
@@ -398,7 +412,7 @@ export default function App() {
     setPreviousEvents(prev => prev.map(e => e.id === event.id ? { ...e, bannerFocalX, bannerFocalY, bannerZoom } : e));
     setSelectedEvent(ev => ev && ev.id === event.id ? { ...ev, bannerFocalX, bannerFocalY, bannerZoom } : ev);
     setSelectedArchiveEvent(ev => ev && ev.id === event.id ? { ...ev, bannerFocalX, bannerFocalY, bannerZoom } : ev);
-    updateEvent(event.id, patched);
+    updateEvent(event.id, patched).then(ok => { if (!ok) showToast("Couldn't save the banner position — please try again."); });
   };
   const handleRemoveBanner = (event) => {
     const file = eventBannerFile(files, event.id);
@@ -409,7 +423,7 @@ export default function App() {
   const handleUpdateEvent = (payload) => {
     setEvents(prev => prev.map(e => e.id === payload.id ? payload : e));
     setSelectedEvent(payload);
-    updateEvent(payload.id, payload);
+    updateEvent(payload.id, payload).then(ok => { if (!ok) showToast("Couldn't save changes — please try again."); });
     pushAudit({ actorId: session?.id, action: "event.updated", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
   // Previous events live in a separate fetched array from `events`; updating that one
@@ -417,7 +431,7 @@ export default function App() {
   const handleUpdatePreviousEvent = (payload) => {
     setPreviousEvents(prev => prev.map(e => e.id === payload.id ? { ...e, ...payload } : e));
     setSelectedArchiveEvent(ev => ev ? { ...ev, ...payload } : ev);
-    updateEvent(payload.id, payload);
+    updateEvent(payload.id, payload).then(ok => { if (!ok) showToast("Couldn't save changes — please try again."); });
     pushAudit({ actorId: session?.id, action: "event.updated", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
 
@@ -588,6 +602,14 @@ export default function App() {
   const handlePublicBrainstormSubmit = (content, submitterName, category) => {
     const idea = { id: "idea" + Date.now(), content, category, addedByName: submitterName || "Anonymous", source: "public", createdAt: new Date().toISOString() };
     insertBrainstormIdea(idea);
+  };
+  // Any signed-in user (not just admin/owner) can suggest an idea from the Dashboard or the
+  // bottom of Upcoming Events — it's tagged with their real name but inserted the same way as a
+  // public submission, since only admin/owner can read the shared brainstorm list back (RLS).
+  const handleMemberBrainstormSubmit = (content, category) => {
+    const idea = { id: "idea" + Date.now(), content, category, addedByName: session?.name || "Someone", source: "member" };
+    insertBrainstormIdea(idea);
+    showToast("Thanks — your idea has been added!");
   };
 
   // Test accounts exist purely for admin/owner "preview as" — no real Supabase Auth
@@ -852,18 +874,19 @@ export default function App() {
                 onCreateCertificate={() => { changePage("certificates"); setCreateCertificateOpen(true); }}
                 onAddStaff={() => { changePage("staff"); setSelectedStaff(blankStaff()); }}
                 onAddEvent={() => { changePage("upcoming"); setCreateEventOpen(true); }}
+                onSuggestIdea={() => setSuggestIdeaOpen(true)}
               />
             )}
             {page === "mycpd" && viewSession.userType === "external" && (
-              <ExternalDashboard user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} />
+              <ExternalDashboard user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycpd" && viewSession.userType !== "external" && (
-              <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} />
+              <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
-            {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} />}
+            {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={() => setSuggestIdeaOpen(true)} />}
             {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} />}
-            {page === "staff" && <StaffDirectory openStaff={openStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} />}
+            {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} />}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} />}
             {page === "certificates" && (
               <Certificates
@@ -947,6 +970,13 @@ export default function App() {
           linkableUsers={users.filter(u => ["admin", "owner"].includes(u.role) && !u.staffId)}
         />
         {profileOpen && <ProfileMenu user={session} onClose={() => setProfileOpen(false)} onLogout={handleLogout} onSave={handleProfileSave} showToast={showToast} />}
+        {suggestIdeaOpen && (
+          <SuggestIdeaModal
+            session={session}
+            onClose={() => setSuggestIdeaOpen(false)}
+            onSubmit={(content, category) => handleMemberBrainstormSubmit(content, category)}
+          />
+        )}
         <RegisterEventModal
           open={registerModalOpen} onClose={() => setRegisterModalOpen(false)} session={session} events={eventsWithLiveCounts}
           defaultEventId={registerDefaultEventId} onSubmit={handleSubmitRegistration}

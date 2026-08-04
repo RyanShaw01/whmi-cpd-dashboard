@@ -136,7 +136,7 @@ export default function Settings({
   const testAccounts = users.filter(u => u.isTest);
 
   const [teamSort, setTeamSort] = useState("firstName"); // firstName | lastName | recent
-  const [teamGroupsExpanded, setTeamGroupsExpanded] = useState({ adminOwner: true, internal: true, external: true });
+  const [teamGroupsExpanded, setTeamGroupsExpanded] = useState({ adminOwner: false, internal: false, external: false });
   const toggleTeamGroup = (key) => setTeamGroupsExpanded(s => ({ ...s, [key]: !s[key] }));
   const sortUsers = (list) => {
     const sorted = [...list];

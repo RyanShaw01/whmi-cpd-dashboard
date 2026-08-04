@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { ChevronRight, Download, ClipboardList, MessageSquareText } from "lucide-react";
+import { ChevronRight, Download, ClipboardList, MessageSquareText, Lightbulb } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import { fmtDate, hasEventEnded } from "../lib/helpers";
 
-export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, openEvent, onOpenRegister, onNavigatePage }) {
+export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, openEvent, onOpenRegister, onNavigatePage, onSuggestIdea }) {
   const staff = staffDirectory.find(s => s.id === user.staffId);
   const myCerts = certificates.filter(c => c.staff === user.name);
   const myPastEvents = staff?.attendedEventIds
@@ -63,6 +63,13 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
             </button>
           ))}
         </div>
+        {onSuggestIdea && (
+          <div className="flex justify-center pt-3">
+            <button onClick={onSuggestIdea} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
+              <Lightbulb size={14} />Suggest a CPD idea
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="whmi-card p-5">

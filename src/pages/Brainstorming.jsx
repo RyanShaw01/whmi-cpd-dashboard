@@ -1,15 +1,8 @@
 import { useState } from "react";
-import { Lightbulb, Plus, Trash2, ChevronDown, ChevronRight, QrCode, User, Tag, Presentation, Mic2, MapPin, MoreHorizontal } from "lucide-react";
+import { Lightbulb, Plus, Trash2, ChevronDown, ChevronRight, QrCode, User } from "lucide-react";
 import EventQRCode from "../components/EventQRCode";
 import { relativeTime } from "../lib/helpers";
-
-export const BRAINSTORM_CATEGORIES = [
-  { id: "topic", label: "Topics & CPD Types", icon: Tag },
-  { id: "delivery", label: "Event Delivery Types", icon: Presentation },
-  { id: "presenter", label: "Presenters", icon: Mic2 },
-  { id: "location", label: "Locations", icon: MapPin },
-  { id: "other", label: "Other", icon: MoreHorizontal },
-];
+import { BRAINSTORM_CATEGORIES } from "../lib/brainstormCategories";
 
 export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea }) {
   const [content, setContent] = useState("");
@@ -86,7 +79,8 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
                         <div className="text-[12.5px] break-words">{idea.content}</div>
                         <div className="text-[10.5px] flex items-center gap-1 mt-0.5 flex-wrap" style={{ color: "var(--text-faint)" }}>
                           <User size={10} />{idea.addedByName}
-                          {idea.source === "public" && <span className="whmi-badge" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Staff submission</span>}
+                          {idea.source === "public" && <span className="whmi-badge" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Public link submission</span>}
+                          {idea.source === "member" && <span className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>Team suggestion</span>}
                           <span>· {relativeTime(idea.createdAt)}</span>
                         </div>
                       </div>

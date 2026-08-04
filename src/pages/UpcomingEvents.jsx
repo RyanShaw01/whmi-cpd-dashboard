@@ -4,7 +4,7 @@ import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl } from "../lib/helpers";
 
-export default function UpcomingEvents({ events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files, onGoBrainstorm }) {
+export default function UpcomingEvents({ events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea }) {
   const [filter, setFilter] = useState("All");
   const statuses = ["All", "Registration Open", "Draft", "Awaiting Approval"];
   const filtered = filter === "All" ? events : events.filter(e => e.status === filter);
@@ -127,11 +127,18 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
         })}
       </div>
 
-      {canManage && onGoBrainstorm && (
-        <div className="flex justify-center pt-2">
-          <button onClick={onGoBrainstorm} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
-            <Lightbulb size={14} />Have an idea for a future CPD event? Go to Brainstorming →
-          </button>
+      {(onSuggestIdea || (canManage && onGoBrainstorm)) && (
+        <div className="flex justify-center items-center gap-2 pt-2 flex-wrap">
+          {onSuggestIdea && (
+            <button onClick={onSuggestIdea} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
+              <Lightbulb size={14} />Suggest a CPD idea
+            </button>
+          )}
+          {canManage && onGoBrainstorm && (
+            <button onClick={onGoBrainstorm} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
+              <Lightbulb size={14} />Go to Brainstorming →
+            </button>
+          )}
         </div>
       )}
     </div>

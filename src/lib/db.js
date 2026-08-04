@@ -258,9 +258,14 @@ export async function insertEvent(event) {
   if (error) console.error("insertEvent", error);
 }
 export async function updateEvent(id, event) {
-  if (!supabaseConfigured) return;
-  const { error } = await supabase.from("events").update({ ...eventToRow(event), updated_at: new Date().toISOString() }).eq("id", id);
-  if (error) console.error("updateEvent", error);
+  if (!supabaseConfigured) return true;
+  const { data, error } = await supabase.from("events").update({ ...eventToRow(event), updated_at: new Date().toISOString() }).eq("id", id).select("id");
+  if (error) { console.error("updateEvent", error); return false; }
+  // RLS silently drops the row instead of erroring when the USING clause excludes it — an
+  // empty `data` array here means the write matched nothing, which looks identical to success
+  // unless we check for it explicitly.
+  if (!data || data.length === 0) { console.error("updateEvent: no row matched/updated (RLS?)", id); return false; }
+  return true;
 }
 export async function deleteEvent(id) {
   if (!supabaseConfigured) return;

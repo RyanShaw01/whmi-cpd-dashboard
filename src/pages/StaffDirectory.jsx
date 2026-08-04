@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, ArrowUp, ArrowDown, Plus, ChevronDown, ChevronRight, Shield } from "lucide-react";
+import { Search, ArrowUp, ArrowDown, Plus, Shield } from "lucide-react";
 import StaffQuickStats from "../components/StaffQuickStats";
 import CharacterAvatar from "../components/CharacterAvatar";
 
@@ -16,17 +16,27 @@ export const blankStaff = () => ({
   qualifiedYear: null, hoursLast3Years: null, eventsThisYear: null, lastAttended: null, attendedEventIds: [],
 });
 
-export default function StaffDirectory({ openStaff, staffDirectory, canManage, externalParticipants = [], certificates = [], users = [] }) {
+export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirectory, canManage, externalParticipants = [], certificates = [], users = [] }) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [desc, setDesc] = useState(false);
-  const [adminsExpanded, setAdminsExpanded] = useState(true);
-  const adminOwnerUsers = useMemo(
-    () => users.filter(u => !u.isTest && (u.role === "admin" || u.role === "owner")).sort((a, b) => (a.name || "").localeCompare(b.name || "")),
-    [users]
-  );
+
+  // Admins/owners already linked to a staff record just appear naturally via staffDirectory;
+  // only unlinked ones need a synthetic tile so every admin/owner shows up in the one combined list.
+  const unlinkedAdminOwnerUsers = useMemo(() => {
+    const linkedStaffIds = new Set(staffDirectory.map(s => s.id));
+    return users
+      .filter(u => !u.isTest && (u.role === "admin" || u.role === "owner") && (!u.staffId || !linkedStaffIds.has(u.staffId)))
+      .map(u => ({
+        id: `admin-${u.id}`, name: u.name, profession: u.role === "admin" ? "Admin" : "Owner", campuses: [],
+        hours: 0, attended: 0, certificates: 0, isUnlinkedAdmin: true, user: u,
+      }));
+  }, [users, staffDirectory]);
+
+  const combined = useMemo(() => [...staffDirectory, ...unlinkedAdminOwnerUsers], [staffDirectory, unlinkedAdminOwnerUsers]);
+
   const filtered = useMemo(() => {
-    const list = staffDirectory.filter(s => s.name.toLowerCase().includes(q.toLowerCase()));
+    const list = combined.filter(s => s.name.toLowerCase().includes(q.toLowerCase()));
     list.sort((a, b) => {
       const av = sortBy === "name" ? a.name : a[sortBy];
       const bv = sortBy === "name" ? b.name : b[sortBy];
@@ -34,14 +44,15 @@ export default function StaffDirectory({ openStaff, staffDirectory, canManage, e
       return desc ? (bv ?? 0) - (av ?? 0) : (av ?? 0) - (bv ?? 0);
     });
     return list;
-  }, [staffDirectory, q, sortBy, desc]);
+  }, [combined, q, sortBy, desc]);
   const manualCertRecipients = certificates.filter(c => c.isManual);
+  const openStaffTile = (s) => s.isUnlinkedAdmin ? onOpenAdminStaff(s.user) : openStaff(s);
   return (
     <div className="whmi-fade-in p-6 max-w-[1400px] mx-auto space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="disp text-[22px] font-extrabold">Staff Directory</h1>
-          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>{staffDirectory.length} staff members across WHMI campuses.</p>
+          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>{combined.length} staff members across WHMI campuses.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="whmi-input flex items-center gap-2 px-3 py-2 w-56">
@@ -64,44 +75,25 @@ export default function StaffDirectory({ openStaff, staffDirectory, canManage, e
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map(s => (
-          <button key={s.id} onClick={() => openStaff(s)} className="whmi-card p-4 text-left whmi-row-hover transition flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
-              {s.name.split(" ").map(n => n[0]).join("")}
-            </div>
+          <button key={s.id} onClick={() => openStaffTile(s)} className="whmi-card p-4 text-left whmi-row-hover transition flex items-center gap-3">
+            {s.isUnlinkedAdmin ? (
+              <CharacterAvatar avatarId={s.user.avatarId} color={s.user.avatarColor} size={44} />
+            ) : (
+              <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
+                {s.name.split(" ").map(n => n[0]).join("")}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
-              <div className="font-semibold text-[13.5px] truncate">{s.name}</div>
-              <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{s.profession} · {s.campuses.join("/")}</div>
+              <div className="font-semibold text-[13.5px] truncate flex items-center gap-1.5">
+                {s.name}
+                {s.isUnlinkedAdmin && <Shield size={12} style={{ color: "var(--accent-primary)" }} title={s.profession} />}
+              </div>
+              <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{s.profession}{s.campuses.length > 0 ? ` · ${s.campuses.join("/")}` : ""}</div>
               <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{s.hours} CPD hrs · {s.certificates} certificates</div>
             </div>
           </button>
         ))}
       </div>
-
-      {canManage && adminOwnerUsers.length > 0 && (
-        <div className="whmi-card p-4">
-          <button onClick={() => setAdminsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              {adminsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
-              <Shield size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Admins &amp; Owners</div>
-            </div>
-            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{adminOwnerUsers.length}</span>
-          </button>
-          {adminsExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-              {adminOwnerUsers.map(u => (
-                <div key={u.id} className="flex items-center gap-3 p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
-                  <CharacterAvatar avatarId={u.avatarId} color={u.avatarColor} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-[12.5px] truncate">{u.name}</div>
-                    <div className="text-[10.5px] truncate" style={{ color: "var(--text-faint)" }}>{u.email}</div>
-                  </div>
-                  <span className="whmi-badge shrink-0" style={{ background: "var(--surface)", color: "var(--text-dim)", textTransform: "capitalize" }}>{u.role}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {canManage && externalParticipants.length > 0 && (
         <div>
@@ -125,7 +117,7 @@ export default function StaffDirectory({ openStaff, staffDirectory, canManage, e
 
       {canManage && manualCertRecipients.length > 0 && (
         <div>
-          <h2 className="disp text-[16px] font-bold mb-3">Certificate Recipients</h2>
+          <h2 className="disp text-[16px] font-bold mb-3">External Certificate Recipients</h2>
           <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>People without an account who've been issued a certificate directly.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {manualCertRecipients.map(c => (

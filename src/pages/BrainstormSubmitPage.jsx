@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Lightbulb, CheckCircle2 } from "lucide-react";
-import { BRAINSTORM_CATEGORIES } from "./Brainstorming";
+import { BRAINSTORM_CATEGORIES } from "../lib/brainstormCategories";
 
 export default function BrainstormSubmitPage({ session, onSubmit }) {
   const [name, setName] = useState(session?.name || "");

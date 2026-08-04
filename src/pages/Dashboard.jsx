@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import {
   Clock, ClipboardList, Award, TrendingUp, ChevronRight, MapPin,
-  Calendar, UserPlus, Download, Link2, MessageSquareText,
+  Calendar, UserPlus, Download, Link2, MessageSquareText, Lightbulb,
 } from "lucide-react";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
@@ -40,7 +40,7 @@ function groupActivity(auditLog, users) {
   });
 }
 
-export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent }) {
+export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onSuggestIdea }) {
   // Re-render every minute so countdowns (and join-meeting availability) stay fresh.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -226,9 +226,32 @@ export default function Dashboard({ events, previousEvents, registrations, refle
             </button>
           ))}
         </div>
+        {onSuggestIdea && (
+          <button onClick={onSuggestIdea} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px] mt-3">
+            <Lightbulb size={14} />Suggest a CPD idea
+          </button>
+        )}
       </div>
 
-      {layoutOrder.filter(id => sections[id]).map(id => sections[id])}
+      {(() => {
+        const visible = layoutOrder.filter(id => sections[id]);
+        const pairCharts = visible.includes("hoursChart") && visible.includes("modeChart");
+        const rendered = new Set();
+        return visible.map(id => {
+          if (rendered.has(id)) return null;
+          if (pairCharts && (id === "hoursChart" || id === "modeChart")) {
+            rendered.add("hoursChart");
+            rendered.add("modeChart");
+            return (
+              <div key="charts-row" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2">{sections.hoursChart}</div>
+                <div className="md:col-span-1">{sections.modeChart}</div>
+              </div>
+            );
+          }
+          return sections[id];
+        });
+      })()}
     </div>
   );
 }

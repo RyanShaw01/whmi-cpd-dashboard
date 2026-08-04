@@ -1,4 +1,4 @@
-import { Clock, Award, ChevronRight, Download, Video, ClipboardList, Link2 } from "lucide-react";
+import { Clock, Award, ChevronRight, Download, Video, ClipboardList, Link2, Lightbulb } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTime12h } from "../lib/helpers";
@@ -7,7 +7,7 @@ import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTime12h } from 
 // (past + upcoming, recordings, certificates) plus a "Browse & Register" section covering
 // every event admins have opted into external visibility (events.open_to_external) — unlike
 // the internal viewer catalog, this is deliberately scoped to only externally-open events.
-export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, reflections, openEvent, onOpenRegister, onNavigatePage }) {
+export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, reflections, openEvent, onOpenRegister, onNavigatePage, onSuggestIdea }) {
   const myRegisteredEventIds = new Set((registrations || []).filter(r => r.userId === user.id).map(r => r.eventId));
   const myUpcoming = events.filter(e => myRegisteredEventIds.has(e.id));
   const myPast = previousEvents.filter(e => myRegisteredEventIds.has(e.id));
@@ -88,6 +88,13 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
           ))}
           {browsableEvents.length === 0 && <div className="text-[12.5px]" style={{ color: "var(--text-faint)" }}>No externally-open events available right now.</div>}
         </div>
+        {onSuggestIdea && (
+          <div className="flex justify-center pt-3">
+            <button onClick={onSuggestIdea} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
+              <Lightbulb size={14} />Suggest a CPD idea
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="whmi-card p-5">

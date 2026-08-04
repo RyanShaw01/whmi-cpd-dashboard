@@ -85,8 +85,11 @@ export default function HeaderBar({
           </button>
         )}
         <button data-tour="header-profile" onClick={onAvatarClick} title="Your profile" className="flex items-center gap-1.5 whmi-row-hover rounded-full p-1 -m-1">
-          <span className="text-[10px] font-semibold hidden sm:inline" style={{ color: "var(--text-faint)" }}>
-            {user.userType === "external" ? "External" : user.role === "admin" ? "Admin" : user.role === "owner" ? "Owner" : "Viewer"}
+          <span className="hidden sm:flex flex-col items-end leading-tight">
+            <span className="text-[11.5px] font-semibold truncate max-w-[140px]">{user.name}</span>
+            <span className="text-[10px] font-semibold" style={{ color: "var(--text-faint)" }}>
+              {user.userType === "external" ? "External" : user.role === "admin" ? "Admin" : user.role === "owner" ? "Owner" : "Viewer"}
+            </span>
           </span>
           <CharacterAvatar avatarId={user.avatarId} color={user.avatarColor} size={32} />
         </button>
