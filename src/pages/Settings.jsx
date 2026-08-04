@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Sun, Moon, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload } from "lucide-react";
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
+import AddMemberModal from "../components/AddMemberModal";
 import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS } from "../data/mockData";
 import { relativeTime, ACTION_LABELS } from "../lib/helpers";
 
@@ -20,9 +21,7 @@ export default function Settings({
 }) {
   const [toggles, setToggles] = useState({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: true });
   const [devMode, setDevMode] = useState(false);
-  const [inviteName, setInviteName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("viewer");
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [profileName, setProfileName] = useState(session?.name || "");
   const [profileAvatarId, setProfileAvatarId] = useState(session?.avatarId || CHARACTERS[0].id);
   const [profileAvatarColor, setProfileAvatarColor] = useState(session?.avatarColor || "blue");
@@ -200,17 +199,17 @@ export default function Settings({
     onLayoutChange(newOrder);
   };
 
-  const addUser = () => {
-    if (!inviteName.trim() || !inviteEmail.trim()) return;
+  const handleAddMember = ({ firstName, lastName, userType, isEducationTeam, email, secondaryEmail }) => {
     const brandColors = Object.keys(BRAND_HEX);
-    const isWh = inviteEmail.trim().toLowerCase().endsWith("@wh.org.au");
+    const role = isEducationTeam ? "owner" : "viewer";
+    const name = `${firstName} ${lastName}`.trim();
     const newUser = {
-      id: "u" + Date.now(), name: inviteName.trim(), email: inviteEmail.trim(), role: inviteRole, staffId: null,
+      id: "u" + Date.now(), name, email, secondaryEmail: secondaryEmail || null, role, staffId: null,
       avatarId: CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)].id, avatarColor: brandColors[Math.floor(Math.random() * brandColors.length)],
-      userType: isWh ? "internal" : "external", verified: isWh, onboarded: false,
+      userType, verified: userType === "internal", onboarded: false,
     };
     onUsersChange([...users, newUser]);
-    setInviteName(""); setInviteEmail("");
+    showToast(`${name} added${role === "owner" ? " as Owner" : ""}.`);
   };
 
   const patchUser = (id, patch) => onUsersChange(users.map(x => x.id === id ? { ...x, ...patch } : x));
@@ -476,15 +475,8 @@ export default function Settings({
               )}
             </div>
           ))}
-          <div className="flex gap-1.5 flex-wrap">
-            <input placeholder="Name" value={inviteName} onChange={e => setInviteName(e.target.value)} className="whmi-input px-2.5 py-1.5 flex-1 min-w-[100px]" />
-            <input placeholder="Email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="whmi-input px-2.5 py-1.5 flex-1 min-w-[140px]" />
-            <select value={inviteRole} onChange={e => setInviteRole(e.target.value)} className="whmi-input px-2 py-1.5">
-              <option value="viewer">Viewer</option>
-              <option value="owner">Owner</option>
-              <option value="admin">Admin</option>
-            </select>
-            <button onClick={addUser} className="whmi-btn-primary flex items-center gap-1.5"><UserPlus size={13} />Add</button>
+          <div className="flex justify-end">
+            <button onClick={() => setAddMemberOpen(true)} className="whmi-btn-primary flex items-center gap-1.5"><UserPlus size={13} />Add Member</button>
           </div>
         </div>
       )}
@@ -844,6 +836,8 @@ export default function Settings({
         <div className="font-semibold text-[13px] mb-1">Role</div>
         <div className="text-[12.5px] capitalize" style={{ color: "var(--text-dim)" }}>{role} · {role === "admin" ? "Full access to all functions" : role === "owner" ? "Full access except code-level changes" : "Can view own certificates and CPD only"}</div>
       </div>
+
+      <AddMemberModal open={addMemberOpen} onClose={() => setAddMemberOpen(false)} onAdd={handleAddMember} />
     </div>
   );
 }
