@@ -11,7 +11,8 @@ import InfoTooltip from "./InfoTooltip";
 import EventForm from "./EventForm";
 import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
-import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, splitPeopleList } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, splitPeopleList, eventCpdHours } from "../lib/helpers";
+import { previewCertificateTemplate } from "../lib/db";
 
 const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
 
@@ -39,7 +40,18 @@ export default function EventDetailModal({
   const [regTab, setRegTab] = useState("overview");
   const [editing, setEditing] = useState(false);
   const [meetingUrlDraft, setMeetingUrlDraft] = useState("");
+  const [previewingTemplate, setPreviewingTemplate] = useState(false);
   if (!event) return null;
+
+  const previewTemplate = async () => {
+    setPreviewingTemplate(true);
+    const result = await previewCertificateTemplate({
+      sessionName: event.title, date: event.date, cpdHours: eventCpdHours(event.start, event.end) || 1, cpdTypeId: event.cpdTypeId,
+    });
+    setPreviewingTemplate(false);
+    if (!result.ok) { alert("Couldn't generate the preview. Please try again."); return; }
+    window.open(URL.createObjectURL(result.blob), "_blank");
+  };
   const joinable = event.meetingUrl && canJoinMeeting(event.date, event.start, event.end);
   const bannerUrl = eventBannerUrl(files, event.id);
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
@@ -234,7 +246,7 @@ export default function EventDetailModal({
                 <AlertCircle size={14} className="shrink-0" />Certificate approval mode: <strong style={{ color: "var(--text)" }}>Manual approval</strong>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <button className="whmi-btn-ghost flex items-center gap-1.5"><Eye size={14} />Preview Template</button>
+                <button onClick={previewTemplate} disabled={previewingTemplate} className="whmi-btn-ghost flex items-center gap-1.5"><Eye size={14} />{previewingTemplate ? "Generating…" : "Preview Template"}</button>
                 <button className="whmi-btn-ghost flex items-center gap-1.5"><Send size={14} />Send Reflection Requests</button>
               </div>
             </div>

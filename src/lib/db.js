@@ -565,6 +565,17 @@ export async function createManualCertificate({ name, email, sessionName, date, 
   return { ok: true, ...data };
 }
 
+// Renders the certificate template with sample data (no real certificate created, nothing
+// emailed) so an admin can preview what an attendee's certificate will look like.
+export async function previewCertificateTemplate({ sessionName, date, cpdHours, cpdTypeId }) {
+  if (!supabaseConfigured) return { ok: false };
+  const { data, error } = await supabase.functions.invoke("preview-certificate-template", {
+    body: { sessionName, date, cpdHours, cpdTypeId },
+  });
+  if (error) { console.error("previewCertificateTemplate", error); return { ok: false }; }
+  return { ok: true, blob: data instanceof Blob ? data : new Blob([data], { type: "application/pdf" }) };
+}
+
 export async function sendReflectionReminder({ name, email, eventId, eventTitle }) {
   if (!supabaseConfigured) return { ok: false };
   const { data, error } = await supabase.functions.invoke("send-reflection-reminder", {
