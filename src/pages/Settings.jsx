@@ -3,7 +3,7 @@ import { Sun, Moon, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save,
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
-import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS } from "../data/mockData";
+import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS, STAFF_FIELD_DEFS } from "../data/mockData";
 import { relativeTime, ACTION_LABELS } from "../lib/helpers";
 
 const CPD_CATEGORIES = [
@@ -18,10 +18,12 @@ export default function Settings({
   tags = [], onSaveTag, onDeleteTag, onReorderTags, onBackfillStaffLinks, auditLog = [],
   avatarIcons = [], onSaveAvatarIcon, onDeleteAvatarIcon, onReorderAvatarIcons, onUploadAvatarIconImage,
   avatarColors = [], onSaveAvatarColor, onDeleteAvatarColor, onReorderAvatarColors,
+  staffFieldVisibility = {}, onToggleStaffField,
 }) {
   const [toggles, setToggles] = useState({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: true });
   const [devMode, setDevMode] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [staffFieldsExpanded, setStaffFieldsExpanded] = useState(false);
   const [profileName, setProfileName] = useState(session?.name || "");
   const [profileAvatarId, setProfileAvatarId] = useState(session?.avatarId || CHARACTERS[0].id);
   const [profileAvatarColor, setProfileAvatarColor] = useState(session?.avatarColor || "blue");
@@ -584,6 +586,35 @@ export default function Settings({
                     </div>
                   </div>
                 )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {canManageUsers && (
+        <div className="whmi-card p-4">
+          <button onClick={() => setStaffFieldsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              {staffFieldsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <UserCircle2 size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Staff Information Fields</div>
+            </div>
+          </button>
+          {staffFieldsExpanded && (
+            <>
+              <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Choose which fields show on staff records across the Staff Directory. Name is always shown.</div>
+              <div className="space-y-1.5">
+                {STAFF_FIELD_DEFS.map(f => {
+                  const visible = staffFieldVisibility[f.id] !== false;
+                  return (
+                    <div key={f.id} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
+                      <span className="text-[12.5px] font-semibold">{f.label}</span>
+                      <button type="button" onClick={() => onToggleStaffField?.(f.id, !visible)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: visible ? "var(--accent-success)" : "var(--surface)", border: "1px solid var(--border)" }}>
+                        <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: visible ? "20px" : "3px", width: 18, height: 18 }} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}

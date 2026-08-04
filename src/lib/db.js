@@ -332,6 +332,20 @@ export async function deleteBrainstormIdea(id) {
   if (error) console.error("deleteBrainstormIdea", error);
 }
 /* ---------------------------------------------------------------------- */
+/* app_settings (generic admin/owner-configurable key/value store)        */
+/* ---------------------------------------------------------------------- */
+export async function fetchAppSetting(key) {
+  if (!supabaseConfigured) return null;
+  const { data, error } = await supabase.from("app_settings").select("value").eq("key", key).maybeSingle();
+  if (error) { console.error("fetchAppSetting", error); return null; }
+  return data?.value ?? null;
+}
+export async function upsertAppSetting(key, value) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("app_settings").upsert({ key, value, updated_at: new Date().toISOString() });
+  if (error) console.error("upsertAppSetting", error);
+}
+/* ---------------------------------------------------------------------- */
 /* tags (admin-managed event topics)                                      */
 /* ---------------------------------------------------------------------- */
 const tagFromRow = (r) => ({ id: r.id, name: r.name, sortOrder: r.sort_order });

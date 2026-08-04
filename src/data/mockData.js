@@ -71,6 +71,26 @@ export const LOCATION_OPTIONS = ["Footscray Hospital", "Sunshine Hospital", "Wil
 export const MODALITY_OPTIONS = ["General XR", "CT", "MRI", "Ultrasound", "Mammography", "Nuclear Medicine", "Angiography"];
 export const GRADE_OPTIONS = ["Student", "Grade 1", "Grade 2", "Senior", "Clinical Educator", "Manager"];
 
+// Which staff-record fields show in the Staff Directory / staff modal. Admins/owners can
+// toggle any of these (except name/email, which are never optional) in Settings; off by
+// default for the three least commonly used ones.
+export const STAFF_FIELD_DEFS = [
+  { id: "profession", label: "Profession" },
+  { id: "department", label: "Department" },
+  { id: "campuses", label: "Campuses" },
+  { id: "modality", label: "Modality" },
+  { id: "grade", label: "Grade" },
+  { id: "qualifiedYear", label: "Qualified Year" },
+  { id: "hoursLast3Years", label: "CPD Hours (Past 3 Years)" },
+  { id: "eventsThisYear", label: "Events This Year" },
+  { id: "lastAttended", label: "Last Attended Event" },
+  { id: "hours", label: "Total CPD Hours" },
+  { id: "attended", label: "Total Events Attended" },
+  { id: "certificates", label: "Certificates" },
+];
+const OFF_BY_DEFAULT = new Set(["modality", "grade", "qualifiedYear"]);
+export const DEFAULT_STAFF_FIELD_VISIBILITY = Object.fromEntries(STAFF_FIELD_DEFS.map(f => [f.id, !OFF_BY_DEFAULT.has(f.id)]));
+
 export const STAFF_SEED = [
   { id: "s1", name: "Amir Hossain", profession: "Radiographer", campuses: ["SH"], department: "Medical Imaging", hours: 18.5, attended: 9, certificates: 8, modality: "General XR", grade: "Grade 2", qualifiedYear: 2019, attendedEventIds: ["p1", "p3"], hoursLast3Years: 15, eventsThisYear: 4, lastAttended: daysFromNow(-14) },
   { id: "s2", name: "Leah Biffin", profession: "MRI Radiographer", campuses: ["FH"], department: "Medical Imaging", hours: 14, attended: 6, certificates: 6, modality: "MRI", grade: "Senior", qualifiedYear: 2014, attendedEventIds: ["p1", "p4"], hoursLast3Years: 9, eventsThisYear: 2, lastAttended: daysFromNow(-14) },

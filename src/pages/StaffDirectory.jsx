@@ -16,7 +16,7 @@ export const blankStaff = () => ({
   qualifiedYear: null, hoursLast3Years: null, eventsThisYear: null, lastAttended: null, attendedEventIds: [],
 });
 
-export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirectory: rawStaffDirectory, canManage, externalParticipants = [], certificates = [], users = [] }) {
+export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirectory: rawStaffDirectory, canManage, externalParticipants = [], certificates = [], users = [], fieldVisibility = {} }) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [desc, setDesc] = useState(false);
@@ -132,8 +132,15 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
                     {s.name}
                     {s.isUnlinkedAdmin && <Shield size={12} style={{ color: "var(--accent-primary)" }} title={s.profession} />}
                   </div>
-                  <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{s.profession}{s.campuses.length > 0 ? ` · ${s.campuses.join("/")}` : ""}</div>
-                  <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{s.hours} CPD hrs · {s.certificates} certificates</div>
+                  <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>
+                    {fieldVisibility.profession !== false ? s.profession : ""}
+                    {fieldVisibility.campuses !== false && s.campuses.length > 0 ? ` · ${s.campuses.join("/")}` : ""}
+                  </div>
+                  <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
+                    {fieldVisibility.hours !== false ? `${s.hours} CPD hrs` : ""}
+                    {fieldVisibility.hours !== false && fieldVisibility.certificates !== false ? " · " : ""}
+                    {fieldVisibility.certificates !== false ? `${s.certificates} certificates` : ""}
+                  </div>
                 </div>
               </button>
             ))}

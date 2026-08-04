@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Save, Download, Trash2 } from "lucide-react";
 import { CAMPUS_OPTIONS, MODALITY_OPTIONS, GRADE_OPTIONS } from "../data/mockData";
 
-export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, onRequestDelete, linkableUsers = [] }) {
+export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, onRequestDelete, linkableUsers = [], fieldVisibility = {} }) {
   const isNew = !!staff?.isNew;
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(staff);
@@ -15,6 +15,8 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
   // or `form.name`/`form.campuses` below throw and take down the whole tree (blank screen).
   if (!staff || !form) return null;
 
+  const show = (id) => fieldVisibility[id] !== false;
+
   const toggleCampus = (code) => setForm(f => ({ ...f, campuses: f.campuses.includes(code) ? f.campuses.filter(c => c !== code) : [...f.campuses, code] }));
 
   const handleLinkUser = (userId) => {
@@ -25,7 +27,7 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
 
   const save = () => {
     if (isNew) {
-      if (!form.name.trim() || !form.profession.trim()) return;
+      if (!form.name.trim() || (show("profession") && !form.profession.trim())) return;
       onCreate({ ...form, id: "s" + Date.now() }, linkedUserId || null);
     } else {
       onSave(form);
@@ -42,7 +44,7 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-[15px] break-words">{isNew ? "New Staff Member" : staff.name}</div>
-            <div className="text-[12px]" style={{ color: "var(--text-dim)" }}>{isNew ? "Add a record" : staff.profession}</div>
+            <div className="text-[12px]" style={{ color: "var(--text-dim)" }}>{isNew ? "Add a record" : (show("profession") ? staff.profession : "")}</div>
           </div>
           <button onClick={onClose} className="whmi-btn-ghost !p-2 shrink-0"><X size={14} /></button>
         </div>
@@ -57,11 +59,11 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
           </div>
         )}
 
-        {!isNew && (
+        {!isNew && (show("hours") || show("attended") || show("certificates")) && (
           <div className="p-5 grid grid-cols-3 gap-3">
-            <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.hours}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>CPD Hours</div></div>
-            <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.attended}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Attended</div></div>
-            <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.certificates}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Certificates</div></div>
+            {show("hours") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.hours}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>CPD Hours</div></div>}
+            {show("attended") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.attended}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Attended</div></div>}
+            {show("certificates") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.certificates}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Certificates</div></div>}
           </div>
         )}
 
@@ -73,10 +75,13 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
 
           {!editing ? (
             <div className="space-y-2 text-[12.5px]">
-              <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Qualified</span><span>{staff.qualifiedYear || "—"}</span></div>
-              <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Modality</span><span>{staff.modality}</span></div>
-              <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Grade</span><span>{staff.grade}</span></div>
-              <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Campuses</span><span>{staff.campuses.join(", ")}</span></div>
+              {show("qualifiedYear") && <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Qualified</span><span>{staff.qualifiedYear || "—"}</span></div>}
+              {show("modality") && <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Modality</span><span>{staff.modality}</span></div>}
+              {show("grade") && <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Grade</span><span>{staff.grade}</span></div>}
+              {show("department") && <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Department</span><span>{staff.department || "—"}</span></div>}
+              {show("campuses") && <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Campuses</span><span>{staff.campuses.join(", ") || "—"}</span></div>}
+              {show("hoursLast3Years") && <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>CPD Hours (Past 3 Years)</span><span>{staff.hoursLast3Years ?? "—"}</span></div>}
+              {show("eventsThisYear") && <div className="flex justify-between"><span style={{ color: "var(--text-faint)" }}>Events This Year</span><span>{staff.eventsThisYear ?? "—"}</span></div>}
             </div>
           ) : (
             <div className="space-y-2.5">
@@ -86,72 +91,54 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
                     <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Name</label>
                     <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} disabled={!!linkedUserId} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
                   </div>
-                  <div>
-                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Profession</label>
-                    <input required value={form.profession} onChange={e => setForm(f => ({ ...f, profession: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Department</label>
-                    <input value={form.department || ""} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  {show("profession") && (
                     <div>
-                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>CPD Hours</label>
-                      <input type="number" min="0" value={form.hours} onChange={e => setForm(f => ({ ...f, hours: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Profession</label>
+                      <input required value={form.profession} onChange={e => setForm(f => ({ ...f, profession: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
                     </div>
+                  )}
+                  {show("department") && (
                     <div>
-                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Attended</label>
-                      <input type="number" min="0" value={form.attended} onChange={e => setForm(f => ({ ...f, attended: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Department</label>
+                      <input value={form.department || ""} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
                     </div>
-                    <div>
-                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Certificates</label>
-                      <input type="number" min="0" value={form.certificates} onChange={e => setForm(f => ({ ...f, certificates: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
-                    </div>
-                  </div>
+                  )}
                 </>
               )}
-              {!isNew && (
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>CPD Hours</label>
-                    <input type="number" min="0" value={form.hours} onChange={e => setForm(f => ({ ...f, hours: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Attended</label>
-                    <input type="number" min="0" value={form.attended} onChange={e => setForm(f => ({ ...f, attended: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Certificates</label>
-                    <input type="number" min="0" value={form.certificates} onChange={e => setForm(f => ({ ...f, certificates: Number(e.target.value) || 0 }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+              {show("qualifiedYear") && (
+                <div>
+                  <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Qualified Year</label>
+                  <input type="number" value={form.qualifiedYear || ""} onChange={e => setForm(f => ({ ...f, qualifiedYear: e.target.value ? Number(e.target.value) : null }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
+                </div>
+              )}
+              {show("modality") && (
+                <div>
+                  <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Modality</label>
+                  <select value={form.modality} onChange={e => setForm(f => ({ ...f, modality: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1">
+                    {MODALITY_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              )}
+              {show("grade") && (
+                <div>
+                  <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Grade</label>
+                  <select value={form.grade} onChange={e => setForm(f => ({ ...f, grade: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1">
+                    {GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+              )}
+              {show("campuses") && (
+                <div>
+                  <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Campuses</label>
+                  <div className="flex gap-1.5 flex-wrap mt-1">
+                    {CAMPUS_OPTIONS.map(c => (
+                      <button key={c.code} type="button" onClick={() => toggleCampus(c.code)} className="whmi-badge" style={{ background: form.campuses.includes(c.code) ? "var(--accent-primary)" : "var(--surface-2)", color: form.campuses.includes(c.code) ? "white" : "var(--text-dim)" }}>
+                        {c.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
-              <div>
-                <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Qualified Year</label>
-                <input type="number" value={form.qualifiedYear || ""} onChange={e => setForm(f => ({ ...f, qualifiedYear: e.target.value ? Number(e.target.value) : null }))} className="whmi-input w-full px-2.5 py-1.5 mt-1" />
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Modality</label>
-                <select value={form.modality} onChange={e => setForm(f => ({ ...f, modality: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1">
-                  {MODALITY_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Grade</label>
-                <select value={form.grade} onChange={e => setForm(f => ({ ...f, grade: e.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1">
-                  {GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Campuses</label>
-                <div className="flex gap-1.5 flex-wrap mt-1">
-                  {CAMPUS_OPTIONS.map(c => (
-                    <button key={c.code} type="button" onClick={() => toggleCampus(c.code)} className="whmi-badge" style={{ background: form.campuses.includes(c.code) ? "var(--accent-primary)" : "var(--surface-2)", color: form.campuses.includes(c.code) ? "white" : "var(--text-dim)" }}>
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
               <div className="flex gap-2 pt-1">
                 <button onClick={save} className="whmi-btn-primary flex-1 flex items-center justify-center gap-1.5"><Save size={13} />{isNew ? "Add Staff" : "Save"}</button>
                 <button onClick={() => { if (isNew) { onClose(); } else { setForm(staff); setEditing(false); } }} className="whmi-btn-ghost flex-1">Cancel</button>

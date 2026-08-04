@@ -30,7 +30,7 @@ import Toast from "./components/Toast";
 import RegisterEventModal from "./components/RegisterEventModal";
 import EventFormModal from "./components/EventFormModal";
 import CreateCertificateModal from "./components/CreateCertificateModal";
-import { BRAND_HEX, CHARACTERS, NAV_FULL, NAV_VIEWER, DEFAULT_LAYOUT } from "./data/mockData";
+import { BRAND_HEX, CHARACTERS, NAV_FULL, NAV_VIEWER, DEFAULT_LAYOUT, DEFAULT_STAFF_FIELD_VISIBILITY } from "./data/mockData";
 import { TOUR_STEPS } from "./data/tourSteps";
 import { loadPersonal, savePersonal } from "./lib/storage";
 import { buildNotificationGroups } from "./lib/notifications";
@@ -48,6 +48,7 @@ import {
   fetchAvatarIcons, insertAvatarIcon, updateAvatarIcon, deleteAvatarIcon, uploadAvatarIconImage,
   fetchAvatarColors, insertAvatarColor, updateAvatarColor, deleteAvatarColor,
   fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea,
+  fetchAppSetting, upsertAppSetting,
 } from "./lib/db";
 import { setAvatarIcons as setRegistryIcons, setAvatarColors as setRegistryColors } from "./lib/avatarRegistry";
 
@@ -70,6 +71,7 @@ export default function App() {
   const [avatarIcons, setAvatarIcons] = useState([]);
   const [avatarColors, setAvatarColors] = useState([]);
   const [brainstormIdeas, setBrainstormIdeas] = useState([]);
+  const [staffFieldVisibility, setStaffFieldVisibility] = useState(DEFAULT_STAFF_FIELD_VISIBILITY);
   const [suggestIdeaOpen, setSuggestIdeaOpen] = useState(false);
   const [auditLog, setAuditLog] = useState([]);
   // Writes to the DB and optimistically prepends locally so the Dashboard's Recent Activity
@@ -173,10 +175,12 @@ export default function App() {
     const [
       userList, staffList, eventList, prevEventList, certList, regList, externalList, reflectionList, fileList,
       dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList, avatarIconList, avatarColorList, brainstormIdeaList,
+      staffFieldVisibilitySetting,
     ] = await Promise.all([
       fetchUsers(), fetchStaff(), fetchEvents(), fetchPreviousEvents(), fetchCertificates(), fetchRegistrations(), fetchExternalParticipants(),
       fetchReflections(), fetchAllFiles(), fetchDismissedPairs("registration"), fetchDismissedPairs("reflection"), fetchCpdTypes(), fetchTags(),
       fetchAuditLog(50), fetchAvatarIcons(), fetchAvatarColors(), fetchBrainstormIdeas(),
+      fetchAppSetting("staff_field_visibility"),
     ]);
     setAvatarIcons(avatarIconList);
     setAvatarColors(avatarColorList);
@@ -197,12 +201,13 @@ export default function App() {
     setTags(tagList);
     setAuditLog(auditLogList);
     setBrainstormIdeas(brainstormIdeaList);
+    setStaffFieldVisibility({ ...DEFAULT_STAFF_FIELD_VISIBILITY, ...(staffFieldVisibilitySetting || {}) });
   };
 
   const clearAppData = () => {
     setUsers([]); setStaffDirectory([]); setEvents([]); setPreviousEvents([]); setCertificates([]);
     setRegistrations([]); setExternalParticipants([]); setReflections([]); setFiles([]); setCpdTypes([]); setTags([]); setAuditLog([]);
-    setAvatarIcons([]); setAvatarColors([]); setBrainstormIdeas([]);
+    setAvatarIcons([]); setAvatarColors([]); setBrainstormIdeas([]); setStaffFieldVisibility(DEFAULT_STAFF_FIELD_VISIBILITY);
     setDismissedRegistrationPairs(new Set()); setDismissedReflectionPairs(new Set());
   };
 
@@ -618,6 +623,12 @@ export default function App() {
     showToast("CPD type deleted.");
   });
 
+  const handleToggleStaffField = (fieldId, visible) => {
+    const next = { ...staffFieldVisibility, [fieldId]: visible };
+    setStaffFieldVisibility(next);
+    upsertAppSetting("staff_field_visibility", next);
+  };
+
   const handleAddBrainstormIdea = (content, category) => {
     const idea = { id: "idea" + Date.now(), content, category, addedByName: session?.name || "Unknown", source: "admin", createdAt: new Date().toISOString() };
     setBrainstormIdeas(prev => [idea, ...prev]);
@@ -960,7 +971,7 @@ export default function App() {
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
             {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={canManage ? undefined : () => setSuggestIdeaOpen(true)} />}
             {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} />}
-            {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} />}
+            {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility} />}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} />}
             {page === "certificates" && (
               <Certificates
@@ -994,6 +1005,7 @@ export default function App() {
                 onReorderAvatarColors={handleReorderAvatarColors}
                 previewSession={previewSession} onPreviewAs={setPreviewSession} onCreateTestAccount={handleCreateTestAccount}
                 onSaveUserContact={requestSaveUserContact}
+                staffFieldVisibility={staffFieldVisibility} onToggleStaffField={handleToggleStaffField}
               />
             )}
             </div>
@@ -1043,6 +1055,7 @@ export default function App() {
         <StaffModal
           staff={selectedStaff} onClose={() => setSelectedStaff(null)} canEdit={canManage} onSave={handleStaffSave} onCreate={handleStaffCreate} onRequestDelete={requestDeleteStaff}
           linkableUsers={users.filter(u => ["admin", "owner"].includes(u.role) && !u.staffId)}
+          fieldVisibility={staffFieldVisibility}
         />
         {profileOpen && <ProfileMenu user={session} onClose={() => setProfileOpen(false)} onLogout={handleLogout} onSave={handleProfileSave} showToast={showToast} />}
         {suggestIdeaOpen && (

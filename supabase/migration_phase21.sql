@@ -4,10 +4,23 @@
 --     names everywhere they're selected/displayed. This converts any existing
 --     stored short codes to match.
 --   - events.level (optional floor/level, shown alongside room number)
+--   - app_settings: generic admin/owner-configurable key/value store, first used
+--     for which staff-record fields are shown (Settings > Staff Information Fields)
 -- Run in Supabase SQL Editor (Dashboard > SQL Editor > New query), once.
 -- ============================================================
 
 alter table public.events add column if not exists level text;
+
+create table if not exists public.app_settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.app_settings enable row level security;
+drop policy if exists "read: any signed-in user" on public.app_settings;
+create policy "read: any signed-in user" on public.app_settings for select using (auth.uid() is not null);
+drop policy if exists "write: admin or owner" on public.app_settings;
+create policy "write: admin or owner" on public.app_settings for all using (is_admin_or_owner()) with check (is_admin_or_owner());
 
 -- STAFF.CAMPUSES (text[]) -----------------------------------------------------
 update public.staff
