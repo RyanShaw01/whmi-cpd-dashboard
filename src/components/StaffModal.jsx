@@ -8,7 +8,12 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
   const [form, setForm] = useState(staff);
   const [linkedUserId, setLinkedUserId] = useState("");
   useEffect(() => { setForm(staff); setEditing(isNew); setLinkedUserId(""); }, [staff]);
-  if (!staff) return null;
+  // `form` is seeded from `staff` at mount time and only resynced by the effect above, which
+  // runs AFTER this render commits. Since StaffModal stays mounted with staff=null until the
+  // first click, the very first open of any session hits a render where `staff` is already the
+  // clicked record but `form` is still the stale null from mount — guard both, not just `staff`,
+  // or `form.name`/`form.campuses` below throw and take down the whole tree (blank screen).
+  if (!staff || !form) return null;
 
   const toggleCampus = (code) => setForm(f => ({ ...f, campuses: f.campuses.includes(code) ? f.campuses.filter(c => c !== code) : [...f.campuses, code] }));
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Lightbulb, Plus, X, QrCode, User } from "lucide-react";
+import { Lightbulb, Plus, X, QrCode, User, ChevronDown, ChevronRight } from "lucide-react";
 import EventQRCode from "../components/EventQRCode";
 import { relativeTime } from "../lib/helpers";
 import { BRAINSTORM_CATEGORIES } from "../lib/brainstormCategories";

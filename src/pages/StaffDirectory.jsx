@@ -23,6 +23,7 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [staffExpanded, setStaffExpanded] = useState(false);
   const [externalsExpanded, setExternalsExpanded] = useState(false);
+  const [recipientsExpanded, setRecipientsExpanded] = useState(false);
 
   // Admins/owners already linked to a staff record just appear naturally via staffDirectory;
   // only unlinked ones need a synthetic tile so every admin/owner shows up in the one combined list.
@@ -55,7 +56,9 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="disp text-[22px] font-extrabold">Staff Directory</h1>
-          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>{combined.length} staff members.</p>
+          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>
+            {combined.length} staff members{manualCertRecipients.length > 0 ? `, ${manualCertRecipients.length} external recipient${manualCertRecipients.length === 1 ? "" : "s"}` : ""}.
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="whmi-input flex items-center gap-2 px-3 py-2 w-56">
@@ -95,52 +98,60 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
           <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{filtered.length}</span>
         </button>
         {staffExpanded && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
-              {filtered.map(s => (
-                <button key={s.id} onClick={() => openStaffTile(s)} className="whmi-card p-4 text-left whmi-row-hover transition flex items-center gap-3">
-                  {s.isUnlinkedAdmin ? (
-                    <CharacterAvatar avatarId={s.user.avatarId} color={s.user.avatarColor} size={44} />
-                  ) : (
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
-                      {s.name.split(" ").map(n => n[0]).join("")}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-[13.5px] truncate flex items-center gap-1.5">
-                      {s.name}
-                      {s.isUnlinkedAdmin && <Shield size={12} style={{ color: "var(--accent-primary)" }} title={s.profession} />}
-                    </div>
-                    <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{s.profession}{s.campuses.length > 0 ? ` · ${s.campuses.join("/")}` : ""}</div>
-                    <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{s.hours} CPD hrs · {s.certificates} certificates</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
+            {filtered.map(s => (
+              <button key={s.id} onClick={() => openStaffTile(s)} className="whmi-card p-4 text-left whmi-row-hover transition flex items-center gap-3">
+                {s.isUnlinkedAdmin ? (
+                  <CharacterAvatar avatarId={s.user.avatarId} color={s.user.avatarColor} size={44} />
+                ) : (
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
+                    {s.name.split(" ").map(n => n[0]).join("")}
                   </div>
-                </button>
-              ))}
-            </div>
-
-            {canManage && manualCertRecipients.length > 0 && (
-              <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-                <div className="font-semibold text-[12.5px] mb-1">External Certificate Recipients</div>
-                <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>People without an account who've been issued a certificate directly.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {manualCertRecipients.map(c => (
-                    <div key={c.id} className="whmi-card p-4 flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
-                        {c.staff.split(" ").map(n => n[0]).join("")}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-[13.5px] truncate">{c.staff}</div>
-                        <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{c.recipientEmail}</div>
-                        <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{c.event}</div>
-                      </div>
-                    </div>
-                  ))}
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-[13.5px] truncate flex items-center gap-1.5">
+                    {s.name}
+                    {s.isUnlinkedAdmin && <Shield size={12} style={{ color: "var(--accent-primary)" }} title={s.profession} />}
+                  </div>
+                  <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{s.profession}{s.campuses.length > 0 ? ` · ${s.campuses.join("/")}` : ""}</div>
+                  <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{s.hours} CPD hrs · {s.certificates} certificates</div>
                 </div>
-              </div>
-            )}
-          </>
+              </button>
+            ))}
+          </div>
         )}
       </div>
+
+      {canManage && manualCertRecipients.length > 0 && (
+        <div className="whmi-card p-4">
+          <button onClick={() => setRecipientsExpanded(x => !x)} className="w-full flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {recipientsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <div className="disp text-[13px] font-semibold">External Certificate Recipients</div>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{manualCertRecipients.length}</span>
+          </button>
+          {recipientsExpanded && (
+            <>
+              <p className="text-[11.5px] mt-2 mb-3" style={{ color: "var(--text-faint)" }}>People without an account who've been issued a certificate directly.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {manualCertRecipients.map(c => (
+                  <div key={c.id} className="whmi-card p-4 flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
+                      {c.staff.split(" ").map(n => n[0]).join("")}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-[13.5px] truncate">{c.staff}</div>
+                      <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{c.recipientEmail}</div>
+                      <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{c.event}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {canManage && externalParticipants.length > 0 && (
         <div className="whmi-card p-4">
