@@ -455,6 +455,12 @@ export default function App() {
     setSelectedEvent(null);
     pushAudit({ actorId: session?.id, action: "event.deleted", entityType: "event", entityId: ev.id, details: { title: ev.title } });
   });
+  const requestDeletePreviousEvent = (ev) => requestDelete(`the past event "${ev.title}"`, () => {
+    setPreviousEvents(prev => prev.filter(e => e.id !== ev.id));
+    deleteEventRow(ev.id);
+    setSelectedArchiveEvent(null);
+    pushAudit({ actorId: session?.id, action: "event.deleted", entityType: "event", entityId: ev.id, details: { title: ev.title } });
+  });
   const requestDeleteCertificate = (c) => requestDelete(`the certificate for "${c.staff}"`, () => {
     setCertificates(prev => prev.filter(x => x.id !== c.id));
     deleteCertificateRow(c.id);
@@ -603,13 +609,14 @@ export default function App() {
     const idea = { id: "idea" + Date.now(), content, category, addedByName: submitterName || "Anonymous", source: "public", createdAt: new Date().toISOString() };
     insertBrainstormIdea(idea);
   };
-  // Any signed-in user (not just admin/owner) can suggest an idea from the Dashboard or the
-  // bottom of Upcoming Events — it's tagged with their real name but inserted the same way as a
-  // public submission, since only admin/owner can read the shared brainstorm list back (RLS).
-  const handleMemberBrainstormSubmit = (content, category) => {
-    const idea = { id: "idea" + Date.now(), content, category, addedByName: session?.name || "Someone", source: "member" };
-    insertBrainstormIdea(idea);
-    showToast("Thanks — your idea has been added!");
+  // Any signed-in user (not just admin/owner) can suggest one or more ideas at once from the
+  // Dashboard or the bottom of Upcoming Events — tagged with their real name but inserted the
+  // same way as a public submission, since only admin/owner can read the shared list back (RLS).
+  const handleMemberBrainstormSubmit = (ideas) => {
+    ideas.forEach((idea, i) => {
+      insertBrainstormIdea({ id: `idea${Date.now()}${i}`, content: idea.content, category: idea.category, addedByName: session?.name || "Someone", source: "member" });
+    });
+    showToast(ideas.length > 1 ? `Thanks — your ${ideas.length} ideas have been added!` : "Thanks — your idea has been added!");
   };
 
   // Test accounts exist purely for admin/owner "preview as" — no real Supabase Auth
@@ -821,6 +828,49 @@ export default function App() {
   const openArchiveEvent = (ev) => setSelectedArchiveEvent(ev);
   const openStaff = (s) => setSelectedStaff(s);
 
+  // Recent Activity rows are clickable — jump to whatever record the audit entry refers to.
+  // There's no stored before/after diff, so "see what changed" means opening the record at its
+  // current state rather than a literal field-by-field highlight.
+  const navigateToEntity = (entry) => {
+    const { entityType, entityId } = entry;
+    if (!entityId) return;
+    if (entityType === "event") {
+      const ev = events.find(e => e.id === entityId);
+      if (ev) { openEvent(ev); return; }
+      const prevEv = previousEvents.find(e => e.id === entityId);
+      if (prevEv) { openArchiveEvent(prevEv); return; }
+      showToast("That event no longer exists.");
+      return;
+    }
+    if (entityType === "staff") {
+      const rec = staffDirectory.find(s => s.id === entityId);
+      if (rec) { openStaff(rec); return; }
+      showToast("That staff record no longer exists.");
+      return;
+    }
+    if (entityType === "registration") {
+      const reg = registrations.find(r => r.id === entityId);
+      const ev = reg && (events.find(e => e.id === reg.eventId) || previousEvents.find(e => e.id === reg.eventId));
+      if (ev) { events.includes(ev) ? openEvent(ev) : openArchiveEvent(ev); return; }
+      showToast("That registration's event no longer exists.");
+      return;
+    }
+    if (entityType === "certificate") {
+      changePage("certificates");
+      setHighlightId(entityId);
+      return;
+    }
+    if (entityType === "brainstorm_idea") {
+      changePage("brainstorm");
+      return;
+    }
+    if (["user", "tag", "cpd_type", "avatar_icon", "avatar_color"].includes(entityType)) {
+      changePage("settings");
+      return;
+    }
+    showToast("Nothing to open for this activity.");
+  };
+
   let mainContent;
   if (!ready) {
     mainContent = (
@@ -874,7 +924,7 @@ export default function App() {
                 onCreateCertificate={() => { changePage("certificates"); setCreateCertificateOpen(true); }}
                 onAddStaff={() => { changePage("staff"); setSelectedStaff(blankStaff()); }}
                 onAddEvent={() => { changePage("upcoming"); setCreateEventOpen(true); }}
-                onSuggestIdea={() => setSuggestIdeaOpen(true)}
+                onActivityClick={navigateToEntity}
               />
             )}
             {page === "mycpd" && viewSession.userType === "external" && (
@@ -884,8 +934,8 @@ export default function App() {
               <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
-            {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={() => setSuggestIdeaOpen(true)} />}
-            {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} />}
+            {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={canManage ? undefined : () => setSuggestIdeaOpen(true)} />}
+            {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} />}
             {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} />}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} />}
             {page === "certificates" && (
@@ -943,6 +993,7 @@ export default function App() {
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}
           certificates={certificates} reflections={reflections} session={session} onEdit={handleUpdatePreviousEvent}
+          canManage={canManage} onRequestDelete={requestDeletePreviousEvent}
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}
           onDeleteReflection={requestDeleteReflection}
           onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField}
@@ -974,7 +1025,7 @@ export default function App() {
           <SuggestIdeaModal
             session={session}
             onClose={() => setSuggestIdeaOpen(false)}
-            onSubmit={(content, category) => handleMemberBrainstormSubmit(content, category)}
+            onSubmit={handleMemberBrainstormSubmit}
           />
         )}
         <RegisterEventModal

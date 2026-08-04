@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import {
   Clock, ClipboardList, Award, TrendingUp, ChevronRight, MapPin,
-  Calendar, UserPlus, Download, Link2, MessageSquareText, Lightbulb,
+  Calendar, UserPlus, Download, Link2, MessageSquareText, UserCircle2,
 } from "lucide-react";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
@@ -29,18 +29,20 @@ function groupActivity(auditLog, users) {
       last.count += 1;
       last.latest = entry.createdAt;
     } else {
-      groups.push({ actorId: entry.actorId, action: entry.action, count: 1, latest: entry.createdAt });
+      // auditLog is newest-first, so the entry that starts a new group is also the most recent
+      // one affected by it — that's what a click on a merged "(3 times)" row will jump to.
+      groups.push({ actorId: entry.actorId, action: entry.action, count: 1, latest: entry.createdAt, entityType: entry.entityType, entityId: entry.entityId });
     }
   }
   return groups.map(g => {
     const actor = users.find(u => u.id === g.actorId);
     const label = ACTION_LABELS[g.action] || g.action;
     const text = g.count > 1 ? `${actor?.name || "Someone"} ${label} (${g.count} times)` : `${actor?.name || "Someone"} ${label}`;
-    return { key: `${g.actorId}-${g.action}-${g.latest}`, text, time: relativeTime(g.latest) };
+    return { key: `${g.actorId}-${g.action}-${g.latest}`, text, time: relativeTime(g.latest), entityType: g.entityType, entityId: g.entityId };
   });
 }
 
-export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onSuggestIdea }) {
+export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onActivityClick }) {
   // Re-render every minute so countdowns (and join-meeting availability) stay fresh.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -99,24 +101,24 @@ export default function Dashboard({ events, previousEvents, registrations, refle
                     />
                   </div>
                 )}
-                <div className="w-full flex items-center gap-4">
+                <div className="w-full flex items-start gap-4">
                   <div className="w-14 h-14 rounded-lg shrink-0 flex flex-col items-center justify-center" style={{ background: primaryHex }}>
                     <span className="text-white text-[10px] font-bold uppercase">{fmtDate(ev.date).split(" ")[2]}</span>
                     <span className="text-white text-[16px] font-extrabold leading-none">{fmtDate(ev.date).split(" ")[1]}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-[13.5px] break-words">{ev.title}</div>
-                    <div className="flex items-center gap-3 mt-1 text-[11.5px] flex-wrap" style={{ color: "var(--text-dim)" }}>
-                      <span className="flex items-center gap-1"><Clock size={11} />{fmtTimeRange12h(ev.start, ev.end)}</span>
-                      <span className="flex items-center gap-1"><MapPin size={11} />{ev.location.split(",")[0]}</span>
-                      <span>{ev.presenter}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-semibold text-[13.5px] break-words">{ev.title}</div>
+                      <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />
                     </div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
+                      <span className="flex items-center gap-1"><Clock size={11} className="shrink-0" />{fmtTimeRange12h(ev.start, ev.end)}</span>
+                      <span className="flex items-center gap-1"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.location.split(",")[0]}</span></span>
+                      <span className="flex items-center gap-1"><UserCircle2 size={11} className="shrink-0" /><span className="truncate">{ev.presenter}</span></span>
+                      <span className="flex items-center gap-1 font-bold whitespace-nowrap">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span>
+                    </div>
+                    <div className="mt-1.5"><StatusBadge status={ev.status} /></div>
                   </div>
-                  <div className="flex flex-col items-end gap-1.5 shrink-0 hidden sm:flex">
-                    <div className="text-[12px] font-bold whitespace-nowrap">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</div>
-                    <StatusBadge status={ev.status} />
-                  </div>
-                  <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />
                 </div>
               </button>
             );
@@ -128,15 +130,19 @@ export default function Dashboard({ events, previousEvents, registrations, refle
       <div key="activity" className="whmi-card p-5">
         <h2 className="disp text-[15px] font-bold mb-4">Recent Activity</h2>
         <div className="space-y-4">
-          {groupActivity(auditLog, users).slice(0, 8).map(a => (
-            <div key={a.key} className="flex gap-3">
-              <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: primaryHex }} />
-              <div className="min-w-0">
-                <div className="text-[12.5px] leading-snug break-words">{a.text}</div>
-                <div className="text-[11px] mt-0.5" style={{ color: "var(--text-faint)" }}>{a.time}</div>
-              </div>
-            </div>
-          ))}
+          {groupActivity(auditLog, users).slice(0, 8).map(a => {
+            const clickable = !!(onActivityClick && a.entityId);
+            const Row = clickable ? "button" : "div";
+            return (
+              <Row key={a.key} onClick={clickable ? () => onActivityClick(a) : undefined} className={`flex gap-3 w-full text-left${clickable ? " whmi-row-hover rounded-lg -m-1 p-1 transition" : ""}`}>
+                <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: primaryHex }} />
+                <div className="min-w-0">
+                  <div className="text-[12.5px] leading-snug break-words">{a.text}</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: "var(--text-faint)" }}>{a.time}</div>
+                </div>
+              </Row>
+            );
+          })}
           {auditLog.length === 0 && <div className="text-[12.5px]" style={{ color: "var(--text-faint)" }}>No activity recorded yet.</div>}
         </div>
       </div>
@@ -226,11 +232,6 @@ export default function Dashboard({ events, previousEvents, registrations, refle
             </button>
           ))}
         </div>
-        {onSuggestIdea && (
-          <button onClick={onSuggestIdea} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px] mt-3">
-            <Lightbulb size={14} />Suggest a CPD idea
-          </button>
-        )}
       </div>
 
       {(() => {

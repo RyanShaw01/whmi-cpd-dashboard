@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, ArrowUp, ArrowDown, Plus, Shield } from "lucide-react";
+import { Search, ArrowUp, ArrowDown, Plus, Shield, ChevronDown, ChevronRight, BarChart3, Users } from "lucide-react";
 import StaffQuickStats from "../components/StaffQuickStats";
 import CharacterAvatar from "../components/CharacterAvatar";
 
@@ -20,6 +20,9 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [desc, setDesc] = useState(false);
+  const [statsExpanded, setStatsExpanded] = useState(false);
+  const [staffExpanded, setStaffExpanded] = useState(false);
+  const [externalsExpanded, setExternalsExpanded] = useState(false);
 
   // Admins/owners already linked to a staff record just appear naturally via staffDirectory;
   // only unlinked ones need a synthetic tile so every admin/owner shows up in the one combined list.
@@ -71,34 +74,62 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
         </div>
       </div>
 
-      {canManage && <StaffQuickStats staffDirectory={staffDirectory} />}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(s => (
-          <button key={s.id} onClick={() => openStaffTile(s)} className="whmi-card p-4 text-left whmi-row-hover transition flex items-center gap-3">
-            {s.isUnlinkedAdmin ? (
-              <CharacterAvatar avatarId={s.user.avatarId} color={s.user.avatarColor} size={44} />
-            ) : (
-              <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
-                {s.name.split(" ").map(n => n[0]).join("")}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold text-[13.5px] truncate flex items-center gap-1.5">
-                {s.name}
-                {s.isUnlinkedAdmin && <Shield size={12} style={{ color: "var(--accent-primary)" }} title={s.profession} />}
-              </div>
-              <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{s.profession}{s.campuses.length > 0 ? ` · ${s.campuses.join("/")}` : ""}</div>
-              <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{s.hours} CPD hrs · {s.certificates} certificates</div>
+      {canManage && (
+        <div className="whmi-card p-4">
+          <button onClick={() => setStatsExpanded(x => !x)} className="w-full flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {statsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <BarChart3 size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Quick Stats</div>
             </div>
           </button>
-        ))}
+          {statsExpanded && <div className="mt-3"><StaffQuickStats staffDirectory={staffDirectory} /></div>}
+        </div>
+      )}
+
+      <div className="whmi-card p-4">
+        <button onClick={() => setStaffExpanded(x => !x)} className="w-full flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {staffExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+            <Users size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Staff</div>
+          </div>
+          <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{filtered.length}</span>
+        </button>
+        {staffExpanded && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
+            {filtered.map(s => (
+              <button key={s.id} onClick={() => openStaffTile(s)} className="whmi-card p-4 text-left whmi-row-hover transition flex items-center gap-3">
+                {s.isUnlinkedAdmin ? (
+                  <CharacterAvatar avatarId={s.user.avatarId} color={s.user.avatarColor} size={44} />
+                ) : (
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
+                    {s.name.split(" ").map(n => n[0]).join("")}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-[13.5px] truncate flex items-center gap-1.5">
+                    {s.name}
+                    {s.isUnlinkedAdmin && <Shield size={12} style={{ color: "var(--accent-primary)" }} title={s.profession} />}
+                  </div>
+                  <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{s.profession}{s.campuses.length > 0 ? ` · ${s.campuses.join("/")}` : ""}</div>
+                  <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{s.hours} CPD hrs · {s.certificates} certificates</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {canManage && externalParticipants.length > 0 && (
-        <div>
-          <h2 className="disp text-[16px] font-bold mb-3">External Participants</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="whmi-card p-4">
+          <button onClick={() => setExternalsExpanded(x => !x)} className="w-full flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {externalsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <div className="disp text-[13px] font-semibold">External Participants</div>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{externalParticipants.length}</span>
+          </button>
+          {externalsExpanded && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
             {externalParticipants.map(p => (
               <div key={p.id} className="whmi-card p-4 flex items-center gap-3">
                 <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-success)" }}>
@@ -112,6 +143,7 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 

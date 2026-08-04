@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Table2, CalendarDays, Plus } from "lucide-react";
+import { Table2, CalendarDays, Plus, Trash2 } from "lucide-react";
 import YearCalendar from "../components/YearCalendar";
 import { fmtDate, fmtTimeRange12h } from "../lib/helpers";
 
-export default function PreviousEvents({ previousEvents, onOpenArchive, canManage, onCreatePreviousEvent }) {
+export default function PreviousEvents({ previousEvents, onOpenArchive, canManage, onCreatePreviousEvent, onRequestDelete }) {
   const years = [...new Set(previousEvents.map(ev => new Date(`${ev.date}T00:00:00`).getFullYear()))].sort((a, b) => b - a);
   const currentYear = new Date().getFullYear();
   const [view, setView] = useState("table");
@@ -41,8 +41,8 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
           <table className="w-full text-[13px]">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                {["Event", "Date", "Time", "Location", "Presenter", "Attendance", "Feedback"].map(h => (
-                  <th key={h} className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
+                {["Event", "Date", "Time", "Location", "Presenter", "Attendance", "Feedback", ...(canManage && onRequestDelete ? [""] : [])].map((h, i) => (
+                  <th key={h || `col-${i}`} className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -58,6 +58,13 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
                   <td className="px-4 py-3">
                     <span className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>★ {ev.feedback}</span>
                   </td>
+                  {canManage && onRequestDelete && (
+                    <td className="px-4 py-3">
+                      <button onClick={(e) => { e.stopPropagation(); onRequestDelete(ev); }} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }} title="Delete event">
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

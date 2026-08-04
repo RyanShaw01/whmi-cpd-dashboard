@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Mail, Award } from "lucide-react";
+import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Mail, Award, Trash2 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
 import EventFilesPanel from "./EventFilesPanel";
@@ -17,7 +17,7 @@ function avg(nums) {
 }
 
 export default function PreviousEventDetailModal({
-  event, onClose, registrations, certificates, reflections, session, onEdit,
+  event, onClose, registrations, certificates, reflections, session, onEdit, canManage, onRequestDelete,
   dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair, onDeleteReflection,
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
@@ -106,9 +106,16 @@ export default function PreviousEventDetailModal({
       <div className="whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
         <div className="min-h-[92px] relative flex items-end p-5" style={{ background: "var(--accent-primary)" }}>
           <div className="absolute top-3 right-3 flex items-center gap-2">
-            <button onClick={() => setEditing(true)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Edit event">
-              <Pencil size={13} color="white" />
-            </button>
+            {canManage && (
+              <button onClick={() => setEditing(true)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Edit event">
+                <Pencil size={13} color="white" />
+              </button>
+            )}
+            {canManage && onRequestDelete && (
+              <button onClick={() => onRequestDelete(event)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Delete event">
+                <Trash2 size={13} color="white" />
+              </button>
+            )}
             <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }}>
               <X size={15} color="white" />
             </button>
