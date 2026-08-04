@@ -12,7 +12,7 @@ const CPD_CATEGORIES = [
 
 export default function Settings({
   dark, setDark, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
-  redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType,
+  redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType, onReorderCpdTypes,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
   tags = [], onSaveTag, onDeleteTag, onReorderTags, onBackfillStaffLinks, auditLog = [],
   avatarIcons = [], onSaveAvatarIcon, onDeleteAvatarIcon, onReorderAvatarIcons, onUploadAvatarIconImage,
@@ -58,6 +58,14 @@ export default function Settings({
   const [avatarIconFile, setAvatarIconFile] = useState(null);
   const [avatarIconError, setAvatarIconError] = useState("");
   const [avatarIconUploading, setAvatarIconUploading] = useState(false);
+  const [avatarIconFilePreviewUrl, setAvatarIconFilePreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (!avatarIconFile) { setAvatarIconFilePreviewUrl(null); return; }
+    const url = URL.createObjectURL(avatarIconFile);
+    setAvatarIconFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [avatarIconFile]);
 
   const startAddAvatarIcon = () => { setEditingAvatarIconId("new"); setAvatarIconLabel(""); setAvatarIconScale(55); setAvatarIconFile(null); setAvatarIconError(""); };
   const startEditAvatarIcon = (icon) => { setEditingAvatarIconId(icon.id); setAvatarIconLabel(icon.label); setAvatarIconScale(icon.iconScale); setAvatarIconFile(null); setAvatarIconError(""); };
@@ -116,6 +124,7 @@ export default function Settings({
   };
   const [expandedUserId, setExpandedUserId] = useState(null);
   const [sessionActionStatus, setSessionActionStatus] = useState({});
+  const [cpdTypesExpanded, setCpdTypesExpanded] = useState(false);
   const [editingCpdTypeId, setEditingCpdTypeId] = useState(null); // null | "new" | <id>
   const [cpdTypeName, setCpdTypeName] = useState("");
   const [cpdTypeCode, setCpdTypeCode] = useState("");
@@ -126,6 +135,20 @@ export default function Settings({
   const visibleUsers = users.filter(u => !u.isTest);
   const testAccounts = users.filter(u => u.isTest);
 
+  const [teamSort, setTeamSort] = useState("firstName"); // firstName | lastName | recent
+  const [teamGroupsExpanded, setTeamGroupsExpanded] = useState({ adminOwner: true, internal: true, external: true });
+  const toggleTeamGroup = (key) => setTeamGroupsExpanded(s => ({ ...s, [key]: !s[key] }));
+  const sortUsers = (list) => {
+    const sorted = [...list];
+    if (teamSort === "firstName") sorted.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    else if (teamSort === "lastName") sorted.sort((a, b) => (a.name || "").split(" ").slice(-1)[0].localeCompare((b.name || "").split(" ").slice(-1)[0]));
+    else if (teamSort === "recent") sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    return sorted;
+  };
+  const adminOwnerUsers = sortUsers(visibleUsers.filter(u => u.role === "admin" || u.role === "owner"));
+  const internalViewerUsers = sortUsers(visibleUsers.filter(u => u.role === "viewer" && u.userType !== "external"));
+  const externalViewerUsers = sortUsers(visibleUsers.filter(u => u.role === "viewer" && u.userType === "external"));
+
   const startAddCpdType = () => { setEditingCpdTypeId("new"); setCpdTypeName(""); setCpdTypeCode(""); setCpdTypeCategory(""); setCpdTypeError(""); };
   const startEditCpdType = (t) => { setEditingCpdTypeId(t.id); setCpdTypeName(t.name); setCpdTypeCode(t.appellationCode); setCpdTypeCategory(t.category || ""); setCpdTypeError(""); };
   const cancelCpdTypeEdit = () => { setEditingCpdTypeId(null); setCpdTypeError(""); };
@@ -135,10 +158,20 @@ export default function Settings({
       return;
     }
     const isNew = editingCpdTypeId === "new";
-    const cpdType = { id: isNew ? "cpd" + Date.now() : editingCpdTypeId, name: cpdTypeName.trim(), appellationCode: cpdTypeCode.trim(), category: cpdTypeCategory.trim() };
+    const cpdType = {
+      id: isNew ? "cpd" + Date.now() : editingCpdTypeId, name: cpdTypeName.trim(), appellationCode: cpdTypeCode.trim(), category: cpdTypeCategory.trim(),
+      sortOrder: isNew ? cpdTypes.length : cpdTypes.find(t => t.id === editingCpdTypeId)?.sortOrder ?? 0,
+    };
     onSaveCpdType(cpdType, isNew);
     setEditingCpdTypeId(null);
     setCpdTypeError("");
+  };
+  const moveCpdType = (index, dir) => {
+    const next = [...cpdTypes];
+    const swapWith = index + dir;
+    if (swapWith < 0 || swapWith >= next.length) return;
+    [next[index], next[swapWith]] = [next[swapWith], next[index]];
+    onReorderCpdTypes(next);
   };
 
   useEffect(() => {
@@ -186,6 +219,116 @@ export default function Settings({
     setSessionActionStatus(s => ({ ...s, [u.id]: "working" }));
     const result = await onRevokeSession(u, action);
     setSessionActionStatus(s => ({ ...s, [u.id]: result.ok ? (action === "restore" ? "restored" : "revoked") : "error" }));
+  };
+
+  const renderUserRow = (u) => {
+    const expanded = expandedUserId === u.id;
+    const status = sessionActionStatus[u.id];
+    const banned = status === "revoked";
+    const draft = emailDrafts[u.id] || { email: u.email, secondaryEmail: u.secondaryEmail || "" };
+    const setDraft = (patch) => setEmailDrafts(s => ({ ...s, [u.id]: { ...draft, ...patch } }));
+    const emailDirty = draft.email !== u.email || draft.secondaryEmail !== (u.secondaryEmail || "");
+    const saveContact = () => {
+      const patch = {};
+      if (draft.email !== u.email) patch.email = draft.email;
+      if (draft.secondaryEmail !== (u.secondaryEmail || "")) patch.secondaryEmail = draft.secondaryEmail || null;
+      onSaveUserContact(u, patch);
+      setEmailDrafts(s => { const next = { ...s }; delete next[u.id]; return next; });
+    };
+    return (
+      <div key={u.id} className="rounded-lg overflow-hidden" style={{ background: "var(--surface-2)" }}>
+        <div className="flex items-center justify-between p-2.5 gap-2 flex-wrap">
+          <button onClick={() => setExpandedUserId(expanded ? null : u.id)} className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
+            {expanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" />}
+            <CharacterAvatar avatarId={u.avatarId} color={u.avatarColor} size={28} />
+            <div className="min-w-0">
+              <div className="text-[12.5px] font-semibold truncate flex items-center gap-1">
+                {u.name}
+                {u.userType === "external" && <span className="whmi-badge" style={{ background: "rgba(217,83,79,.12)", color: "#D9534F" }}>External</span>}
+                {u.verified && <BadgeCheck size={12} style={{ color: "var(--accent-success)" }} title="Verified" />}
+              </div>
+              <div className="text-[10.5px] truncate" style={{ color: "var(--text-faint)" }}>{u.email}</div>
+            </div>
+          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <select value={u.role} onChange={e => patchUser(u.id, { role: e.target.value })} className="whmi-input px-2 py-1 text-[11.5px]">
+              <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
+              <option value="viewer">Viewer</option>
+            </select>
+            <button onClick={() => onRequestDelete(u)} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
+          </div>
+        </div>
+
+        {expanded && (
+          <div className="p-3 space-y-3" style={{ borderTop: "1px solid var(--border)" }}>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Account type</label>
+                <select value={u.userType || "internal"} onChange={e => patchUser(u.id, { userType: e.target.value })} className="whmi-input w-full px-2 py-1 mt-1 text-[12px]">
+                  <option value="internal">Internal (Western Health staff)</option>
+                  <option value="external">External</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Verified</label>
+                <button onClick={() => patchUser(u.id, { verified: !u.verified })} className="w-full mt-1 whmi-btn-ghost flex items-center justify-center gap-1.5 text-[12px]" style={u.verified ? { background: "rgba(156,203,59,.15)", color: "#7CA82F", border: "1px solid rgba(156,203,59,.4)" } : {}}>
+                  <BadgeCheck size={13} />{u.verified ? "Verified" : "Not verified"}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Primary email</label>
+                <input
+                  value={draft.email} onChange={e => setDraft({ email: e.target.value })}
+                  className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12px]"
+                />
+              </div>
+              <div>
+                <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Secondary email (login &amp; certificate delivery)</label>
+                <input
+                  value={draft.secondaryEmail} placeholder="jane.doe@othermail.com"
+                  onChange={e => setDraft({ secondaryEmail: e.target.value })}
+                  className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12px]"
+                />
+              </div>
+            </div>
+            {u.secondaryEmail && (
+              <div className="flex items-center gap-3">
+                <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Send certificates to:</span>
+                <label className="flex items-center gap-1 text-[11px]"><input type="radio" checked={(u.certEmailPreference || "primary") === "primary"} onChange={() => patchUser(u.id, { certEmailPreference: "primary" })} />Primary</label>
+                <label className="flex items-center gap-1 text-[11px]"><input type="radio" checked={u.certEmailPreference === "secondary"} onChange={() => patchUser(u.id, { certEmailPreference: "secondary" })} />Secondary</label>
+              </div>
+            )}
+            {emailDirty && (
+              <div className="flex justify-end">
+                <button onClick={saveContact} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Save Contact Details</button>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>
+                {u.authId ? "This account has signed in for real at least once." : "This account hasn't completed a real login yet; nothing to revoke."}
+              </span>
+              {u.authId && (
+                banned ? (
+                  <button onClick={() => doRevoke(u, "restore")} disabled={status === "working"} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px]">
+                    <RotateCcw size={13} />{status === "working" ? "Restoring…" : "Restore Access"}
+                  </button>
+                ) : (
+                  <button onClick={() => doRevoke(u, "revoke")} disabled={status === "working"} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px]" style={{ color: "#D9534F" }}>
+                    <Ban size={13} />{status === "working" ? "Revoking…" : "Revoke Session"}
+                  </button>
+                )
+              )}
+            </div>
+            {status === "error" && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>Something went wrong. Please try again.</div>}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -301,117 +444,38 @@ export default function Settings({
               </div>
             );
           })()}
-          <div className="space-y-1.5 mb-3">
-            {visibleUsers.map(u => {
-              const expanded = expandedUserId === u.id;
-              const status = sessionActionStatus[u.id];
-              const banned = status === "revoked";
-              const draft = emailDrafts[u.id] || { email: u.email, secondaryEmail: u.secondaryEmail || "" };
-              const setDraft = (patch) => setEmailDrafts(s => ({ ...s, [u.id]: { ...draft, ...patch } }));
-              const emailDirty = draft.email !== u.email || draft.secondaryEmail !== (u.secondaryEmail || "");
-              const saveContact = () => {
-                const patch = {};
-                if (draft.email !== u.email) patch.email = draft.email;
-                if (draft.secondaryEmail !== (u.secondaryEmail || "")) patch.secondaryEmail = draft.secondaryEmail || null;
-                onSaveUserContact(u, patch);
-                setEmailDrafts(s => { const next = { ...s }; delete next[u.id]; return next; });
-              };
-              return (
-                <div key={u.id} className="rounded-lg overflow-hidden" style={{ background: "var(--surface-2)" }}>
-                  <div className="flex items-center justify-between p-2.5 gap-2 flex-wrap">
-                    <button onClick={() => setExpandedUserId(expanded ? null : u.id)} className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
-                      {expanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" />}
-                      <CharacterAvatar avatarId={u.avatarId} color={u.avatarColor} size={28} />
-                      <div className="min-w-0">
-                        <div className="text-[12.5px] font-semibold truncate flex items-center gap-1">
-                          {u.name}
-                          {u.userType === "external" && <span className="whmi-badge" style={{ background: "rgba(217,83,79,.12)", color: "#D9534F" }}>External</span>}
-                          {u.verified && <BadgeCheck size={12} style={{ color: "var(--accent-success)" }} title="Verified" />}
-                        </div>
-                        <div className="text-[10.5px] truncate" style={{ color: "var(--text-faint)" }}>{u.email}</div>
-                      </div>
-                    </button>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <select value={u.role} onChange={e => patchUser(u.id, { role: e.target.value })} className="whmi-input px-2 py-1 text-[11.5px]">
-                        <option value="admin">Admin</option>
-                        <option value="owner">Owner</option>
-                        <option value="viewer">Viewer</option>
-                      </select>
-                      <button onClick={() => onRequestDelete(u)} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
-                    </div>
-                  </div>
-
-                  {expanded && (
-                    <div className="p-3 space-y-3" style={{ borderTop: "1px solid var(--border)" }}>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Account type</label>
-                          <select value={u.userType || "internal"} onChange={e => patchUser(u.id, { userType: e.target.value })} className="whmi-input w-full px-2 py-1 mt-1 text-[12px]">
-                            <option value="internal">Internal (Western Health staff)</option>
-                            <option value="external">External</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Verified</label>
-                          <button onClick={() => patchUser(u.id, { verified: !u.verified })} className="w-full mt-1 whmi-btn-ghost flex items-center justify-center gap-1.5 text-[12px]" style={u.verified ? { background: "rgba(156,203,59,.15)", color: "#7CA82F", border: "1px solid rgba(156,203,59,.4)" } : {}}>
-                            <BadgeCheck size={13} />{u.verified ? "Verified" : "Not verified"}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Primary email</label>
-                          <input
-                            value={draft.email} onChange={e => setDraft({ email: e.target.value })}
-                            className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12px]"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Secondary email (login &amp; certificate delivery)</label>
-                          <input
-                            value={draft.secondaryEmail} placeholder="jane.doe@othermail.com"
-                            onChange={e => setDraft({ secondaryEmail: e.target.value })}
-                            className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12px]"
-                          />
-                        </div>
-                      </div>
-                      {u.secondaryEmail && (
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Send certificates to:</span>
-                          <label className="flex items-center gap-1 text-[11px]"><input type="radio" checked={(u.certEmailPreference || "primary") === "primary"} onChange={() => patchUser(u.id, { certEmailPreference: "primary" })} />Primary</label>
-                          <label className="flex items-center gap-1 text-[11px]"><input type="radio" checked={u.certEmailPreference === "secondary"} onChange={() => patchUser(u.id, { certEmailPreference: "secondary" })} />Secondary</label>
-                        </div>
-                      )}
-                      {emailDirty && (
-                        <div className="flex justify-end">
-                          <button onClick={saveContact} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Save Contact Details</button>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>
-                          {u.authId ? "This account has signed in for real at least once." : "This account hasn't completed a real login yet; nothing to revoke."}
-                        </span>
-                        {u.authId && (
-                          banned ? (
-                            <button onClick={() => doRevoke(u, "restore")} disabled={status === "working"} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px]">
-                              <RotateCcw size={13} />{status === "working" ? "Restoring…" : "Restore Access"}
-                            </button>
-                          ) : (
-                            <button onClick={() => doRevoke(u, "revoke")} disabled={status === "working"} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px]" style={{ color: "#D9534F" }}>
-                              <Ban size={13} />{status === "working" ? "Revoking…" : "Revoke Session"}
-                            </button>
-                          )
-                        )}
-                      </div>
-                      {status === "error" && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>Something went wrong. Please try again.</div>}
-                    </div>
+          <div className="flex items-center justify-end gap-2 mb-2">
+            <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Sort by</label>
+            <select value={teamSort} onChange={e => setTeamSort(e.target.value)} className="whmi-input px-2 py-1 text-[11.5px]">
+              <option value="firstName">First name</option>
+              <option value="lastName">Last name</option>
+              <option value="recent">Most recently added</option>
+            </select>
+          </div>
+          {[
+            { key: "adminOwner", label: "Admins & Owners", list: adminOwnerUsers },
+            { key: "internal", label: "WH Staff", list: internalViewerUsers },
+            { key: "external", label: "External", list: externalViewerUsers },
+          ].map(group => (
+            <div key={group.key} className="mb-3">
+              <button onClick={() => toggleTeamGroup(group.key)} className="w-full flex items-center justify-between mb-1.5 py-1">
+                <div className="flex items-center gap-2">
+                  {teamGroupsExpanded[group.key] ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+                  <span className="text-[12px] font-semibold">{group.label}</span>
+                </div>
+                <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{group.list.length}</span>
+              </button>
+              {teamGroupsExpanded[group.key] && (
+                <div className="space-y-1.5">
+                  {group.list.length === 0 ? (
+                    <div className="text-[11.5px] px-1 pb-1" style={{ color: "var(--text-faint)" }}>No one in this group yet.</div>
+                  ) : (
+                    group.list.map(renderUserRow)
                   )}
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </div>
+          ))}
           <div className="flex gap-1.5 flex-wrap">
             <input placeholder="Name" value={inviteName} onChange={e => setInviteName(e.target.value)} className="whmi-input px-2.5 py-1.5 flex-1 min-w-[100px]" />
             <input placeholder="Email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="whmi-input px-2.5 py-1.5 flex-1 min-w-[140px]" />
@@ -460,61 +524,77 @@ export default function Settings({
 
       {canManageUsers && (
         <div className="whmi-card p-4">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2"><Award size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">CPD Types &amp; Appellation Codes</div></div>
-            {editingCpdTypeId === null && (
-              <button onClick={startAddCpdType} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px]"><Plus size={13} />Add Type</button>
-            )}
-          </div>
-          <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Used on the event form to select which ASMIRT-endorsed certificate applies. Adding, editing, and deleting is restricted to admins and owners, and asks for confirmation.</div>
-          <datalist id="cpd-categories">
-            {CPD_CATEGORIES.map(c => <option key={c} value={c} />)}
-          </datalist>
-
-          <div className="space-y-1.5">
-            {cpdTypes.map(t => (
-              editingCpdTypeId === t.id ? (
-                <div key={t.id} className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <input value={cpdTypeName} onChange={e => setCpdTypeName(e.target.value)} placeholder="CPD type name" className="whmi-input px-2.5 py-1.5 text-[12px]" />
-                    <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code (required)" className="whmi-input px-2.5 py-1.5 text-[12px]" />
-                  </div>
-                  <input list="cpd-categories" value={cpdTypeCategory} onChange={e => setCpdTypeCategory(e.target.value)} placeholder="Category" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
-                  {cpdTypeError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{cpdTypeError}</div>}
-                  <div className="flex gap-1.5 justify-end">
-                    <button onClick={cancelCpdTypeEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
-                    <button onClick={saveCpdType} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Save</button>
-                  </div>
-                </div>
-              ) : (
-                <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
-                  <div className="min-w-0">
-                    <div className="text-[12.5px] font-semibold truncate">{t.name}</div>
-                    <div className="text-[10.5px] truncate" style={{ color: "var(--text-faint)" }}>{t.appellationCode}{t.category ? ` · ${t.category}` : ""}</div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => startEditCpdType(t)} className="whmi-btn-ghost !p-1.5"><Pencil size={13} /></button>
-                    <button onClick={() => onDeleteCpdType(t)} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
-                  </div>
-                </div>
-              )
-            ))}
-            {cpdTypes.length === 0 && editingCpdTypeId !== "new" && <div className="text-[12px]" style={{ color: "var(--text-faint)" }}>No CPD types added yet.</div>}
-            {editingCpdTypeId === "new" && (
-              <div className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <input autoFocus value={cpdTypeName} onChange={e => setCpdTypeName(e.target.value)} placeholder="CPD type name" className="whmi-input px-2.5 py-1.5 text-[12px]" />
-                  <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code (required)" className="whmi-input px-2.5 py-1.5 text-[12px]" />
-                </div>
-                <input list="cpd-categories" value={cpdTypeCategory} onChange={e => setCpdTypeCategory(e.target.value)} placeholder="Category" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
-                {cpdTypeError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{cpdTypeError}</div>}
-                <div className="flex gap-1.5 justify-end">
-                  <button onClick={cancelCpdTypeEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
-                  <button onClick={saveCpdType} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Add</button>
-                </div>
+          <button onClick={() => setCpdTypesExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              {cpdTypesExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <Award size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">CPD Types &amp; Appellation Codes</div>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{cpdTypes.length}</span>
+          </button>
+          {cpdTypesExpanded && (
+            <>
+              <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Used on the event form to select which ASMIRT-endorsed certificate applies. Adding, editing, and deleting is restricted to admins and owners, and asks for confirmation. Use the arrows to rearrange the order they appear in on the event form.</div>
+              <datalist id="cpd-categories">
+                {CPD_CATEGORIES.map(c => <option key={c} value={c} />)}
+              </datalist>
+              <div className="flex gap-1.5 mb-2">
+                {editingCpdTypeId === null && (
+                  <button onClick={startAddCpdType} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px]"><Plus size={13} />Add Type</button>
+                )}
               </div>
-            )}
-          </div>
+
+              <div className="space-y-1.5">
+                {cpdTypes.map((t, i) => (
+                  editingCpdTypeId === t.id ? (
+                    <div key={t.id} className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <input value={cpdTypeName} onChange={e => setCpdTypeName(e.target.value)} placeholder="CPD type name" className="whmi-input px-2.5 py-1.5 text-[12px]" />
+                        <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code (required)" className="whmi-input px-2.5 py-1.5 text-[12px]" />
+                      </div>
+                      <input list="cpd-categories" value={cpdTypeCategory} onChange={e => setCpdTypeCategory(e.target.value)} placeholder="Category" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
+                      {cpdTypeError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{cpdTypeError}</div>}
+                      <div className="flex gap-1.5 justify-end">
+                        <button onClick={cancelCpdTypeEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
+                        <button onClick={saveCpdType} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex flex-col shrink-0">
+                          <button onClick={() => moveCpdType(i, -1)} disabled={i === 0} className="whmi-btn-ghost !p-0.5" style={{ opacity: i === 0 ? 0.3 : 1 }}><ArrowUp size={12} /></button>
+                          <button onClick={() => moveCpdType(i, 1)} disabled={i === cpdTypes.length - 1} className="whmi-btn-ghost !p-0.5" style={{ opacity: i === cpdTypes.length - 1 ? 0.3 : 1 }}><ArrowDown size={12} /></button>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[12.5px] font-semibold truncate">{t.name}</div>
+                          <div className="text-[10.5px] truncate" style={{ color: "var(--text-faint)" }}>{t.appellationCode}{t.category ? ` · ${t.category}` : ""}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => startEditCpdType(t)} className="whmi-btn-ghost !p-1.5"><Pencil size={13} /></button>
+                        <button onClick={() => onDeleteCpdType(t)} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }}><Trash2 size={13} /></button>
+                      </div>
+                    </div>
+                  )
+                ))}
+                {cpdTypes.length === 0 && editingCpdTypeId !== "new" && <div className="text-[12px]" style={{ color: "var(--text-faint)" }}>No CPD types added yet.</div>}
+                {editingCpdTypeId === "new" && (
+                  <div className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <input autoFocus value={cpdTypeName} onChange={e => setCpdTypeName(e.target.value)} placeholder="CPD type name" className="whmi-input px-2.5 py-1.5 text-[12px]" />
+                      <input value={cpdTypeCode} onChange={e => setCpdTypeCode(e.target.value)} placeholder="Appellation code (required)" className="whmi-input px-2.5 py-1.5 text-[12px]" />
+                    </div>
+                    <input list="cpd-categories" value={cpdTypeCategory} onChange={e => setCpdTypeCategory(e.target.value)} placeholder="Category" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
+                    {cpdTypeError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{cpdTypeError}</div>}
+                    <div className="flex gap-1.5 justify-end">
+                      <button onClick={cancelCpdTypeEdit} className="whmi-btn-ghost text-[11.5px]">Cancel</button>
+                      <button onClick={saveCpdType} className="whmi-btn-primary text-[11.5px] flex items-center gap-1.5"><Save size={12} />Add</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -596,12 +676,12 @@ export default function Settings({
                   editingAvatarIconId === icon.id ? (
                     <div key={icon.id} className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
                       <div className="flex items-center gap-2.5">
-                        <CharacterAvatar avatarId={icon.id} color="grey" size={40} />
+                        <CharacterAvatar avatarId={icon.id} color="grey" size={40} previewScale={avatarIconScale} previewImageUrl={avatarIconFilePreviewUrl} />
                         <input autoFocus value={avatarIconLabel} onChange={e => setAvatarIconLabel(e.target.value)} placeholder="Label" className="whmi-input flex-1 px-2.5 py-1.5 text-[12px]" />
                       </div>
                       <div>
                         <label className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Size in circle ({avatarIconScale}%)</label>
-                        <input type="range" min="20" max="100" value={avatarIconScale} onChange={e => setAvatarIconScale(Number(e.target.value))} className="w-full" />
+                        <input type="range" min="0" max="100" value={avatarIconScale} onChange={e => setAvatarIconScale(Number(e.target.value))} className="w-full" />
                       </div>
                       <label className="whmi-btn-ghost !py-1.5 !px-2.5 text-[11.5px] flex items-center gap-1.5 w-fit cursor-pointer">
                         <Upload size={12} />{avatarIconFile ? avatarIconFile.name : "Replace image (optional)"}
@@ -630,10 +710,19 @@ export default function Settings({
                 ))}
                 {editingAvatarIconId === "new" && (
                   <div className="p-2.5 rounded-lg space-y-2" style={{ background: "var(--surface-2)" }}>
-                    <input autoFocus value={avatarIconLabel} onChange={e => setAvatarIconLabel(e.target.value)} placeholder="Label" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
+                    <div className="flex items-center gap-2.5">
+                      {avatarIconFilePreviewUrl ? (
+                        <CharacterAvatar avatarId={null} color="grey" size={40} previewScale={avatarIconScale} previewImageUrl={avatarIconFilePreviewUrl} />
+                      ) : (
+                        <div className="rounded-full flex items-center justify-center shrink-0" style={{ width: 40, height: 40, background: "var(--surface-3, #ddd)" }}>
+                          <Image size={16} style={{ color: "var(--text-faint)" }} />
+                        </div>
+                      )}
+                      <input autoFocus value={avatarIconLabel} onChange={e => setAvatarIconLabel(e.target.value)} placeholder="Label" className="whmi-input flex-1 px-2.5 py-1.5 text-[12px]" />
+                    </div>
                     <div>
                       <label className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Size in circle ({avatarIconScale}%)</label>
-                      <input type="range" min="20" max="100" value={avatarIconScale} onChange={e => setAvatarIconScale(Number(e.target.value))} className="w-full" />
+                      <input type="range" min="0" max="100" value={avatarIconScale} onChange={e => setAvatarIconScale(Number(e.target.value))} className="w-full" />
                     </div>
                     <label className="whmi-btn-ghost !py-1.5 !px-2.5 text-[11.5px] flex items-center gap-1.5 w-fit cursor-pointer">
                       <Upload size={12} />{avatarIconFile ? avatarIconFile.name : "Choose PNG image"}

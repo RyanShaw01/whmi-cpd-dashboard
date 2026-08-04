@@ -1,6 +1,6 @@
 import {
   Calendar, Users, Award, BarChart3, Archive, HelpCircle,
-  LayoutDashboard, Settings as SettingsIcon,
+  LayoutDashboard, Settings as SettingsIcon, Lightbulb,
   Bone, Waves, Magnet, Radiation, Stethoscope, Ghost,
   Building2, Syringe, Pill, Thermometer, Microscope, Brain, Eye, Briefcase, ClipboardList, Sun, Donut, Bandage, Cookie, BadgeCheck,
 } from "lucide-react";
@@ -151,6 +151,7 @@ export const NAV_FULL = [
   { id: "staff", label: "Staff", icon: Users },
   { id: "reports", label: "Reports & Analytics", icon: BarChart3 },
   { id: "certificates", label: "Certificates", icon: Award },
+  { id: "brainstorm", label: "Brainstorming", icon: Lightbulb },
   { id: "help", label: "Help Centre", icon: HelpCircle },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];

@@ -142,6 +142,8 @@ export default function BannerPositionEditor({ bannerUrl, focalX = 50, focalY = 
                 style={{ background: "white", border: "2px solid var(--accent-primary)" }}
                 title="Drag to resize"
               />
+              <div className="absolute top-1/2 left-0 right-0 pointer-events-none" style={{ borderTop: "1px dashed rgba(255,255,255,.8)" }} />
+              <div className="absolute left-1/2 top-0 bottom-0 pointer-events-none" style={{ borderLeft: "1px dashed rgba(255,255,255,.8)" }} />
             </div>
           )}
         </div>

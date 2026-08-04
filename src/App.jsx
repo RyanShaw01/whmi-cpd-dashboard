@@ -14,6 +14,8 @@ import Settings from "./pages/Settings";
 import HelpCentre from "./pages/HelpCentre";
 import PublicEventPage from "./pages/PublicEventPage";
 import ReflectionPage from "./pages/ReflectionPage";
+import Brainstorming from "./pages/Brainstorming";
+import BrainstormSubmitPage from "./pages/BrainstormSubmitPage";
 import Onboarding from "./pages/Onboarding";
 import Sidebar from "./components/Sidebar";
 import HeaderBar from "./components/HeaderBar";
@@ -44,6 +46,7 @@ import {
   fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog, sendReflectionReminder,
   fetchAvatarIcons, insertAvatarIcon, updateAvatarIcon, deleteAvatarIcon, uploadAvatarIconImage,
   fetchAvatarColors, insertAvatarColor, updateAvatarColor, deleteAvatarColor,
+  fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea,
 } from "./lib/db";
 import { setAvatarIcons as setRegistryIcons, setAvatarColors as setRegistryColors } from "./lib/avatarRegistry";
 
@@ -65,6 +68,7 @@ export default function App() {
   const [tags, setTags] = useState([]);
   const [avatarIcons, setAvatarIcons] = useState([]);
   const [avatarColors, setAvatarColors] = useState([]);
+  const [brainstormIdeas, setBrainstormIdeas] = useState([]);
   const [auditLog, setAuditLog] = useState([]);
   // Writes to the DB and optimistically prepends locally so the Dashboard's Recent Activity
   // feed reflects actions immediately, without waiting for a reload.
@@ -151,11 +155,11 @@ export default function App() {
   const loadAppData = async () => {
     const [
       userList, staffList, eventList, prevEventList, certList, regList, externalList, reflectionList, fileList,
-      dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList, avatarIconList, avatarColorList,
+      dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList, avatarIconList, avatarColorList, brainstormIdeaList,
     ] = await Promise.all([
       fetchUsers(), fetchStaff(), fetchEvents(), fetchPreviousEvents(), fetchCertificates(), fetchRegistrations(), fetchExternalParticipants(),
       fetchReflections(), fetchAllFiles(), fetchDismissedPairs("registration"), fetchDismissedPairs("reflection"), fetchCpdTypes(), fetchTags(),
-      fetchAuditLog(50), fetchAvatarIcons(), fetchAvatarColors(),
+      fetchAuditLog(50), fetchAvatarIcons(), fetchAvatarColors(), fetchBrainstormIdeas(),
     ]);
     setAvatarIcons(avatarIconList);
     setAvatarColors(avatarColorList);
@@ -175,12 +179,13 @@ export default function App() {
     setCpdTypes(cpdTypeList);
     setTags(tagList);
     setAuditLog(auditLogList);
+    setBrainstormIdeas(brainstormIdeaList);
   };
 
   const clearAppData = () => {
     setUsers([]); setStaffDirectory([]); setEvents([]); setPreviousEvents([]); setCertificates([]);
     setRegistrations([]); setExternalParticipants([]); setReflections([]); setFiles([]); setCpdTypes([]); setTags([]); setAuditLog([]);
-    setAvatarIcons([]); setAvatarColors([]);
+    setAvatarIcons([]); setAvatarColors([]); setBrainstormIdeas([]);
     setDismissedRegistrationPairs(new Set()); setDismissedReflectionPairs(new Set());
   };
 
@@ -493,6 +498,11 @@ export default function App() {
     setTags(withOrder);
     withOrder.forEach(t => updateTag(t.id, { sortOrder: t.sortOrder }));
   };
+  const handleReorderCpdTypes = (newOrder) => {
+    const withOrder = newOrder.map((t, i) => ({ ...t, sortOrder: i }));
+    setCpdTypes(withOrder);
+    withOrder.forEach(t => updateCpdType(t.id, { sortOrder: t.sortOrder }));
+  };
 
   const requestSaveAvatarIcon = (icon, isNew) => requestConfirm({
     title: isNew ? "Add icon?" : "Save changes?",
@@ -563,6 +573,22 @@ export default function App() {
     pushAudit({ actorId: session?.id, action: "cpd_type.deleted", entityType: "cpd_type", entityId: cpdType.id, details: { name: cpdType.name } });
     showToast("CPD type deleted.");
   });
+
+  const handleAddBrainstormIdea = (content) => {
+    const idea = { id: "idea" + Date.now(), content, addedByName: session?.name || "Unknown", source: "admin" };
+    setBrainstormIdeas(prev => [idea, ...prev]);
+    insertBrainstormIdea(idea);
+    pushAudit({ actorId: session?.id, action: "brainstorm_idea.created", entityType: "brainstorm_idea", entityId: idea.id, details: { content } });
+  };
+  const requestDeleteBrainstormIdea = (idea) => requestDelete("this idea", () => {
+    setBrainstormIdeas(prev => prev.filter(i => i.id !== idea.id));
+    deleteBrainstormIdea(idea.id);
+    pushAudit({ actorId: session?.id, action: "brainstorm_idea.deleted", entityType: "brainstorm_idea", entityId: idea.id, details: { content: idea.content } });
+  });
+  const handlePublicBrainstormSubmit = (content, submitterName) => {
+    const idea = { id: "idea" + Date.now(), content, addedByName: submitterName || "Anonymous", source: "public" };
+    insertBrainstormIdea(idea);
+  };
 
   // Test accounts exist purely for admin/owner "preview as" — no real Supabase Auth
   // identity, no login_emails row, hidden from the normal Team Access list.
@@ -835,7 +861,7 @@ export default function App() {
               <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} />
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
-            {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} />}
+            {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} />}
             {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} />}
             {page === "staff" && <StaffDirectory openStaff={openStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} />}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} />}
@@ -845,6 +871,9 @@ export default function App() {
                 highlightId={page === "certificates" ? highlightId : null} onCreateCertificate={() => setCreateCertificateOpen(true)}
                 onApproveAndSendAll={handleApproveAndSendAll} onResend={handleResendCertificate} requestConfirm={requestConfirm}
               />
+            )}
+            {page === "brainstorm" && canManage && (
+              <Brainstorming ideas={brainstormIdeas} onAddIdea={handleAddBrainstormIdea} onRequestDeleteIdea={requestDeleteBrainstormIdea} />
             )}
             {page === "help" && <HelpCentre role={viewSession.role} />}
             {page === "settings" && (
@@ -859,7 +888,7 @@ export default function App() {
                 redDotsEnabled={redDotsEnabled} onToggleRedDots={handleToggleRedDots}
                 onReplayTour={() => { changePage(homePage); setShowTour(true); }}
                 onRevokeSession={handleRevokeSession}
-                cpdTypes={cpdTypes} onSaveCpdType={requestSaveCpdType} onDeleteCpdType={requestDeleteCpdType}
+                cpdTypes={cpdTypes} onSaveCpdType={requestSaveCpdType} onDeleteCpdType={requestDeleteCpdType} onReorderCpdTypes={handleReorderCpdTypes}
                 tags={tags} onSaveTag={requestSaveTag} onDeleteTag={requestDeleteTag} onReorderTags={handleReorderTags}
                 onBackfillStaffLinks={handleBackfillStaffLinks} auditLog={auditLog}
                 avatarIcons={avatarIcons} onSaveAvatarIcon={requestSaveAvatarIcon} onDeleteAvatarIcon={requestDeleteAvatarIcon}
@@ -932,6 +961,7 @@ export default function App() {
     <Routes>
       <Route path="/event/:eventId" element={<PublicEventPage events={eventsWithLiveCounts} session={session} onPublicRegister={handlePublicRegister} />} />
       <Route path="/event/:eventId/reflect" element={<ReflectionPage events={eventsWithLiveCounts} session={session} onSubmitReflection={handleSubmitReflection} />} />
+      <Route path="/brainstorm/submit" element={<BrainstormSubmitPage session={session} onSubmit={handlePublicBrainstormSubmit} />} />
       <Route path="*" element={mainContent} />
     </Routes>
   );

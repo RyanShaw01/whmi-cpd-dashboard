@@ -19,7 +19,7 @@ const userFromRow = (r) => ({
   authId: r.auth_id, userType: r.user_type || "internal", verified: !!r.verified,
   secondaryEmail: r.secondary_email, certEmailPreference: r.cert_email_preference || "primary",
   onboarded: r.onboarded == null ? true : !!r.onboarded,
-  darkMode: !!r.dark_mode, isTest: !!r.is_test,
+  darkMode: !!r.dark_mode, isTest: !!r.is_test, createdAt: r.created_at,
 });
 const userToRow = (u) => ({
   id: u.id, name: u.name, email: u.email, role: u.role,
@@ -277,17 +277,17 @@ export async function updateCertificateStatus(id, status) {
 /* ---------------------------------------------------------------------- */
 /* CPD types (appellation codes)                                          */
 /* ---------------------------------------------------------------------- */
-const cpdTypeFromRow = (r) => ({ id: r.id, name: r.name, appellationCode: r.appellation_code, category: r.category || "" });
+const cpdTypeFromRow = (r) => ({ id: r.id, name: r.name, appellationCode: r.appellation_code, category: r.category || "", sortOrder: r.sort_order ?? 0 });
 
 export async function fetchCpdTypes() {
   if (!supabaseConfigured) return [];
-  const { data, error } = await supabase.from("cpd_types").select("*").order("name");
+  const { data, error } = await supabase.from("cpd_types").select("*").order("sort_order").order("name");
   if (error) { console.error("fetchCpdTypes", error); return []; }
   return data.map(cpdTypeFromRow);
 }
 export async function insertCpdType(cpdType) {
   if (!supabaseConfigured) return;
-  const { error } = await supabase.from("cpd_types").insert({ id: cpdType.id, name: cpdType.name, appellation_code: cpdType.appellationCode, category: cpdType.category || null });
+  const { error } = await supabase.from("cpd_types").insert({ id: cpdType.id, name: cpdType.name, appellation_code: cpdType.appellationCode, category: cpdType.category || null, sort_order: cpdType.sortOrder ?? 0 });
   if (error) console.error("insertCpdType", error);
 }
 export async function updateCpdType(id, patch) {
@@ -296,6 +296,7 @@ export async function updateCpdType(id, patch) {
   if ("name" in patch) row.name = patch.name;
   if ("appellationCode" in patch) row.appellation_code = patch.appellationCode;
   if ("category" in patch) row.category = patch.category || null;
+  if ("sortOrder" in patch) row.sort_order = patch.sortOrder;
   const { error } = await supabase.from("cpd_types").update(row).eq("id", id);
   if (error) console.error("updateCpdType", error);
 }
@@ -303,6 +304,27 @@ export async function deleteCpdType(id) {
   if (!supabaseConfigured) return;
   const { error } = await supabase.from("cpd_types").delete().eq("id", id);
   if (error) console.error("deleteCpdType", error);
+}
+/* ---------------------------------------------------------------------- */
+/* brainstorm ideas (admin/owner shared idea list + public submissions)   */
+/* ---------------------------------------------------------------------- */
+const brainstormIdeaFromRow = (r) => ({ id: r.id, content: r.content, addedByName: r.added_by_name, source: r.source || "admin", createdAt: r.created_at });
+
+export async function fetchBrainstormIdeas() {
+  if (!supabaseConfigured) return [];
+  const { data, error } = await supabase.from("brainstorm_ideas").select("*").order("created_at", { ascending: false });
+  if (error) { console.error("fetchBrainstormIdeas", error); return []; }
+  return data.map(brainstormIdeaFromRow);
+}
+export async function insertBrainstormIdea(idea) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("brainstorm_ideas").insert({ id: idea.id, content: idea.content, added_by_name: idea.addedByName, source: idea.source || "admin" });
+  if (error) console.error("insertBrainstormIdea", error);
+}
+export async function deleteBrainstormIdea(id) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("brainstorm_ideas").delete().eq("id", id);
+  if (error) console.error("deleteBrainstormIdea", error);
 }
 /* ---------------------------------------------------------------------- */
 /* tags (admin-managed event topics)                                      */

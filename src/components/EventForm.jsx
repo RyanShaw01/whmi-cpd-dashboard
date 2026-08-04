@@ -26,7 +26,7 @@ const nullsToEmpty = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]
 
 export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner }) {
   const [form, setForm] = useState(event
-    ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [] }
+    ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [], location: [event.location, event.room].filter(Boolean).join(", "), room: "" }
     : { ...emptyEvent, status: initialStatus || emptyEvent.status });
   const [newTag, setNewTag] = useState("");
   const isEdit = Boolean(event);
@@ -109,11 +109,11 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={field}>Presenter(s)</label>
-          <input value={form.presenter} onChange={e => set("presenter", e.target.value)} placeholder="Comma-separated" className="whmi-input w-full px-2.5 py-2" />
+          <input value={form.presenter} onChange={e => set("presenter", e.target.value)} placeholder="Separate presenters by commas" className="whmi-input w-full px-2.5 py-2" />
         </div>
         <div>
           <label className={field}>Organisers</label>
-          <input value={form.organisers} onChange={e => set("organisers", e.target.value)} placeholder="Comma-separated" className="whmi-input w-full px-2.5 py-2" />
+          <input value={form.organisers} onChange={e => set("organisers", e.target.value)} placeholder="Separate organisers by commas" className="whmi-input w-full px-2.5 py-2" />
         </div>
       </div>
 
@@ -151,18 +151,12 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={field}>Location</label>
-          <input value={form.location} onChange={e => set("location", e.target.value)} list="location-options" className="whmi-input w-full px-2.5 py-2" />
-          <datalist id="location-options">
-            {LOCATION_OPTIONS.map(l => <option key={l} value={l} />)}
-          </datalist>
-        </div>
-        <div>
-          <label className={field}>Room</label>
-          <input value={form.room} onChange={e => set("room", e.target.value)} className="whmi-input w-full px-2.5 py-2" />
-        </div>
+      <div>
+        <label className={field}>Location</label>
+        <input value={form.location} onChange={e => set("location", e.target.value)} list="location-options" placeholder="e.g. Sunshine Hospital, Level 2 Room 204" className="whmi-input w-full px-2.5 py-2" />
+        <datalist id="location-options">
+          {LOCATION_OPTIONS.map(l => <option key={l} value={l} />)}
+        </datalist>
       </div>
 
       {form.mode !== "In-person" && (

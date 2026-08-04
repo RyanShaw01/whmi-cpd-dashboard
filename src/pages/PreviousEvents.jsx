@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Table2, CalendarDays, Plus } from "lucide-react";
 import YearCalendar from "../components/YearCalendar";
-import { fmtDate } from "../lib/helpers";
+import { fmtDate, fmtTimeRange12h } from "../lib/helpers";
 
 export default function PreviousEvents({ previousEvents, onOpenArchive, canManage, onCreatePreviousEvent }) {
   const years = [...new Set(previousEvents.map(ev => new Date(`${ev.date}T00:00:00`).getFullYear()))].sort((a, b) => b - a);
@@ -41,7 +41,7 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
           <table className="w-full text-[13px]">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                {["Event", "Date", "Presenter", "Attendance", "Feedback"].map(h => (
+                {["Event", "Date", "Time", "Location", "Presenter", "Attendance", "Feedback"].map(h => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
                 ))}
               </tr>
@@ -51,6 +51,8 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
                 <tr key={ev.id} className="whmi-row-hover cursor-pointer" style={{ borderBottom: "1px solid var(--border)" }} onClick={() => onOpenArchive(ev)}>
                   <td className="px-4 py-3 font-semibold break-words max-w-[260px]">{ev.title}<div className="text-[11px] font-normal mt-0.5" style={{ color: "var(--text-faint)" }}>{ev.topic}</div></td>
                   <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtDate(ev.date)}</td>
+                  <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</td>
+                  <td className="px-4 py-3 break-words max-w-[180px]" style={{ color: "var(--text-dim)" }}>{ev.location}</td>
                   <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{ev.presenter}</td>
                   <td className="px-4 py-3">{ev.attendance}/{ev.capacity}</td>
                   <td className="px-4 py-3">

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { X, ClipboardList, Calendar, Clock } from "lucide-react";
-import { CAMPUS_OPTIONS } from "../data/mockData";
 import { fmtDate, fmtTimeRange12h } from "../lib/helpers";
 
 export default function RegisterEventModal({ open, onClose, session, events, defaultEventId, onSubmit }) {
@@ -9,7 +8,6 @@ export default function RegisterEventModal({ open, onClose, session, events, def
   const [name, setName] = useState(session?.name || "");
   const [email, setEmail] = useState(session?.email || "");
   const [profession, setProfession] = useState(session?.profession || "");
-  const [campus, setCampus] = useState(session?.campus || "");
   const [attendanceType, setAttendanceType] = useState("In-person");
   const [dietary, setDietary] = useState(session?.dietaryRequirements || "");
   const [accessibility, setAccessibility] = useState(session?.accessibility || "");
@@ -23,7 +21,6 @@ export default function RegisterEventModal({ open, onClose, session, events, def
     setName(session?.name || "");
     setEmail(session?.email || "");
     setProfession(session?.profession || "");
-    setCampus(session?.campus || "");
     setDietary(session?.dietaryRequirements || "");
     setAccessibility(session?.accessibility || "");
     setComments("");
@@ -36,7 +33,7 @@ export default function RegisterEventModal({ open, onClose, session, events, def
     e.preventDefault();
     if (!eventId || !name.trim() || !email.trim()) return;
     onSubmit({
-      eventId, name: name.trim(), email: email.trim(), profession: profession.trim(), campus,
+      eventId, name: name.trim(), email: email.trim(), profession: profession.trim(),
       attendanceType: selectedEvent?.mode === "Hybrid" ? attendanceType : null,
       dietary: dietary.trim(), accessibility: accessibility.trim(), comments: comments.trim(),
     });
@@ -77,18 +74,9 @@ export default function RegisterEventModal({ open, onClose, session, events, def
             <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Email</label>
             <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Profession</label>
-              <input value={profession} onChange={e => setProfession(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Campus</label>
-              <select value={campus} onChange={e => setCampus(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1">
-                <option value="">—</option>
-                {CAMPUS_OPTIONS.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
-              </select>
-            </div>
+          <div>
+            <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Profession</label>
+            <input value={profession} onChange={e => setProfession(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
           </div>
           {selectedEvent?.mode === "Hybrid" && (
             <div>

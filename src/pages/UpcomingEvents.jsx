@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Calendar, MapPin, UserCircle2, Link2, Trash2, ClipboardList } from "lucide-react";
+import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardList, Lightbulb } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl } from "../lib/helpers";
 
-export default function UpcomingEvents({ events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files }) {
+export default function UpcomingEvents({ events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files, onGoBrainstorm }) {
   const [filter, setFilter] = useState("All");
   const statuses = ["All", "Registration Open", "Draft", "Awaiting Approval"];
   const filtered = filter === "All" ? events : events.filter(e => e.status === filter);
@@ -92,8 +92,9 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
                   <ModeBadge mode={ev.mode} />
                 </div>
                 <div className="font-bold text-[14px] leading-snug mb-1.5 break-words">{ev.title}</div>
-                <div className="text-[12px] space-y-1" style={{ color: "var(--text-dim)" }}>
-                  <div className="flex items-center gap-1.5"><Calendar size={12} className="shrink-0" /><span className="break-words">{fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)}</span></div>
+                <div className="text-[12px] grid grid-cols-2 gap-x-3 gap-y-1.5" style={{ color: "var(--text-dim)" }}>
+                  <div className="flex items-center gap-1.5"><Calendar size={12} className="shrink-0" /><span className="break-words">{fmtDate(ev.date)}</span></div>
+                  <div className="flex items-center gap-1.5"><Clock size={12} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(ev.start, ev.end)}</span></div>
                   <div className="flex items-center gap-1.5"><MapPin size={12} className="shrink-0" /><span className="break-words">{ev.location}</span></div>
                   <div className="flex items-center gap-1.5"><UserCircle2 size={12} className="shrink-0" /><span className="break-words">{ev.presenter}</span></div>
                 </div>
@@ -125,6 +126,14 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
           );
         })}
       </div>
+
+      {canManage && onGoBrainstorm && (
+        <div className="flex justify-center pt-2">
+          <button onClick={onGoBrainstorm} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
+            <Lightbulb size={14} />Have an idea for a future CPD event? Go to Brainstorming →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
