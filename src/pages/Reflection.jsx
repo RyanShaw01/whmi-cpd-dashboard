@@ -1,7 +1,15 @@
 import { useState, useMemo } from "react";
-import { NotebookPen, Plus, ChevronDown, ChevronRight, Trash2, Mail, X, Check, Building2 } from "lucide-react";
+import { NotebookPen, Plus, ChevronDown, ChevronRight, Trash2, Mail, X, Save, Building2 } from "lucide-react";
 import { REFLECTION_SECTIONS, REFLECTION_SHORT_FORM } from "../data/reflectionTemplate";
 import { fmtDate } from "../lib/helpers";
+
+const SEPARATE_WH_STORAGE_KEY = "whmi_reflection_separate_wh";
+export const getSeparateWhDefault = () => {
+  try { const v = localStorage.getItem(SEPARATE_WH_STORAGE_KEY); return v === null ? true : v === "true"; } catch { return true; }
+};
+export const setSeparateWhDefault = (value) => {
+  try { localStorage.setItem(SEPARATE_WH_STORAGE_KEY, String(value)); } catch { /* ignore */ }
+};
 
 const SORT_OPTIONS = [
   { id: "date", label: "Event Date" },
@@ -14,11 +22,17 @@ function AddReflectionForm({ onCancel, onSubmit }) {
   const [mode, setMode] = useState("full"); // full | short | freeform
   const [answers, setAnswers] = useState({}); // { "sectionId::question": text }
   const [freeformText, setFreeformText] = useState("");
-  const [expanded, setExpanded] = useState({ understanding: true });
+  // Full Template starts fully collapsed (20 questions is a lot to see at once); Short Form
+  // starts fully open since it's just the one small section.
+  const [expanded, setExpanded] = useState({});
 
   const sections = mode === "short" ? [REFLECTION_SHORT_FORM] : REFLECTION_SECTIONS;
   const setAnswer = (key, value) => setAnswers(a => ({ ...a, [key]: value }));
   const toggleSection = (id) => setExpanded(e => ({ ...e, [id]: !e[id] }));
+  const chooseMode = (m) => {
+    setMode(m);
+    setExpanded(m === "short" ? { [REFLECTION_SHORT_FORM.id]: true } : {});
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -43,7 +57,13 @@ function AddReflectionForm({ onCancel, onSubmit }) {
         <label className="text-[11px] font-semibold block mb-1" style={{ color: "var(--text-faint)" }}>Format</label>
         <div className="flex gap-2">
           {[{ id: "full", label: "Full Template" }, { id: "short", label: "Short Form" }, { id: "freeform", label: "Freestyle" }].map(o => (
-            <button key={o.id} type="button" onClick={() => setMode(o.id)} className={mode === o.id ? "whmi-btn-primary flex-1 !py-1.5 text-[12px]" : "whmi-btn-ghost flex-1 !py-1.5 text-[12px]"}>
+            <button
+              key={o.id} type="button" onClick={() => chooseMode(o.id)}
+              className="flex-1 !py-1.5 text-[12px] font-semibold rounded-lg transition"
+              style={mode === o.id
+                ? { background: "var(--accent-success)", color: "white", border: "1px solid var(--accent-success)" }
+                : { background: "var(--surface-2)", color: "var(--text-dim)", border: "1px solid var(--border)" }}
+            >
               {o.label}
             </button>
           ))}
@@ -88,7 +108,13 @@ function AddReflectionForm({ onCancel, onSubmit }) {
       )}
 
       <div className="flex gap-2 pt-1">
-        <button type="submit" className="whmi-btn-primary flex-1 flex items-center justify-center gap-1.5"><Check size={13} />Save Reflection</button>
+        <button
+          type="submit"
+          className="flex-1 flex items-center justify-center gap-1.5 font-semibold rounded-lg py-2 transition"
+          style={{ background: "var(--accent-success)", color: "white" }}
+        >
+          <Save size={13} />Save Reflection
+        </button>
         <button type="button" onClick={onCancel} className="whmi-btn-ghost flex-1 flex items-center justify-center gap-1.5"><X size={13} />Cancel</button>
       </div>
     </form>
@@ -116,7 +142,7 @@ function whToDisplaySections(r) {
 export default function Reflection({ session, personalReflections = [], whReflections = [], onAddPersonalReflection, onDeletePersonalReflection, onEmailCopy }) {
   const [adding, setAdding] = useState(false);
   const [sortBy, setSortBy] = useState("date");
-  const [separateWh, setSeparateWh] = useState(true);
+  const [separateWh, setSeparateWh] = useState(getSeparateWhDefault);
   const [expandedId, setExpandedId] = useState(null);
   const [emailingId, setEmailingId] = useState(null);
 
@@ -135,6 +161,8 @@ export default function Reflection({ session, personalReflections = [], whReflec
     sorted.sort((a, b) => sortBy === "alpha" ? (a.name || "").localeCompare(b.name || "") : (b.date || "").localeCompare(a.date || ""));
     return sorted;
   };
+
+  const toggleSeparateWh = (value) => { setSeparateWh(value); setSeparateWhDefault(value); };
 
   const combined = sortList([...mine.personal, ...mine.wh]);
   const personalSorted = sortList(mine.personal);
@@ -197,7 +225,7 @@ export default function Reflection({ session, personalReflections = [], whReflec
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="disp text-[22px] font-extrabold flex items-center gap-2"><NotebookPen size={20} style={{ color: "var(--accent-primary)" }} />Reflection</h1>
-          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Your CPD reflections — from Western Health events and any activity you add yourself.</p>
+          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Your CPD reflections - from Western Health events and any activity you add yourself.</p>
         </div>
         {!adding && (
           <button onClick={() => setAdding(true)} className="whmi-btn-primary flex items-center gap-1.5"><Plus size={15} />Add Reflection</button>
@@ -211,11 +239,13 @@ export default function Reflection({ session, personalReflections = [], whReflec
         />
       )}
 
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <label className="flex items-center gap-2 text-[12.5px] cursor-pointer">
-          <input type="checkbox" checked={separateWh} onChange={e => setSeparateWh(e.target.checked)} />
-          Keep Western Health CPD separate from other activities
-        </label>
+      <div className="whmi-card p-3 flex items-center justify-between flex-wrap gap-3">
+        <button type="button" onClick={() => toggleSeparateWh(!separateWh)} className="flex items-center gap-2.5">
+          <span className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: separateWh ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+            <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: separateWh ? "20px" : "3px", width: 18, height: 18 }} />
+          </span>
+          <span className="text-[12.5px] font-semibold">Keep Western Health CPD separate from other activities</span>
+        </button>
         <div className="flex items-center gap-1.5">
           <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Sort by</label>
           <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2 py-1.5 text-[12px]">

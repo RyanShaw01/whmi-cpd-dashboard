@@ -3,6 +3,7 @@ import { Sun, Moon, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save,
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
+import { getSeparateWhDefault, setSeparateWhDefault } from "./Reflection";
 import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS, STAFF_FIELD_DEFS } from "../data/mockData";
 import { relativeTime, ACTION_LABELS } from "../lib/helpers";
 
@@ -24,6 +25,12 @@ export default function Settings({
   const [devMode, setDevMode] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [staffFieldsExpanded, setStaffFieldsExpanded] = useState(false);
+  const [separateWhReflections, setSeparateWhReflectionsState] = useState(getSeparateWhDefault);
+  const toggleSeparateWhReflections = () => {
+    const next = !separateWhReflections;
+    setSeparateWhReflectionsState(next);
+    setSeparateWhDefault(next);
+  };
   const [profileName, setProfileName] = useState(session?.name || "");
   const [profileAvatarId, setProfileAvatarId] = useState(session?.avatarId || CHARACTERS[0].id);
   const [profileAvatarColor, setProfileAvatarColor] = useState(session?.avatarColor || "blue");
@@ -415,6 +422,15 @@ export default function Settings({
         {canManageUsers && t("autoWaitlist", "Automatic Waitlist Promotion", "Move waitlisted staff to confirmed when a place opens")}
         {t("autoApproveCerts", "Auto-approve Certificates", "Skip manual approval once reflection is confirmed")}
         {canManageUsers && t("weeklyDigest", "Weekly Digest", "Summary email of CPD activity every Monday")}
+        <div className="flex items-center justify-between p-4 gap-3">
+          <div className="min-w-0">
+            <div className="font-semibold text-[13px]">Keep Western Health CPD Separate</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>In the Reflection tab, keep Western Health CPD reflections in their own section, separate from other activities you've added.</div>
+          </div>
+          <button onClick={toggleSeparateWhReflections} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: separateWhReflections ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+            <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: separateWhReflections ? "20px" : "3px", width: 18, height: 18 }} />
+          </button>
+        </div>
       </div>
 
       {canManageUsers && (

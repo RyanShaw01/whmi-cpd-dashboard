@@ -136,7 +136,7 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
           )}
           {canManage && onGoBrainstorm && (
             <button onClick={onGoBrainstorm} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
-              <Lightbulb size={14} />Go to Brainstorming →
+              <Lightbulb size={14} />Go to CPD Brainstorming →
             </button>
           )}
         </div>

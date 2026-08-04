@@ -21,7 +21,7 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
   return (
     <div className="whmi-fade-in p-6 max-w-[900px] mx-auto space-y-5">
       <div>
-        <h1 className="disp text-[22px] font-extrabold flex items-center gap-2"><Lightbulb size={20} style={{ color: "var(--accent-primary)" }} />Brainstorming</h1>
+        <h1 className="disp text-[22px] font-extrabold flex items-center gap-2"><Lightbulb size={20} style={{ color: "var(--accent-primary)" }} />CPD Brainstorming</h1>
         <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>A shared space for admins and owners to jot down ideas for future CPD activities — types, subjects, presenters, external workshops, locations, and more.</p>
       </div>
 
@@ -35,7 +35,7 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
         {shareOpen && (
           <div className="mt-2 max-w-xs">
             <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Share this link or QR code so staff can submit their own CPD ideas without logging in. Submissions are added to the list below, tagged with their name.</p>
-            <EventQRCode event={{ id: "brainstorm", title: "Brainstorming Ideas" }} url={submitUrl} filenameSuffix="idea-form" />
+            <EventQRCode event={{ id: "brainstorm", title: "CPD Brainstorming Ideas" }} url={submitUrl} filenameSuffix="idea-form" />
           </div>
         )}
       </div>

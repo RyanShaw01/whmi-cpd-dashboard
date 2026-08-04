@@ -18,6 +18,7 @@ const emptyEvent = {
   meetingUrl: "", room: "", level: "", capacity: "", onlineCapacity: "", inPersonCapacity: "",
   waitlist: 0, status: "Draft", registered: 0, reflectionAutoEmail: true, asmirtCode: "",
   cpdTypeId: null, openToExternal: true, showRegCountExternal: false,
+  externalPrice: "", reflectionEmailOffsetMinutes: 20,
 };
 
 const field = "text-[11px] font-semibold block mb-1";
@@ -107,7 +108,7 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-5">
         <PeopleListField label="Presenter(s)" value={form.presenter} onChange={v => set("presenter", v)} placeholder="Add a presenter" />
         <PeopleListField label="Organisers" value={form.organisers} onChange={v => set("organisers", v)} placeholder="Add an organiser" />
       </div>
@@ -214,6 +215,19 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
         </button>
       </div>
 
+      {form.openToExternal && (
+        <div>
+          <label className={field}>Price for external participants</label>
+          <input
+            type="number" min="0" step="0.01" value={form.externalPrice}
+            onChange={e => set("externalPrice", e.target.value)}
+            placeholder="Leave blank if free"
+            className="whmi-input w-full px-2.5 py-2"
+          />
+          <p className="text-[10.5px] mt-1" style={{ color: "var(--text-faint)" }}>Shown to external participants when registering. Internal WH staff never see a price.</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between p-3 rounded-xl" style={{ border: "1px solid var(--border)" }}>
         <div>
           <div className="text-[12.5px] font-semibold">Show registration numbers to external viewers</div>
@@ -236,7 +250,18 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
           </button>
         </div>
         {form.reflectionAutoEmail && (
-          <p className="text-[10.5px] mt-1.5" style={{ color: "var(--text-faint)" }}>Note: sending automatic emails needs a scheduled job, which isn't connected yet; the link and QR code work today.</p>
+          <>
+            <div className="flex items-center gap-2 mt-3">
+              <label className="text-[11.5px] font-semibold shrink-0" style={{ color: "var(--text-dim)" }}>Send</label>
+              <input
+                type="number" min="0" step="1" value={form.reflectionEmailOffsetMinutes}
+                onChange={e => set("reflectionEmailOffsetMinutes", e.target.value === "" ? "" : Number(e.target.value))}
+                className="whmi-input px-2 py-1.5 w-20 text-center"
+              />
+              <label className="text-[11.5px] font-semibold" style={{ color: "var(--text-dim)" }}>minutes before the event ends</label>
+            </div>
+            <p className="text-[10.5px] mt-1.5" style={{ color: "var(--text-faint)" }}>Note: sending automatic emails needs a scheduled job, which isn't connected yet; the link and QR code work today.</p>
+          </>
         )}
       </div>
 

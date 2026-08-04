@@ -172,7 +172,7 @@ export const NAV_FULL = [
   { id: "reports", label: "Reports & Analytics", icon: BarChart3 },
   { id: "certificates", label: "Certificates", icon: Award },
   { id: "reflection", label: "Reflection", icon: NotebookPen },
-  { id: "brainstorm", label: "Brainstorming", icon: Lightbulb },
+  { id: "brainstorm", label: "CPD Brainstorming", icon: Lightbulb },
   { id: "help", label: "Help Centre", icon: HelpCircle },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];

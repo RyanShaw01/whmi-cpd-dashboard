@@ -15,7 +15,7 @@ import { SEED_USERS, STAFF_SEED, UPCOMING_EVENTS, PREVIOUS_EVENTS, CERT_QUEUE } 
 const userFromRow = (r) => ({
   id: r.id, name: r.name, email: r.email, role: r.role,
   staffId: r.staff_id, avatarId: r.avatar_id, avatarColor: r.avatar_color,
-  dietaryRequirements: r.dietary_requirements,
+  dietaryRequirements: r.dietary_requirements, accessibility: r.accessibility,
   authId: r.auth_id, userType: r.user_type || "internal", verified: !!r.verified,
   secondaryEmail: r.secondary_email, certEmailPreference: r.cert_email_preference || "primary",
   onboarded: r.onboarded == null ? true : !!r.onboarded,
@@ -25,7 +25,7 @@ const userFromRow = (r) => ({
 const userToRow = (u) => ({
   id: u.id, name: u.name, email: u.email, role: u.role,
   staff_id: u.staffId ?? null, avatar_id: u.avatarId, avatar_color: u.avatarColor,
-  dietary_requirements: u.dietaryRequirements ?? null,
+  dietary_requirements: u.dietaryRequirements ?? null, accessibility: u.accessibility ?? null,
   auth_id: u.authId ?? null, user_type: u.userType || "internal", verified: u.verified ?? false,
   secondary_email: u.secondaryEmail ?? null, cert_email_preference: u.certEmailPreference || "primary",
   onboarded: u.onboarded ?? false,
@@ -63,6 +63,8 @@ const eventFromRow = (r) => ({
   reflectionAutoEmail: r.reflection_auto_email !== false, showRegCountExternal: !!r.show_reg_count_external,
   bannerFocalX: r.banner_focal_x == null ? 50 : Number(r.banner_focal_x), bannerFocalY: r.banner_focal_y == null ? 50 : Number(r.banner_focal_y),
   bannerZoom: r.banner_zoom == null ? 1 : Number(r.banner_zoom),
+  externalPrice: r.external_price == null ? null : Number(r.external_price),
+  reflectionEmailOffsetMinutes: r.reflection_email_offset_minutes == null ? 20 : Number(r.reflection_email_offset_minutes),
 });
 const eventToRow = (e) => ({
   title: e.title, topic: e.topic, date: e.date, start_time: e.start, end_time: e.end,
@@ -78,6 +80,8 @@ const eventToRow = (e) => ({
   cpd_type_id: e.cpdTypeId || null, open_to_external: e.openToExternal ?? true,
   reflection_auto_email: e.reflectionAutoEmail !== false, show_reg_count_external: e.showRegCountExternal ?? false,
   banner_focal_x: e.bannerFocalX ?? 50, banner_focal_y: e.bannerFocalY ?? 50, banner_zoom: e.bannerZoom ?? 1,
+  external_price: e.externalPrice === "" || e.externalPrice == null ? null : Number(e.externalPrice),
+  reflection_email_offset_minutes: e.reflectionEmailOffsetMinutes ?? 20,
 });
 
 const certFromRow = (r) => ({
@@ -183,6 +187,7 @@ export async function updateUser(id, patch) {
   if ("avatarId" in patch) row.avatar_id = patch.avatarId;
   if ("avatarColor" in patch) row.avatar_color = patch.avatarColor;
   if ("dietaryRequirements" in patch) row.dietary_requirements = patch.dietaryRequirements;
+  if ("accessibility" in patch) row.accessibility = patch.accessibility;
   if ("authId" in patch) row.auth_id = patch.authId;
   if ("userType" in patch) row.user_type = patch.userType;
   if ("verified" in patch) row.verified = patch.verified;

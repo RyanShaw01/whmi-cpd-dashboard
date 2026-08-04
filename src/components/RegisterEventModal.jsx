@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { X, ClipboardList, Calendar, Clock } from "lucide-react";
-import { fmtDate, fmtTimeRange12h } from "../lib/helpers";
+import { X, ClipboardList, Calendar, Clock, MapPin } from "lucide-react";
+import { fmtDate, fmtTimeRange12h, eventLocationSuffix } from "../lib/helpers";
 
 export default function RegisterEventModal({ open, onClose, session, events, defaultEventId, onSubmit }) {
   const openEvents = events.filter(e => e.status === "Registration Open");
@@ -61,6 +61,15 @@ export default function RegisterEventModal({ open, onClose, session, events, def
                     <span className="flex items-center gap-1"><Calendar size={11} />{fmtDate(ev.date)}</span>
                     <span className="flex items-center gap-1"><Clock size={11} />{fmtTimeRange12h(ev.start, ev.end)}</span>
                   </div>
+                  {(ev.campus || ev.location) && (
+                    <div className="flex items-center gap-1 mt-1 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
+                      <MapPin size={11} />
+                      <span>{ev.campus ? <><b>{ev.campus}</b>{eventLocationSuffix(ev) ? ` - ${eventLocationSuffix(ev)}` : ""}</> : eventLocationSuffix(ev)}</span>
+                    </div>
+                  )}
+                  {session?.userType === "external" && ev.externalPrice != null && (
+                    <div className="text-[11.5px] mt-1 font-semibold" style={{ color: "var(--accent-primary)" }}>${Number(ev.externalPrice).toFixed(2)}</div>
+                  )}
                   {ev.description && <p className="text-[11.5px] mt-1.5 line-clamp-2" style={{ color: "var(--text-faint)" }}>{ev.description}</p>}
                 </button>
               ))}

@@ -835,9 +835,9 @@ export default function App() {
     setRegistrations(prev => [...prev, reg]);
     insertRegistration(reg);
     if (session) {
-      setUsers(prev => prev.map(u => u.id === session.id ? { ...u, dietaryRequirements: dietary, accessibility } : u));
-      setSession(s => ({ ...s, dietaryRequirements: dietary, accessibility }));
-      updateUser(session.id, { dietaryRequirements: dietary });
+      setUsers(prev => prev.map(u => u.id === session.id ? { ...u, dietaryRequirements: dietary, accessibility, profession } : u));
+      setSession(s => ({ ...s, dietaryRequirements: dietary, accessibility, profession }));
+      updateUser(session.id, { dietaryRequirements: dietary, accessibility, profession });
     }
     setRegisterModalOpen(false);
   };
@@ -873,6 +873,11 @@ export default function App() {
     };
     setRegistrations(prev => [...prev, reg]);
     insertRegistration(reg);
+    if (session) {
+      setUsers(prev => prev.map(u => u.id === session.id ? { ...u, dietaryRequirements: dietary, accessibility, profession } : u));
+      setSession(s => ({ ...s, dietaryRequirements: dietary, accessibility, profession }));
+      updateUser(session.id, { dietaryRequirements: dietary, accessibility, profession });
+    }
   };
 
   const primaryHex = BRAND_HEX[colorPrefs.primary] || BRAND_HEX.blue;
