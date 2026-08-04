@@ -6,7 +6,7 @@ import EventFilesPanel from "./EventFilesPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
 import RegistrationsPanel from "./RegistrationsPanel";
 import EventForm from "./EventForm";
-import { fmtDate } from "../lib/helpers";
+import { fmtDate, eventLocationSuffix } from "../lib/helpers";
 
 const TABS = ["overview", "attendance", "files", "recording", "reflections", "certificates"];
 
@@ -162,9 +162,9 @@ export default function PreviousEventDetailModal({
                 <div>
                   <span className="font-semibold">Location:</span>{" "}
                   <span style={{ color: "var(--text-dim)" }}>
-                    {[event.campus, event.location].filter(Boolean).join(" · ")}
-                    {event.level ? ` · Level ${event.level}` : ""}
-                    {event.room ? ` · Room ${event.room}` : ""}
+                    {event.campus && <strong style={{ color: "var(--text)" }}>{event.campus}</strong>}
+                    {event.campus && eventLocationSuffix(event) ? " - " : ""}
+                    {eventLocationSuffix(event)}
                   </span>
                 </div>
               )}

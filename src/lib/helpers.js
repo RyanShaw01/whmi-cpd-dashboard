@@ -184,6 +184,16 @@ export function eventBannerUrl(files, eventId) {
 }
 
 /* Exact CPD hours from event start/end, e.g. "09:00"-"12:30" -> 3.5. */
+/* Everything after the hospital name in the "Hospital - Location (Level X, Room Y)" display
+ * format — the hospital itself is rendered separately (bolded) by the caller. */
+export function eventLocationSuffix(event) {
+  const bracketParts = [];
+  if (event.level) bracketParts.push(`Level ${event.level}`);
+  if (event.room) bracketParts.push(`Room ${event.room}`);
+  const bracket = bracketParts.length > 0 ? ` (${bracketParts.join(", ")})` : "";
+  return `${event.location || ""}${bracket}`;
+}
+
 /* Presenters/organisers are stored as one free-text field; entry supports either newlines
  * (dot-pointed) or commas, so splitting on both keeps older comma-separated data working. */
 export function splitPeopleList(str) {

@@ -11,7 +11,7 @@ import InfoTooltip from "./InfoTooltip";
 import EventForm from "./EventForm";
 import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
-import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, splitPeopleList, eventCpdHours } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, splitPeopleList, eventCpdHours, eventLocationSuffix } from "../lib/helpers";
 import { previewCertificateTemplate } from "../lib/db";
 
 const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
@@ -125,9 +125,9 @@ export default function EventDetailModal({
             <div className="flex items-center gap-2"><Calendar size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtDate(event.date)}</span></div>
             <div className="flex items-center gap-2"><Clock size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(event.start, event.end)}</span></div>
             <div className="flex items-center gap-2"><MapPin size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">
-              {[event.campus, event.location].filter(Boolean).join(" · ")}
-              {event.level ? ` · Level ${event.level}` : ""}
-              {event.room ? ` · Room ${event.room}` : ""}
+              {event.campus && <strong>{event.campus}</strong>}
+              {event.campus && eventLocationSuffix(event) ? " - " : ""}
+              {eventLocationSuffix(event)}
             </span></div>
             <div className="flex items-start gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" />
               {(() => {
