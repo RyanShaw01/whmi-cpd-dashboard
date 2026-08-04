@@ -386,8 +386,8 @@ export default function App() {
     updateCertificateStatus(cert.id, "Sent");
     pushAudit({ actorId: session?.id, action: "certificate.approved", entityType: "certificate", entityId: cert.id, details: { staff: cert.staff, event: cert.event } });
   };
-  const handleApproveAndSendAll = async () => {
-    const awaiting = certificates.filter(c => c.status === "Awaiting Approval");
+  const handleApproveAndSendAll = async (certsToApprove) => {
+    const awaiting = certsToApprove || certificates.filter(c => c.status === "Awaiting Approval");
     for (const cert of awaiting) {
       const res = await sendCertificateEmail(cert.id, false);
       if (res.ok) {
