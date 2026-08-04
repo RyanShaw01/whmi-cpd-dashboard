@@ -6,6 +6,7 @@ import EventFilesPanel from "./EventFilesPanel";
 import BannerPositionEditor from "./BannerPositionEditor";
 import InfoTooltip from "./InfoTooltip";
 import TimeInput12h from "./TimeInput12h";
+import PeopleListField from "./PeopleListField";
 import { eventBannerUrl } from "../lib/helpers";
 
 const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
@@ -107,14 +108,8 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={field}>Presenter(s)</label>
-          <textarea value={form.presenter} onChange={e => set("presenter", e.target.value)} rows={2} placeholder="One per line, or separate with commas" className="whmi-input w-full px-2.5 py-2 resize-none" />
-        </div>
-        <div>
-          <label className={field}>Organisers</label>
-          <textarea value={form.organisers} onChange={e => set("organisers", e.target.value)} rows={2} placeholder="One per line, or separate with commas" className="whmi-input w-full px-2.5 py-2 resize-none" />
-        </div>
+        <PeopleListField label="Presenter(s)" value={form.presenter} onChange={v => set("presenter", v)} placeholder="Add a presenter" />
+        <PeopleListField label="Organisers" value={form.organisers} onChange={v => set("organisers", v)} placeholder="Add an organiser" />
       </div>
 
       <div className="grid grid-cols-3 gap-3">

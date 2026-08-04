@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS } from "../lib/helpers";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, eventLocationSuffix } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
 const QUICK_ACTIONS = [
@@ -113,7 +113,7 @@ export default function Dashboard({ events, previousEvents, registrations, refle
                     </div>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
                       <span className="flex items-center gap-1"><Clock size={11} className="shrink-0" />{fmtTimeRange12h(ev.start, ev.end)}</span>
-                      <span className="flex items-center gap-1"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.location.split(",")[0]}</span></span>
+                      <span className="flex items-center gap-1"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
                       <span className="flex items-center gap-1"><UserCircle2 size={11} className="shrink-0" /><span className="truncate">{ev.presenter}</span></span>
                       <span className="flex items-center gap-1 font-bold whitespace-nowrap">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span>
                     </div>

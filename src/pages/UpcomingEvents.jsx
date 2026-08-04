@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardList, Lightbulb } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
-import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix } from "../lib/helpers";
 
 export default function UpcomingEvents({ events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea }) {
   const [filter, setFilter] = useState("All");
@@ -95,7 +95,7 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
                 <div className="text-[12px] grid grid-cols-2 gap-x-3 gap-y-1.5" style={{ color: "var(--text-dim)" }}>
                   <div className="flex items-center gap-1.5"><Calendar size={12} className="shrink-0" /><span className="break-words">{fmtDate(ev.date)}</span></div>
                   <div className="flex items-center gap-1.5"><Clock size={12} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(ev.start, ev.end)}</span></div>
-                  <div className="flex items-center gap-1.5"><MapPin size={12} className="shrink-0" /><span className="break-words">{ev.location}</span></div>
+                  <div className="flex items-center gap-1.5"><MapPin size={12} className="shrink-0" /><span className="break-words">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></div>
                   <div className="flex items-center gap-1.5"><UserCircle2 size={12} className="shrink-0" /><span className="break-words">{ev.presenter}</span></div>
                 </div>
                 <div className="mt-3">

@@ -72,14 +72,20 @@ export default function TimeInput12h({ value, onChange }) {
     <div className="whmi-input flex items-center gap-1 px-2.5 py-2">
       <input
         inputMode="numeric" placeholder="hh" value={hour} onChange={handleHour}
-        className="w-5 bg-transparent outline-none text-center" style={{ color: "var(--text)" }}
+        className="w-6 shrink-0 bg-transparent outline-none text-center text-[13px]"
+        style={{ color: "var(--text)", fontVariantNumeric: "tabular-nums" }}
       />
       <span style={{ color: "var(--text-faint)" }}>:</span>
       <input
         ref={minuteRef} inputMode="numeric" placeholder="mm" value={minute} onChange={handleMinute}
-        className="w-5 bg-transparent outline-none text-center" style={{ color: "var(--text)" }}
+        className="w-6 shrink-0 bg-transparent outline-none text-center text-[13px]"
+        style={{ color: "var(--text)", fontVariantNumeric: "tabular-nums" }}
       />
-      <select ref={periodRef} value={period} onChange={handlePeriod} className="bg-transparent outline-none text-[12px] font-semibold ml-1" style={{ color: "var(--text)" }}>
+      <select
+        ref={periodRef} value={period} onChange={handlePeriod}
+        className="bg-transparent outline-none text-[13px] font-semibold ml-1 shrink-0"
+        style={{ color: "var(--text)", appearance: "none", WebkitAppearance: "none", MozAppearance: "none", width: "30px" }}
+      >
         <option value="AM">AM</option>
         <option value="PM">PM</option>
       </select>

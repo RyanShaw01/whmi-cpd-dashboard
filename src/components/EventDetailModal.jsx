@@ -11,7 +11,7 @@ import InfoTooltip from "./InfoTooltip";
 import EventForm from "./EventForm";
 import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
-import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, splitPeopleList, eventCpdHours, eventLocationSuffix } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix } from "../lib/helpers";
 import { previewCertificateTemplate } from "../lib/db";
 
 const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
@@ -129,34 +129,13 @@ export default function EventDetailModal({
               {event.campus && eventLocationSuffix(event) ? " - " : ""}
               {eventLocationSuffix(event)}
             </span></div>
-            <div className="flex items-start gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" />
-              {(() => {
-                const presenters = splitPeopleList(event.presenter);
-                return presenters.length > 1 ? (
-                  <ul className="break-words" style={{ paddingLeft: 14, listStyleType: "disc" }}>
-                    {presenters.map((p, i) => <li key={i}>{p}</li>)}
-                  </ul>
-                ) : <span className="break-words">{event.presenter}</span>;
-              })()}
-            </div>
+            <div className="flex items-center gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{event.presenter}</span></div>
           </div>
 
           {(event.description || event.organisers) && (
             <div className="whmi-card p-3 space-y-2 text-[12.5px]">
               {event.description && <p style={{ color: "var(--text-dim)" }}>{event.description}</p>}
-              {event.organisers && (
-                <div>
-                  <span className="font-semibold">Organisers:</span>{" "}
-                  {(() => {
-                    const organisers = splitPeopleList(event.organisers);
-                    return organisers.length > 1 ? (
-                      <ul className="mt-1" style={{ paddingLeft: 14, listStyleType: "disc", color: "var(--text-dim)" }}>
-                        {organisers.map((o, i) => <li key={i}>{o}</li>)}
-                      </ul>
-                    ) : <span style={{ color: "var(--text-dim)" }}>{event.organisers}</span>;
-                  })()}
-                </div>
-              )}
+              {event.organisers && <div><span className="font-semibold">Organisers:</span> <span style={{ color: "var(--text-dim)" }}>{event.organisers}</span></div>}
               {event.tags?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {event.tags.map(t => <span key={t} className="whmi-badge" style={{ background: "var(--surface-2)", color: "var(--text-dim)" }}>{t}</span>)}
