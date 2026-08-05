@@ -112,6 +112,7 @@ export const ACTION_LABELS = {
   "event.updated": "edited an event",
   "event.status_changed": "changed event status",
   "event.deleted": "deleted an event",
+  "registration.created": "registered for",
   "registration.updated": "updated a registration",
   "registration.attendance_changed": "changed attendance status",
   "registration.deleted": "deleted a registration",
@@ -134,7 +135,23 @@ export const ACTION_LABELS = {
   "reflection.reminder_sent": "sent a reflection reminder",
   "file.uploaded": "uploaded a file",
   "file.deleted": "deleted a file",
+  "brainstorm_idea.created": "added a CPD Brainstorming idea",
+  "brainstorm_idea.deleted": "deleted a CPD Brainstorming idea",
 };
+
+// Best-effort human-readable name for the entity an activity-log entry refers to, drawn from
+// whatever the action already stashed in `details` — used to name the specific event/idea/etc.
+// in the Recent Activity feed instead of just "edited an event".
+export function activityEntityName(action, details) {
+  if (!details) return null;
+  if (action === "event.created" || action === "event.updated" || action === "event.deleted") return details.title || null;
+  if (action === "registration.created") return details.eventTitle || null;
+  if (action === "brainstorm_idea.created" || action === "brainstorm_idea.deleted") {
+    const content = details.content || "";
+    return content.length > 40 ? `${content.slice(0, 40)}…` : content || null;
+  }
+  return null;
+}
 
 export function relativeTime(iso) {
   const diffMs = Date.now() - new Date(iso).getTime();

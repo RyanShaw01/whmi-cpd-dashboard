@@ -855,6 +855,7 @@ export default function App() {
     };
     setRegistrations(prev => [...prev, reg]);
     insertRegistration(reg);
+    pushAudit({ actorId: session?.id, action: "registration.created", entityType: "event", entityId: eventId, details: { name: reg.name, eventTitle: events.find(e => e.id === eventId)?.title } });
     if (session) {
       setUsers(prev => prev.map(u => u.id === session.id ? { ...u, dietaryRequirements: dietary, accessibility, profession } : u));
       setSession(s => ({ ...s, dietaryRequirements: dietary, accessibility, profession }));
@@ -894,6 +895,7 @@ export default function App() {
     };
     setRegistrations(prev => [...prev, reg]);
     insertRegistration(reg);
+    pushAudit({ actorId: session?.id, action: "registration.created", entityType: "event", entityId: eventId, details: { name: reg.name, eventTitle: events.find(e => e.id === eventId)?.title } });
     if (session) {
       setUsers(prev => prev.map(u => u.id === session.id ? { ...u, dietaryRequirements: dietary, accessibility, profession } : u));
       setSession(s => ({ ...s, dietaryRequirements: dietary, accessibility, profession }));
@@ -1005,7 +1007,8 @@ export default function App() {
                 openEvent={openEvent} setPage={changePage} layoutOrder={layoutOrder} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} userName={viewSession.name.split(" ")[0]}
                 onCreateCertificate={() => { changePage("certificates"); setCreateCertificateOpen(true); }}
                 onAddStaff={() => { changePage("staff"); setSelectedStaff(blankStaff()); }}
-                onAddEvent={() => { changePage("upcoming"); setCreateEventOpen(true); }}
+                onAddEvent={() => changePage("upcoming")}
+                onOpenRegister={() => handleOpenRegister()}
                 onActivityClick={navigateToEntity}
               />
             )}

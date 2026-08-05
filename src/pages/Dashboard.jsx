@@ -9,11 +9,12 @@ import {
 } from "lucide-react";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, eventLocationSuffix } from "../lib/helpers";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
 const QUICK_ACTIONS = [
   { id: "upcoming", label: "Add/Edit Event", icon: Calendar, color: "var(--accent-primary)" },
+  { id: "register", label: "Register for an Event", icon: ClipboardList, color: "var(--accent-success)" },
   { id: "certificates", label: "Make Certificate", icon: Award, color: "var(--accent-secondary)" },
   { id: "staff", label: "Add Staff", icon: UserPlus, color: "var(--accent-success)" },
   { id: "reports", label: "Export Reports", icon: Download, color: "var(--accent-primary)" },
@@ -31,18 +32,21 @@ function groupActivity(auditLog, users) {
     } else {
       // auditLog is newest-first, so the entry that starts a new group is also the most recent
       // one affected by it — that's what a click on a merged "(3 times)" row will jump to.
-      groups.push({ actorId: entry.actorId, action: entry.action, count: 1, latest: entry.createdAt, entityType: entry.entityType, entityId: entry.entityId });
+      groups.push({ actorId: entry.actorId, action: entry.action, count: 1, latest: entry.createdAt, entityType: entry.entityType, entityId: entry.entityId, details: entry.details });
     }
   }
   return groups.map(g => {
     const actor = users.find(u => u.id === g.actorId);
     const label = ACTION_LABELS[g.action] || g.action;
-    const text = g.count > 1 ? `${actor?.name || "Someone"} ${label} (${g.count} times)` : `${actor?.name || "Someone"} ${label}`;
+    const entityName = g.count === 1 ? activityEntityName(g.action, g.details) : null;
+    const text = g.count > 1
+      ? `${actor?.name || "Someone"} ${label} (${g.count} times)`
+      : `${actor?.name || "Someone"} ${label}${entityName ? ` "${entityName}"` : ""}`;
     return { key: `${g.actorId}-${g.action}-${g.latest}`, text, time: relativeTime(g.latest), entityType: g.entityType, entityId: g.entityId };
   });
 }
 
-export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onActivityClick }) {
+export default function Dashboard({ events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onOpenRegister, onActivityClick }) {
   // Re-render every minute so countdowns (and join-meeting availability) stay fresh.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -216,7 +220,7 @@ export default function Dashboard({ events, previousEvents, registrations, refle
       </div>
 
       <div className="whmi-quick-actions-group">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {QUICK_ACTIONS.map(a => (
             <button
               key={a.id}
@@ -224,6 +228,7 @@ export default function Dashboard({ events, previousEvents, registrations, refle
                 if (a.id === "certificates") onCreateCertificate();
                 else if (a.id === "staff") onAddStaff();
                 else if (a.id === "upcoming") onAddEvent();
+                else if (a.id === "register") onOpenRegister();
                 else setPage(a.id);
               }}
               className="whmi-quick-action"
