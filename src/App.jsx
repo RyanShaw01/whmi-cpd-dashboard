@@ -34,7 +34,7 @@ import CreateCertificateModal from "./components/CreateCertificateModal";
 import { BRAND_HEX, CHARACTERS, NAV_FULL, NAV_VIEWER, NAV_VIEWER_INTERNAL, DEFAULT_LAYOUT, DEFAULT_STAFF_FIELD_VISIBILITY } from "./data/mockData";
 import { TOUR_STEPS } from "./data/tourSteps";
 import { loadPersonal, savePersonal } from "./lib/storage";
-import { buildNotificationGroups } from "./lib/notifications";
+import { buildNotificationGroups, buildViewerNotificationGroups } from "./lib/notifications";
 import { eventAttendedCount, eventAvgRating } from "./lib/analytics";
 import { eventBannerFile, eventCpdHours } from "./lib/helpers";
 import { supabase, supabaseConfigured } from "./lib/supabaseClient";
@@ -53,6 +53,7 @@ import {
   fetchPersonalReflections, insertPersonalReflection, deletePersonalReflection, emailReflectionCopy, emailReflectionsReport,
 } from "./lib/db";
 import { setAvatarIcons as setRegistryIcons, setAvatarColors as setRegistryColors } from "./lib/avatarRegistry";
+import Footer from "./components/Footer";
 
 const WH_DOMAIN = "@wh.org.au";
 
@@ -110,8 +111,8 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id, session?.onboarded]);
   const [highlightId, setHighlightId] = useState(null);
-  const [dark, setDark] = useState(false);
-  const [mainDark, setMainDark] = useState(null);
+  const [theme, setTheme] = useState("light"); // "light" | "dark" | "navy"
+  const [mainTheme, setMainTheme] = useState(null); // null = match `theme`, else "light" | "dark" | "navy"
   const [collapsed, setCollapsed] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -230,8 +231,8 @@ export default function App() {
         const profile = await resolveOrCreateProfile(authSession.user);
         if (!mounted || !profile) { setReady(true); return; }
         setSession(profile);
-        setDark(!!profile.darkMode);
-        setMainDark(profile.mainDarkMode == null ? null : !!profile.mainDarkMode);
+        setTheme(profile.themeMode || "light");
+        setMainTheme(profile.mainThemeMode || null);
         setPage(profile.role === "viewer" ? "mycpd" : "dashboard");
         await loadAppData();
         if (!mounted) return;
@@ -264,16 +265,16 @@ export default function App() {
     setSession(s => ({ ...s, ...updates }));
     updateUser(session.id, updates);
   };
-  // Dark mode and avatar/colour changes save immediately (account-level, so they follow the
+  // Theme and avatar/colour changes save immediately (account-level, so they follow the
   // user across devices) rather than waiting for the Settings "Save Profile" button.
-  const handleSetDark = (next) => {
-    setDark(next);
-    if (session) handleProfileSave({ darkMode: next });
+  const handleSetTheme = (next) => {
+    setTheme(next);
+    if (session) handleProfileSave({ themeMode: next });
   };
-  // null = "match sidebar & header theme"; true/false = explicit override for the main page only.
-  const handleSetMainDark = (next) => {
-    setMainDark(next);
-    if (session) handleProfileSave({ mainDarkMode: next });
+  // null = "match sidebar & header theme"; "light"/"dark"/"navy" = explicit override for the main page only.
+  const handleSetMainTheme = (next) => {
+    setMainTheme(next);
+    if (session) handleProfileSave({ mainThemeMode: next });
   };
   const handleCompleteOnboarding = async (updates) => {
     const patch = { ...updates, onboarded: true };
@@ -834,10 +835,19 @@ export default function App() {
     () => buildNotificationGroups({ events, certificates, registrations, acknowledged }),
     [events, certificates, registrations, acknowledged]
   );
+  const viewerNotificationGroups = useMemo(() => {
+    const vs = previewSession || session;
+    if (!vs || vs.role !== "viewer") return [];
+    const visible = eventsWithLiveCounts.filter(e => e.status === "Registration Open" && e.openToExternal);
+    return buildViewerNotificationGroups({
+      session: vs, visibleEvents: visible, previousEvents: previousEventsWithLiveStats,
+      registrations, reflections, acknowledged,
+    });
+  }, [previewSession, session, eventsWithLiveCounts, previousEventsWithLiveStats, registrations, reflections, acknowledged]);
   const acknowledgeGroup = (g) => setAcknowledged(prev => new Set([...prev, ...g.ackKeys]));
-  const acknowledgeAllNotifications = () => setAcknowledged(prev => {
+  const acknowledgeAllNotifications = (groups) => setAcknowledged(prev => {
     const next = new Set(prev);
-    notificationGroups.forEach(g => g.ackKeys.forEach(k => next.add(k)));
+    (groups || notificationGroups).forEach(g => g.ackKeys.forEach(k => next.add(k)));
     return next;
   });
   const navigateToNotification = (g) => {
@@ -994,24 +1004,25 @@ export default function App() {
     } : {};
 
     mainContent = (
-      <div className={`whmi-root ${dark ? "dark" : "light"}`} style={{ minHeight: "100vh", ...rootVars }}>
+      <div className={`whmi-root ${theme}`} style={{ minHeight: "100vh", ...rootVars }}>
         <div className="flex" style={{ minHeight: "100vh" }}>
           <Sidebar page={page} setPage={changePage} collapsed={collapsed} setCollapsed={setCollapsed} navItems={navItems} homePage={homePage} width={sidebarWidth} badgePages={badgePages} />
 
           <div className="flex-1 min-w-0">
             <HeaderBar
-              page={page} dark={dark} setDark={handleSetDark} navItems={navItems} user={viewSession}
+              page={page} theme={theme} setTheme={handleSetTheme} mainTheme={mainTheme} setMainTheme={handleSetMainTheme} navItems={navItems} user={viewSession}
               onAvatarClick={() => setProfileOpen(o => !o)}
               events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} staffDirectory={staffDirectory} openEvent={openEvent} openStaff={openStaff}
               openArchiveEvent={openArchiveEvent} certificates={certificates} reflections={reflections} files={files} onNavigatePage={changePage}
-              canManage={canManage} notificationGroups={notificationGroups} redDotsEnabled={redDotsEnabled}
-              onNavigateNotification={navigateToNotification} onAcknowledgeGroup={acknowledgeGroup} onAcknowledgeAll={acknowledgeAllNotifications}
+              canManage={canManage} notificationGroups={canManage ? notificationGroups : viewerNotificationGroups} redDotsEnabled={redDotsEnabled}
+              onNavigateNotification={navigateToNotification} onAcknowledgeGroup={acknowledgeGroup}
+              onAcknowledgeAll={() => acknowledgeAllNotifications(canManage ? notificationGroups : viewerNotificationGroups)}
               showSearch={viewSession.role !== "viewer"}
               previewSession={previewSession} onExitPreview={() => setPreviewSession(null)}
               testAccounts={users.filter(u => u.isTest)} onPreviewAs={setPreviewSession}
             />
 
-            <div data-tour="main-content" className={`whmi-root ${(mainDark == null ? dark : mainDark) ? "dark" : "light"}`} style={rootVars}>
+            <div data-tour="main-content" className={`whmi-root ${mainTheme || theme}`} style={rootVars}>
             {page === "dashboard" && viewSession.role !== "viewer" && (
               <Dashboard
                 events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} certificates={certificates} files={files}
@@ -1064,8 +1075,8 @@ export default function App() {
             {page === "help" && <HelpCentre role={viewSession.role} />}
             {page === "settings" && (
               <Settings
-                dark={dark} setDark={handleSetDark}
-                mainDark={mainDark} setMainDark={handleSetMainDark}
+                theme={theme} setTheme={handleSetTheme}
+                mainTheme={mainTheme} setMainTheme={handleSetMainTheme}
                 role={session.role}
                 session={session} onProfileSave={handleProfileSave} showToast={showToast}
                 users={users} onUsersChange={handleUsersChange}
@@ -1087,6 +1098,7 @@ export default function App() {
                 staffFieldVisibility={staffFieldVisibility} onToggleStaffField={handleToggleStaffField}
               />
             )}
+            <Footer />
             </div>
           </div>
         </div>

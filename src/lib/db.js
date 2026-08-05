@@ -19,7 +19,9 @@ const userFromRow = (r) => ({
   authId: r.auth_id, userType: r.user_type || "internal", verified: !!r.verified,
   secondaryEmail: r.secondary_email, certEmailPreference: r.cert_email_preference || "primary",
   onboarded: r.onboarded == null ? true : !!r.onboarded,
-  darkMode: !!r.dark_mode, mainDarkMode: r.main_dark_mode == null ? null : !!r.main_dark_mode, isTest: !!r.is_test, createdAt: r.created_at,
+  themeMode: r.theme_mode || (r.dark_mode ? "dark" : "light"),
+  mainThemeMode: r.main_theme_mode || (r.main_dark_mode == null ? null : (r.main_dark_mode ? "dark" : "light")),
+  isTest: !!r.is_test, createdAt: r.created_at,
   profession: r.profession, department: r.department,
 });
 const userToRow = (u) => ({
@@ -29,7 +31,7 @@ const userToRow = (u) => ({
   auth_id: u.authId ?? null, user_type: u.userType || "internal", verified: u.verified ?? false,
   secondary_email: u.secondaryEmail ?? null, cert_email_preference: u.certEmailPreference || "primary",
   onboarded: u.onboarded ?? false,
-  dark_mode: u.darkMode ?? false, main_dark_mode: u.mainDarkMode === undefined ? null : u.mainDarkMode, is_test: u.isTest ?? false,
+  theme_mode: u.themeMode || "light", main_theme_mode: u.mainThemeMode === undefined ? null : u.mainThemeMode, is_test: u.isTest ?? false,
   profession: u.profession ?? null, department: u.department ?? null,
 });
 
@@ -197,8 +199,8 @@ export async function updateUser(id, patch) {
   if ("secondaryEmail" in patch) row.secondary_email = patch.secondaryEmail;
   if ("certEmailPreference" in patch) row.cert_email_preference = patch.certEmailPreference;
   if ("onboarded" in patch) row.onboarded = patch.onboarded;
-  if ("darkMode" in patch) row.dark_mode = patch.darkMode;
-  if ("mainDarkMode" in patch) row.main_dark_mode = patch.mainDarkMode;
+  if ("themeMode" in patch) row.theme_mode = patch.themeMode;
+  if ("mainThemeMode" in patch) row.main_theme_mode = patch.mainThemeMode;
   if ("isTest" in patch) row.is_test = patch.isTest;
   if ("profession" in patch) row.profession = patch.profession;
   if ("department" in patch) row.department = patch.department;

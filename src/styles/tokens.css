@@ -30,6 +30,18 @@
   --text-faint: #6B7280;
   --logo-color: #FFFFFF;
 }
+/* Deep navy dark mode — complements Western Health's blue brand mark better than a
+   neutral black dark mode does. */
+.whmi-root.navy {
+  --bg: #0B1B33;
+  --surface: #122744;
+  --surface-2: #16305A;
+  --border: #234270;
+  --text: #F2F5FA;
+  --text-dim: #AAB9D6;
+  --text-faint: #6E82AC;
+  --logo-color: #FFFFFF;
+}
 .whmi-root {
   background: var(--bg);
   color: var(--text);
@@ -45,7 +57,7 @@
   border-radius: 14px;
 }
 .whmi-event-card { background: var(--surface); }
-.whmi-root.dark .whmi-event-card { background: var(--surface-2); }
+.whmi-root.dark .whmi-event-card, .whmi-root.navy .whmi-event-card { background: var(--surface-2); }
 .whmi-quick-actions-group {
   background: var(--surface);
   border: 1px solid var(--border);

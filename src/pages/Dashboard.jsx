@@ -196,25 +196,33 @@ export default function Dashboard({ events, previousEvents, registrations, refle
         <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Here's what's happening across WHMI CPD today, {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}.</p>
 
         {dueSoonEvents.length > 0 && (
-          <ul className="mt-2 space-y-1 pl-5" style={{ listStyleType: "disc" }}>
-            {dueSoonEvents.map(ev => {
+          <ul className="mt-2 space-y-0.5">
+            {dueSoonEvents.slice(0, 5).map(ev => {
               const joinable = ev.meetingUrl && canJoinMeeting(ev.date, ev.start, ev.end);
               return (
-                <li key={ev.id} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[13px]">
-                  <button onClick={() => openEvent(ev)} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--text)" }}>{ev.title}</button>
-                  <span style={{ color: "var(--text-faint)" }}>·</span>
-                  <span className="font-extrabold" style={{ color: primaryHex }}>{formatCountdown(ev.date, ev.start)}</span>
-                  <button onClick={() => openEvent(ev)} className="underline-offset-2 hover:underline" style={{ color: "var(--text-faint)" }}>
-                    ({fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)})
+                <li key={ev.id} className="flex items-center flex-wrap gap-x-2">
+                  <button onClick={() => openEvent(ev)} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[13px] px-2 py-1 -mx-2 rounded-lg whmi-row-hover transition text-left">
+                    <span className="font-medium" style={{ color: "var(--text)" }}>{ev.title}</span>
+                    <span style={{ color: "var(--text-faint)" }}>·</span>
+                    <span className="font-extrabold" style={{ color: primaryHex }}>{formatCountdown(ev.date, ev.start)}</span>
+                    <span style={{ color: "var(--text-faint)" }}>·</span>
+                    <span style={{ color: "var(--text-faint)" }}>({fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)})</span>
                   </button>
                   {joinable && (
-                    <a href={ev.meetingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] font-semibold" style={{ color: secondaryHex }}>
+                    <a href={ev.meetingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] font-semibold shrink-0" style={{ color: secondaryHex }}>
                       <Link2 size={12} />Join meeting here
                     </a>
                   )}
                 </li>
               );
             })}
+            {dueSoonEvents.length > 5 && (
+              <li>
+                <button onClick={() => setPage("upcoming")} className="text-[12px] font-semibold px-2 py-1 -mx-2 rounded-lg whmi-row-hover transition" style={{ color: primaryHex }}>
+                  Show {dueSoonEvents.length - 5} more →
+                </button>
+              </li>
+            )}
           </ul>
         )}
       </div>

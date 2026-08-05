@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sun, Moon, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload } from "lucide-react";
+import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload } from "lucide-react";
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
@@ -13,7 +13,7 @@ const CPD_CATEGORIES = [
 ];
 
 export default function Settings({
-  dark, setDark, mainDark, setMainDark, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
+  theme, setTheme, mainTheme, setMainTheme, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
   redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType, onReorderCpdTypes,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
   tags = [], onSaveTag, onDeleteTag, onReorderTags, onBackfillStaffLinks, auditLog = [],
@@ -373,11 +373,12 @@ export default function Settings({
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <div className="font-semibold text-[13px]">Appearance — Sidebar &amp; Header</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Switch between light and dark mode for the sidebar and top header bar.</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose light, dark, or navy for the sidebar and top header bar.</div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setDark(false)} className={!dark ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-            <button onClick={() => setDark(true)} className={dark ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+            <button onClick={() => setTheme("light")} className={theme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+            <button onClick={() => setTheme("dark")} className={theme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+            <button onClick={() => setTheme("navy")} className={theme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
           </div>
         </div>
         <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
@@ -386,9 +387,10 @@ export default function Settings({
             <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the main content area's theme separately, or leave it matching the sidebar and header.</div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setMainDark(null)} className={mainDark == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
-            <button onClick={() => setMainDark(false)} className={mainDark === false ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-            <button onClick={() => setMainDark(true)} className={mainDark === true ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+            <button onClick={() => setMainTheme(null)} className={mainTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
+            <button onClick={() => setMainTheme("light")} className={mainTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+            <button onClick={() => setMainTheme("dark")} className={mainTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+            <button onClick={() => setMainTheme("navy")} className={mainTheme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
           </div>
         </div>
       </div>

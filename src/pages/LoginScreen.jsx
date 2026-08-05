@@ -87,6 +87,9 @@ export default function LoginScreen({ rootVars }) {
         <div className="mt-4 pt-4 text-[10.5px] leading-relaxed" style={{ borderTop: "1px solid var(--border)", color: "var(--text-faint)" }}>
           Western Health staff (@wh.org.au) are recognised automatically. Anyone else can still sign in; external accounts are flagged for admin review.
         </div>
+        <div className="mt-3 text-[10.5px] leading-relaxed text-center" style={{ color: "var(--text-faint)" }}>
+          Having a problem? Email <a href="mailto:whmieducation@wh.org.au" style={{ color: "var(--accent-primary)" }}>whmieducation@wh.org.au</a>.
+        </div>
       </div>
     </div>
   );

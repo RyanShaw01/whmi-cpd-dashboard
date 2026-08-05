@@ -1,11 +1,73 @@
-import { useState } from "react";
-import { Sun, Moon, Eye, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Sun, Moon, MoonStar, Eye, X, ChevronDown } from "lucide-react";
 import CharacterAvatar from "./CharacterAvatar";
 import SearchDropdown from "./SearchDropdown";
 import NotificationBell from "./NotificationBell";
 
+const THEME_OPTIONS = [
+  { id: "light", label: "Light", icon: Sun },
+  { id: "dark", label: "Dark", icon: Moon },
+  { id: "navy", label: "Navy", icon: MoonStar },
+];
+
+function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    const onClick = (e) => { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const CurrentIcon = THEME_OPTIONS.find(o => o.id === theme)?.icon || Sun;
+
+  return (
+    <div className="relative" ref={rootRef}>
+      <button onClick={() => setOpen(o => !o)} className="whmi-btn-ghost !p-2 flex items-center gap-0.5" title="Theme">
+        <CurrentIcon size={15} /><ChevronDown size={11} style={{ opacity: 0.6 }} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-11 whmi-card w-64 p-3 whmi-fade-in z-50">
+          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Sidebar &amp; Header</div>
+          <div className="flex gap-1.5 mb-3">
+            {THEME_OPTIONS.map(o => (
+              <button
+                key={o.id} onClick={() => setTheme(o.id)}
+                className="flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10.5px] font-semibold"
+                style={theme === o.id ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
+              >
+                <o.icon size={13} />{o.label}
+              </button>
+            ))}
+          </div>
+          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Main Page</div>
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setMainTheme(null)}
+              className="flex-1 py-1.5 rounded-lg text-[10.5px] font-semibold"
+              style={mainTheme == null ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
+            >
+              Match
+            </button>
+            {THEME_OPTIONS.map(o => (
+              <button
+                key={o.id} onClick={() => setMainTheme(o.id)}
+                className="flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10.5px] font-semibold"
+                style={mainTheme === o.id ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
+              >
+                <o.icon size={13} />{o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function HeaderBar({
-  page, dark, setDark, navItems, user, onAvatarClick, events, previousEvents, staffDirectory, openEvent, openStaff,
+  page, theme, setTheme, mainTheme, setMainTheme, navItems, user, onAvatarClick, events, previousEvents, staffDirectory, openEvent, openStaff,
   openArchiveEvent, certificates, reflections, files, onNavigatePage,
   canManage, notificationGroups, redDotsEnabled, onNavigateNotification, onAcknowledgeGroup, onAcknowledgeAll,
   showSearch = true, previewSession, onExitPreview, testAccounts = [], onPreviewAs,
@@ -16,10 +78,15 @@ export default function HeaderBar({
   return (
     <>
       {previewSession && (
-        <div className="flex items-center justify-between px-6 py-2 gap-3" style={{ background: "#D9534F", color: "white" }}>
-          <div className="flex items-center gap-1.5 text-[12.5px] font-semibold"><Eye size={14} />Previewing as {previewSession.name} ({previewSession.userType === "external" ? "external" : "internal"} viewer)</div>
-          <button onClick={onExitPreview} className="flex items-center gap-1 text-[12px] font-semibold" style={{ opacity: 0.9 }}><X size={13} />Exit preview</button>
-        </div>
+        <button
+          onClick={onExitPreview}
+          className="sticky top-0 z-40 w-full flex items-center justify-between px-6 py-2 gap-3 whmi-row-hover text-left transition"
+          style={{ background: "#D9534F", color: "white" }}
+          title="Click anywhere to exit preview"
+        >
+          <span className="flex items-center gap-1.5 text-[12.5px] font-semibold"><Eye size={14} />Previewing as {previewSession.name} ({previewSession.userType === "external" ? "external" : "internal"} viewer)</span>
+          <span className="flex items-center gap-1 text-[12px] font-semibold" style={{ opacity: 0.9 }}><X size={13} />Exit preview</span>
+        </button>
       )}
     <div className="flex items-center justify-between px-6 py-3 gap-4" style={{ borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
       <div className="disp font-bold text-[15px] truncate">{title}</div>
@@ -71,19 +138,13 @@ export default function HeaderBar({
             )}
           </div>
         )}
-        {canManage && (
-          <div data-tour="header-notifications">
-            <NotificationBell
-              groups={notificationGroups} redDotsEnabled={redDotsEnabled}
-              onNavigate={onNavigateNotification} onAcknowledgeGroup={onAcknowledgeGroup} onAcknowledgeAll={onAcknowledgeAll}
-            />
-          </div>
-        )}
-        {!canManage && (
-          <button onClick={() => setDark(!dark)} className="whmi-btn-ghost !p-2" title="Toggle theme">
-            {dark ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
-        )}
+        <ThemeMenu theme={theme} setTheme={setTheme} mainTheme={mainTheme} setMainTheme={setMainTheme} />
+        <div data-tour="header-notifications">
+          <NotificationBell
+            groups={notificationGroups} redDotsEnabled={redDotsEnabled}
+            onNavigate={onNavigateNotification} onAcknowledgeGroup={onAcknowledgeGroup} onAcknowledgeAll={onAcknowledgeAll}
+          />
+        </div>
         <button data-tour="header-profile" onClick={onAvatarClick} title="Your profile" className="flex items-center gap-1.5 whmi-row-hover rounded-full p-1 -m-1">
           <span className="hidden sm:flex flex-col items-end leading-tight">
             <span className="text-[11.5px] font-semibold truncate max-w-[140px]">{user.name}</span>
