@@ -1,23 +1,26 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Calendar, Clock, MapPin, UserCircle2, CheckCircle2 } from "lucide-react";
+import { Calendar, Clock, MapPin, UserCircle2, Maximize2, X, DollarSign } from "lucide-react";
 import ModeBadge from "../components/ModeBadge";
-import { fmtDate, fmtTimeRange12h, eventLocationSuffix } from "../lib/helpers";
+import RegistrationSuccessCard from "../components/RegistrationSuccessCard";
+import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl } from "../lib/helpers";
 
 const WH_DOMAIN = "@wh.org.au";
 
-export default function PublicEventPage({ events, session, onPublicRegister }) {
+export default function PublicEventPage({ events, session, onPublicRegister, files }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState(session?.name || "");
   const [email, setEmail] = useState(session?.email || "");
   const [profession, setProfession] = useState(session?.profession || "");
+  const [organisation, setOrganisation] = useState(session?.organisation || "");
   const [attendanceType, setAttendanceType] = useState("In-person");
   const [dietary, setDietary] = useState(session?.dietaryRequirements || "");
   const [accessibility, setAccessibility] = useState(session?.accessibility || "");
   const [askWhStaff, setAskWhStaff] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [flyerExpanded, setFlyerExpanded] = useState(false);
 
   if (!event) {
     return (
@@ -31,6 +34,8 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
   }
 
   const isWhEmail = email.trim().toLowerCase().endsWith(WH_DOMAIN);
+  const isExternalRegistrant = !!session ? session.userType === "external" : (askWhStaff || (email.trim() && !isWhEmail));
+  const flyerUrl = eventBannerUrl(files, event.id);
 
   const submit = (e, whStaffAnswer) => {
     if (e) e.preventDefault();
@@ -46,6 +51,7 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
       name: name.trim(),
       email: email.trim(),
       profession: profession.trim(),
+      organisation: organisation.trim(),
       attendanceType: event.mode === "Hybrid" ? attendanceType : null,
       dietary: dietary.trim(),
       accessibility: accessibility.trim(),
@@ -57,12 +63,33 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
   return (
     <div className="whmi-root light min-h-screen" style={{ background: "var(--bg)", color: "var(--text)" }}>
       <div className="max-w-2xl mx-auto p-6 space-y-5">
-        <Link to="/" className="whmi-logo-full block mx-auto" style={{ width: 150, height: 77 }} />
+        <div className="flex items-center justify-center gap-2.5">
+          <Link to="/" className="whmi-logo-full shrink-0" style={{ width: 72, height: 37 }} />
+          <div className="text-left leading-tight">
+            <div className="font-extrabold text-[13px]" style={{ color: "var(--text)" }}>Medical Imaging CPD</div>
+            <div className="text-[10px]" style={{ color: "var(--text-faint)" }}>Western Health</div>
+          </div>
+        </div>
 
         <div className="whmi-card overflow-hidden">
-          <div className="h-40 flex items-center justify-center relative" style={{ background: "var(--accent-primary)" }}>
-            <span className="text-white font-extrabold text-[20px] disp z-10 px-6 text-center break-words">{event.topic}</span>
-          </div>
+          {flyerUrl ? (
+            <div className="relative h-40 flex items-center justify-center overflow-hidden" style={{ background: "var(--surface-2)" }}>
+              <img src={flyerUrl} alt="" className="max-w-full max-h-full object-contain" />
+              <button
+                onClick={() => setFlyerExpanded(true)}
+                className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(0,0,0,.45)" }}
+                title="View full flyer"
+                type="button"
+              >
+                <Maximize2 size={14} color="white" />
+              </button>
+            </div>
+          ) : (
+            <div className="h-40 flex items-center justify-center relative" style={{ background: "var(--accent-primary)" }}>
+              <span className="text-white font-extrabold text-[20px] disp z-10 px-6 text-center break-words">{event.topic}</span>
+            </div>
+          )}
           <div className="p-6 space-y-4">
             <div>
               <ModeBadge mode={event.mode} />
@@ -71,16 +98,21 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[13.5px]">
               <div className="flex items-center gap-2"><Calendar size={15} style={{ color: "var(--text-faint)" }} /><span>{fmtDate(event.date)}</span></div>
               <div className="flex items-center gap-2"><Clock size={15} style={{ color: "var(--text-faint)" }} /><span>{fmtTimeRange12h(event.start, event.end)}</span></div>
-              <div className="flex items-center gap-2"><MapPin size={15} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{event.campus && <strong>{event.campus}</strong>}{event.campus && eventLocationSuffix(event) ? " - " : ""}{eventLocationSuffix(event)}</span></div>
+              <div className="flex items-start gap-2"><MapPin size={15} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" /><span className="break-words">{event.campus && <strong>{event.campus}</strong>}{event.campus && eventLocationSuffix(event) ? " - " : ""}{eventLocationSuffix(event)}</span></div>
               <div className="flex items-center gap-2"><UserCircle2 size={15} style={{ color: "var(--text-faint)" }} /><span>{event.presenter}</span></div>
             </div>
+
+            {event.openToExternal !== false && (
+              <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: event.externalPrice ? "var(--accent-primary)" : "rgba(156,203,59,.15)", color: event.externalPrice ? "#fff" : "var(--accent-success)" }}>
+                <span className="text-[13px] font-semibold flex items-center gap-1.5"><DollarSign size={14} />Cost</span>
+                <span className="text-[17px] font-extrabold">{event.externalPrice ? `$${Number(event.externalPrice).toFixed(2)} AUD` : "Free"}</span>
+              </div>
+            )}
 
             {event.status !== "Registration Open" ? (
               <div className="whmi-card p-3 text-[13px]" style={{ color: "var(--text-faint)" }}>Registration isn't open for this event yet; check back soon.</div>
             ) : submitted ? (
-              <div className="whmi-card p-4 flex items-center gap-2" style={{ color: "var(--accent-success)" }}>
-                <CheckCircle2 size={18} /><span className="font-semibold text-[13.5px]">You're registered! We've noted your details.</span>
-              </div>
+              <RegistrationSuccessCard event={event} />
             ) : !showForm ? (
               <button onClick={() => setShowForm(true)} className="whmi-btn-primary w-full">Register for this Event</button>
             ) : (
@@ -100,6 +132,12 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
                   <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Profession</label>
                   <input value={profession} onChange={e => setProfession(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
                 </div>
+                {isExternalRegistrant && (
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Hospital / University / Business</label>
+                    <input value={organisation} onChange={e => setOrganisation(e.target.value)} placeholder="Which organisation are you from?" className="whmi-input w-full px-2.5 py-2 mt-1" />
+                  </div>
+                )}
                 {event.mode === "Hybrid" && (
                   <div>
                     <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Attendance Type</label>
@@ -135,6 +173,15 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
           </div>
         </div>
       </div>
+
+      {flyerExpanded && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.8)" }} onClick={() => setFlyerExpanded(false)}>
+          <button onClick={() => setFlyerExpanded(false)} className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
+            <X size={18} color="white" />
+          </button>
+          <img src={flyerUrl} alt="" className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }

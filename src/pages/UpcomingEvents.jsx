@@ -166,21 +166,41 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
                 <div className="text-[12px] grid grid-cols-2 gap-x-3 gap-y-1.5" style={{ color: "var(--text-dim)" }}>
                   <div className="flex items-center gap-1.5"><Calendar size={12} className="shrink-0" /><span className="break-words">{fmtDate(ev.date)}</span></div>
                   <div className="flex items-center gap-1.5"><Clock size={12} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(ev.start, ev.end)}</span></div>
-                  <div className="flex items-center gap-1.5"><MapPin size={12} className="shrink-0" /><span className="break-words">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></div>
-                  <div className="flex items-center gap-1.5"><UserCircle2 size={12} className="shrink-0" /><span className="break-words">{ev.presenter}</span></div>
-                </div>
-                <div className="mt-3">
-                  <div className="flex justify-between text-[11px] mb-1" style={{ color: "var(--text-faint)" }}>
-                    <span>{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
-                    {ev.capacity != null && <span>{Math.round((ev.registered / ev.capacity) * 100)}%</span>}
-                  </div>
-                  {ev.capacity != null && (
-                    <div className="h-1.5 rounded-full" style={{ background: "var(--surface-2)" }}>
-                      <div className="h-1.5 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (ev.registered / ev.capacity) * 100)}%` }} />
-                    </div>
-                  )}
+                  <div className="flex items-start gap-1.5"><MapPin size={12} className="shrink-0 mt-0.5" /><span className="break-words">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></div>
+                  <div className="flex items-start gap-1.5"><UserCircle2 size={12} className="shrink-0 mt-0.5" /><span className="break-words">{ev.presenter}</span></div>
                 </div>
               </button>
+              <div className="mt-3">
+                {canManage ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEvent(ev, "registrations"); }}
+                    className="w-full text-left rounded-lg -mx-1 px-1 py-0.5 whmi-row-hover transition"
+                    title="View registrations"
+                  >
+                    <div className="flex justify-between text-[11px] mb-1" style={{ color: "var(--text-faint)" }}>
+                      <span>{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
+                      {ev.capacity != null && <span>{Math.round((ev.registered / ev.capacity) * 100)}%</span>}
+                    </div>
+                    {ev.capacity != null && (
+                      <div className="h-1.5 rounded-full" style={{ background: "var(--surface-2)" }}>
+                        <div className="h-1.5 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (ev.registered / ev.capacity) * 100)}%` }} />
+                      </div>
+                    )}
+                  </button>
+                ) : (
+                  <div>
+                    <div className="flex justify-between text-[11px] mb-1" style={{ color: "var(--text-faint)" }}>
+                      <span>{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
+                      {ev.capacity != null && <span>{Math.round((ev.registered / ev.capacity) * 100)}%</span>}
+                    </div>
+                    {ev.capacity != null && (
+                      <div className="h-1.5 rounded-full" style={{ background: "var(--surface-2)" }}>
+                        <div className="h-1.5 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (ev.registered / ev.capacity) * 100)}%` }} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="flex items-center justify-between gap-2 mt-2">
                 {joinable ? (
                   <a href={ev.meetingUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: "var(--accent-secondary)" }}>
@@ -188,8 +208,8 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
                   </a>
                 ) : <span />}
                 {onOpenRegister && ev.status === "Registration Open" && (
-                  <button onClick={(e) => { e.stopPropagation(); onOpenRegister(ev.id); }} className="text-[12px] font-semibold" style={{ color: "var(--accent-primary)" }}>
-                    Register →
+                  <button onClick={(e) => { e.stopPropagation(); onOpenRegister(ev.id); }} className="text-[12px] font-semibold px-1.5 py-0.5 -mx-1.5 rounded-lg whmi-row-hover transition flex items-center gap-1" style={{ color: "var(--accent-primary)" }}>
+                    Register <span className="transition-transform">→</span>
                   </button>
                 )}
               </div>

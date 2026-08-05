@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import {
@@ -81,12 +81,17 @@ export default function EventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
+  initialTab,
 }) {
-  const [regTab, setRegTab] = useState("overview");
+  const [regTab, setRegTab] = useState(initialTab || "overview");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [meetingUrlDraft, setMeetingUrlDraft] = useState("");
   const [previewingTemplate, setPreviewingTemplate] = useState(false);
+  // The modal stays mounted between opens (no key), so a fresh `initialTab` from a new
+  // openEvent(ev, tab) call needs to be applied explicitly rather than relying on useState's
+  // one-time initializer.
+  useEffect(() => { if (event) setRegTab(initialTab || "overview"); }, [event?.id, initialTab]);
   if (!event) return null;
 
   const previewTemplate = async () => {

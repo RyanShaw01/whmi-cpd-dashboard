@@ -200,19 +200,22 @@ export default function Dashboard({ events, previousEvents, registrations, refle
             {dueSoonEvents.slice(0, 5).map(ev => {
               const joinable = ev.meetingUrl && canJoinMeeting(ev.date, ev.start, ev.end);
               return (
-                <li key={ev.id} className="flex items-center flex-wrap gap-x-2">
-                  <button onClick={() => openEvent(ev)} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[13px] px-2 py-1 -mx-2 rounded-lg whmi-row-hover transition text-left">
-                    <span className="font-medium" style={{ color: "var(--text)" }}>{ev.title}</span>
-                    <span style={{ color: "var(--text-faint)" }}>·</span>
-                    <span className="font-extrabold" style={{ color: primaryHex }}>{formatCountdown(ev.date, ev.start)}</span>
-                    <span style={{ color: "var(--text-faint)" }}>·</span>
-                    <span style={{ color: "var(--text-faint)" }}>({fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)})</span>
-                  </button>
-                  {joinable && (
-                    <a href={ev.meetingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] font-semibold shrink-0" style={{ color: secondaryHex }}>
-                      <Link2 size={12} />Join meeting here
-                    </a>
-                  )}
+                <li key={ev.id} className="flex items-start gap-2">
+                  <span className="w-1 h-1 rounded-full shrink-0" style={{ background: "var(--text-faint)", marginTop: 8 }} />
+                  <div className="min-w-0 flex-1">
+                    <button onClick={() => openEvent(ev)} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[13px] px-1 py-1 -mx-1 rounded-lg whmi-row-hover transition text-left w-full">
+                      <span className="font-medium" style={{ color: "var(--text)" }}>{ev.title}</span>
+                      <span style={{ color: "var(--text-faint)" }}>·</span>
+                      <span className="font-extrabold" style={{ color: primaryHex }}>{formatCountdown(ev.date, ev.start)}</span>
+                      <span style={{ color: "var(--text-faint)" }}>·</span>
+                      <span style={{ color: "var(--text-faint)" }}>({fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)})</span>
+                    </button>
+                    {joinable && (
+                      <a href={ev.meetingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] font-semibold shrink-0 mt-0.5" style={{ color: secondaryHex }}>
+                        <Link2 size={12} />Join meeting here
+                      </a>
+                    )}
+                  </div>
                 </li>
               );
             })}

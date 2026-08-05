@@ -29,6 +29,7 @@ import StaffModal from "./components/StaffModal";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import Toast from "./components/Toast";
 import RegisterEventModal from "./components/RegisterEventModal";
+import RegistrationSuccessCard from "./components/RegistrationSuccessCard";
 import EventFormModal from "./components/EventFormModal";
 import CreateCertificateModal from "./components/CreateCertificateModal";
 import { BRAND_HEX, CHARACTERS, NAV_FULL, NAV_VIEWER, NAV_VIEWER_INTERNAL, DEFAULT_LAYOUT, DEFAULT_STAFF_FIELD_VISIBILITY } from "./data/mockData";
@@ -50,7 +51,7 @@ import {
   fetchAvatarColors, insertAvatarColor, updateAvatarColor, deleteAvatarColor,
   fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea,
   fetchAppSetting, upsertAppSetting,
-  fetchPersonalReflections, insertPersonalReflection, deletePersonalReflection, emailReflectionCopy, emailReflectionsReport,
+  fetchPersonalReflections, insertPersonalReflection, deletePersonalReflection, emailReflectionCopy, emailReflectionsReport, sendRegistrationConfirmation,
 } from "./lib/db";
 import { setAvatarIcons as setRegistryIcons, setAvatarColors as setRegistryColors } from "./lib/avatarRegistry";
 import Footer from "./components/Footer";
@@ -117,6 +118,8 @@ export default function App() {
   const [isNarrow, setIsNarrow] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventInitialTab, setEventInitialTab] = useState(null);
+  const [registrationSuccessEvent, setRegistrationSuccessEvent] = useState(null);
   const [selectedArchiveEvent, setSelectedArchiveEvent] = useState(null);
   const [archiveInitialTab, setArchiveInitialTab] = useState(null);
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -866,26 +869,29 @@ export default function App() {
   };
 
   const handleOpenRegister = (eventId) => { setRegisterDefaultEventId(eventId || null); setRegisterModalOpen(true); };
-  const handleSubmitRegistration = ({ eventId, name, email, profession, campus, attendanceType, dietary, accessibility, comments }) => {
+  const handleSubmitRegistration = ({ eventId, name, email, profession, organisation, campus, attendanceType, dietary, accessibility, comments }) => {
     const reg = {
-      id: "r" + Date.now(), eventId, name, email, profession, campus, attendanceType, dietary, accessibility, comments,
+      id: "r" + Date.now(), eventId, name, email, profession, organisation, campus, attendanceType, dietary, accessibility, comments,
       userId: session?.id ?? null, isExternal: false, attendanceStatus: nextAttendanceStatus(eventId), createdAt: new Date().toISOString(),
     };
     setRegistrations(prev => [...prev, reg]);
     insertRegistration(reg);
     pushAudit({ actorId: session?.id, action: "registration.created", entityType: "event", entityId: eventId, details: { name: reg.name, eventTitle: events.find(e => e.id === eventId)?.title } });
     if (session) {
-      setUsers(prev => prev.map(u => u.id === session.id ? { ...u, dietaryRequirements: dietary, accessibility, profession } : u));
-      setSession(s => ({ ...s, dietaryRequirements: dietary, accessibility, profession }));
-      updateUser(session.id, { dietaryRequirements: dietary, accessibility, profession });
+      setUsers(prev => prev.map(u => u.id === session.id ? { ...u, dietaryRequirements: dietary, accessibility, profession, organisation } : u));
+      setSession(s => ({ ...s, dietaryRequirements: dietary, accessibility, profession, organisation }));
+      updateUser(session.id, { dietaryRequirements: dietary, accessibility, profession, organisation });
     }
+    sendRegistrationConfirmation({ eventId, name, email });
     setRegisterModalOpen(false);
+    const ev = events.find(e => e.id === eventId);
+    if (ev) setRegistrationSuccessEvent(ev);
   };
 
   // No-login registration from the public QR landing page: sync to a signed-in session, match
   // an existing account by email, auto-create a viewer account for WH emails, or file the
   // person under External Participants if they're not WH staff.
-  const handlePublicRegister = ({ eventId, name, email, profession, campus, attendanceType, dietary, accessibility, comments, isWhStaffAnswer }) => {
+  const handlePublicRegister = ({ eventId, name, email, profession, organisation, campus, attendanceType, dietary, accessibility, comments, isWhStaffAnswer }) => {
     let userId = null;
     let isExternal = false;
 
@@ -908,17 +914,18 @@ export default function App() {
     }
 
     const reg = {
-      id: "r" + Date.now(), eventId, name, email, profession, campus, attendanceType, dietary, accessibility, comments,
+      id: "r" + Date.now(), eventId, name, email, profession, organisation, campus, attendanceType, dietary, accessibility, comments,
       userId, isExternal, attendanceStatus: nextAttendanceStatus(eventId), createdAt: new Date().toISOString(),
     };
     setRegistrations(prev => [...prev, reg]);
     insertRegistration(reg);
     pushAudit({ actorId: session?.id, action: "registration.created", entityType: "event", entityId: eventId, details: { name: reg.name, eventTitle: events.find(e => e.id === eventId)?.title } });
     if (session) {
-      setUsers(prev => prev.map(u => u.id === session.id ? { ...u, dietaryRequirements: dietary, accessibility, profession } : u));
-      setSession(s => ({ ...s, dietaryRequirements: dietary, accessibility, profession }));
-      updateUser(session.id, { dietaryRequirements: dietary, accessibility, profession });
+      setUsers(prev => prev.map(u => u.id === session.id ? { ...u, dietaryRequirements: dietary, accessibility, profession, organisation } : u));
+      setSession(s => ({ ...s, dietaryRequirements: dietary, accessibility, profession, organisation }));
+      updateUser(session.id, { dietaryRequirements: dietary, accessibility, profession, organisation });
     }
+    sendRegistrationConfirmation({ eventId, name, email });
   };
 
   const primaryHex = BRAND_HEX[colorPrefs.primary] || BRAND_HEX.blue;
@@ -926,7 +933,7 @@ export default function App() {
   const successHex = BRAND_HEX[colorPrefs.success] || BRAND_HEX.green;
   const rootVars = { "--accent-primary": primaryHex, "--accent-secondary": secondaryHex, "--accent-success": successHex };
 
-  const openEvent = (ev) => setSelectedEvent(ev);
+  const openEvent = (ev, initialTab) => { setSelectedEvent(ev); setEventInitialTab(initialTab || null); };
   const openArchiveEvent = (ev, initialTab) => { setSelectedArchiveEvent(ev); setArchiveInitialTab(initialTab || null); };
   const openStaff = (s) => setSelectedStaff(s);
 
@@ -1077,7 +1084,7 @@ export default function App() {
               <Settings
                 theme={theme} setTheme={handleSetTheme}
                 mainTheme={mainTheme} setMainTheme={handleSetMainTheme}
-                role={session.role}
+                role={viewSession.role}
                 session={session} onProfileSave={handleProfileSave} showToast={showToast}
                 users={users} onUsersChange={handleUsersChange}
                 colorPrefs={colorPrefs} onColorChange={handleColorChange}
@@ -1106,7 +1113,7 @@ export default function App() {
         {showTour && <OnboardingTour steps={TOUR_STEPS} onFinish={() => setShowTour(false)} />}
 
         <EventDetailModal
-          event={selectedEvent} onClose={() => setSelectedEvent(null)} registrations={registrations}
+          event={selectedEvent} onClose={() => setSelectedEvent(null)} registrations={registrations} initialTab={eventInitialTab}
           canManage={canManage} onDelete={selectedEvent ? () => requestDeleteEvent(selectedEvent) : undefined}
           onStatusChange={handleStatusChange} onEdit={handleUpdateEvent} uploadedBy={session.id} session={session}
           onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField}
@@ -1161,6 +1168,13 @@ export default function App() {
           open={registerModalOpen} onClose={() => setRegisterModalOpen(false)} session={session} events={eventsWithLiveCounts}
           defaultEventId={registerDefaultEventId} onSubmit={handleSubmitRegistration}
         />
+        {registrationSuccessEvent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setRegistrationSuccessEvent(null)}>
+            <div className="w-full max-w-sm whmi-fade-in" onClick={e => e.stopPropagation()}>
+              <RegistrationSuccessCard event={registrationSuccessEvent} onClose={() => setRegistrationSuccessEvent(null)} />
+            </div>
+          </div>
+        )}
         <ConfirmDeleteModal request={confirmModal} onCancel={closeConfirm} onConfirm={() => { confirmModal?.onConfirm(); closeConfirm(); }} />
         <Toast message={toast} onDone={() => setToast(null)} />
       </div>
@@ -1169,7 +1183,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/event/:eventId" element={<PublicEventPage events={eventsWithLiveCounts} session={session} onPublicRegister={handlePublicRegister} />} />
+      <Route path="/event/:eventId" element={<PublicEventPage events={eventsWithLiveCounts} session={session} onPublicRegister={handlePublicRegister} files={files} />} />
       <Route path="/event/:eventId/reflect" element={<ReflectionPage events={eventsWithLiveCounts} session={session} onSubmitReflection={handleSubmitReflection} />} />
       <Route path="/brainstorm/submit" element={<BrainstormSubmitPage session={session} onSubmit={handlePublicBrainstormSubmit} />} />
       <Route path="*" element={mainContent} />

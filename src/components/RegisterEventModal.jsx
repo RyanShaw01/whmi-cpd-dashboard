@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { X, ClipboardList, Calendar, Clock, MapPin } from "lucide-react";
-import { fmtDate, fmtTimeRange12h, eventLocationSuffix } from "../lib/helpers";
+import { X, ClipboardList, Calendar, Clock, MapPin, UserCircle2 } from "lucide-react";
+import { fmtDate, fmtTimeRange12h, eventLocationSuffix, splitPeopleList } from "../lib/helpers";
 
 export default function RegisterEventModal({ open, onClose, session, events, defaultEventId, onSubmit }) {
   const openEvents = events.filter(e => e.status === "Registration Open");
@@ -8,11 +8,13 @@ export default function RegisterEventModal({ open, onClose, session, events, def
   const [name, setName] = useState(session?.name || "");
   const [email, setEmail] = useState(session?.email || "");
   const [profession, setProfession] = useState(session?.profession || "");
+  const [organisation, setOrganisation] = useState(session?.organisation || "");
   const [attendanceType, setAttendanceType] = useState("In-person");
   const [dietary, setDietary] = useState(session?.dietaryRequirements || "");
   const [accessibility, setAccessibility] = useState(session?.accessibility || "");
 
   const selectedEvent = openEvents.find(e => e.id === eventId);
+  const isExternal = session?.userType === "external";
 
   useEffect(() => {
     if (!open) return;
@@ -20,6 +22,7 @@ export default function RegisterEventModal({ open, onClose, session, events, def
     setName(session?.name || "");
     setEmail(session?.email || "");
     setProfession(session?.profession || "");
+    setOrganisation(session?.organisation || "");
     setDietary(session?.dietaryRequirements || "");
     setAccessibility(session?.accessibility || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -31,7 +34,7 @@ export default function RegisterEventModal({ open, onClose, session, events, def
     e.preventDefault();
     if (!eventId || !name.trim() || !email.trim()) return;
     onSubmit({
-      eventId, name: name.trim(), email: email.trim(), profession: profession.trim(),
+      eventId, name: name.trim(), email: email.trim(), profession: profession.trim(), organisation: organisation.trim(),
       attendanceType: selectedEvent?.mode === "Hybrid" ? attendanceType : null,
       dietary: dietary.trim(), accessibility: accessibility.trim(),
     });
@@ -54,15 +57,33 @@ export default function RegisterEventModal({ open, onClose, session, events, def
                   className="w-full text-left p-3 rounded-xl transition"
                   style={{ border: `2px solid ${eventId === ev.id ? "var(--accent-primary)" : "var(--border)"}`, background: eventId === ev.id ? "var(--surface-2)" : "transparent" }}
                 >
-                  <div className="font-semibold text-[14px] break-words">{ev.title}</div>
+                  <div
+                    className="break-words"
+                    style={eventId === ev.id ? { fontWeight: 800, fontSize: 15, color: "var(--accent-primary)" } : { fontWeight: 600, fontSize: 14 }}
+                  >
+                    {ev.title}
+                  </div>
                   <div className="flex items-center gap-3 mt-1 text-[11.5px] flex-wrap" style={{ color: "var(--text-dim)" }}>
                     <span className="flex items-center gap-1"><Calendar size={11} />{fmtDate(ev.date)}</span>
                     <span className="flex items-center gap-1"><Clock size={11} />{fmtTimeRange12h(ev.start, ev.end)}</span>
                   </div>
                   {(ev.campus || ev.location) && (
-                    <div className="flex items-center gap-1 mt-1 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
-                      <MapPin size={11} />
+                    <div className="flex items-start gap-1 mt-1 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
+                      <MapPin size={11} className="shrink-0 mt-0.5" />
                       <span>{ev.campus ? <><b>{ev.campus}</b>{eventLocationSuffix(ev) ? ` - ${eventLocationSuffix(ev)}` : ""}</> : eventLocationSuffix(ev)}</span>
+                    </div>
+                  )}
+                  {ev.presenter && (
+                    <div className="flex items-start gap-1 mt-1 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
+                      <UserCircle2 size={11} className="shrink-0 mt-0.5" />
+                      {(() => {
+                        const presenters = splitPeopleList(ev.presenter);
+                        return presenters.length > 1 ? (
+                          <ul style={{ paddingLeft: 12, listStyleType: "disc" }}>
+                            {presenters.map((p, i) => <li key={i}>{p}</li>)}
+                          </ul>
+                        ) : <span>{ev.presenter}</span>;
+                      })()}
                     </div>
                   )}
                   {session?.userType === "external" && ev.externalPrice != null && (
@@ -85,6 +106,12 @@ export default function RegisterEventModal({ open, onClose, session, events, def
             <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Profession</label>
             <input value={profession} onChange={e => setProfession(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
           </div>
+          {isExternal && (
+            <div>
+              <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Hospital / University / Business</label>
+              <input value={organisation} onChange={e => setOrganisation(e.target.value)} placeholder="Which organisation are you from?" className="whmi-input w-full px-2.5 py-2 mt-1" />
+            </div>
+          )}
           {selectedEvent?.mode === "Hybrid" && (
             <div>
               <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Attendance Type</label>

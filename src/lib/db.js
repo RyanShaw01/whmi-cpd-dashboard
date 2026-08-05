@@ -22,7 +22,7 @@ const userFromRow = (r) => ({
   themeMode: r.theme_mode || (r.dark_mode ? "dark" : "light"),
   mainThemeMode: r.main_theme_mode || (r.main_dark_mode == null ? null : (r.main_dark_mode ? "dark" : "light")),
   isTest: !!r.is_test, createdAt: r.created_at,
-  profession: r.profession, department: r.department,
+  profession: r.profession, department: r.department, organisation: r.organisation,
 });
 const userToRow = (u) => ({
   id: u.id, name: u.name, email: u.email, role: u.role,
@@ -32,7 +32,7 @@ const userToRow = (u) => ({
   secondary_email: u.secondaryEmail ?? null, cert_email_preference: u.certEmailPreference || "primary",
   onboarded: u.onboarded ?? false,
   theme_mode: u.themeMode || "light", main_theme_mode: u.mainThemeMode === undefined ? null : u.mainThemeMode, is_test: u.isTest ?? false,
-  profession: u.profession ?? null, department: u.department ?? null,
+  profession: u.profession ?? null, department: u.department ?? null, organisation: u.organisation ?? null,
 });
 
 const staffFromRow = (r) => ({
@@ -104,7 +104,7 @@ const registrationFromRow = (r) => ({
   name: r.name, email: r.email, dietary: r.dietary, isExternal: r.is_external,
   attendanceStatus: r.attendance_status, createdAt: r.created_at,
   profession: r.profession, campus: r.campus, attendanceType: r.attendance_type,
-  accessibility: r.accessibility, comments: r.comments,
+  accessibility: r.accessibility, comments: r.comments, organisation: r.organisation,
   reflectionEmailSentAt: r.reflection_email_sent_at || null,
 });
 const registrationToRow = (r) => ({
@@ -112,7 +112,7 @@ const registrationToRow = (r) => ({
   name: r.name, email: r.email, dietary: r.dietary ?? null, is_external: r.isExternal ?? false,
   attendance_status: r.attendanceStatus || "Registered",
   profession: r.profession ?? null, campus: r.campus ?? null, attendance_type: r.attendanceType ?? null,
-  accessibility: r.accessibility ?? null, comments: r.comments ?? null,
+  accessibility: r.accessibility ?? null, comments: r.comments ?? null, organisation: r.organisation ?? null,
 });
 
 const externalFromRow = (r) => ({ id: r.id, name: r.name, email: r.email, createdAt: r.created_at });
@@ -204,6 +204,7 @@ export async function updateUser(id, patch) {
   if ("isTest" in patch) row.is_test = patch.isTest;
   if ("profession" in patch) row.profession = patch.profession;
   if ("department" in patch) row.department = patch.department;
+  if ("organisation" in patch) row.organisation = patch.organisation;
   const { error } = await supabase.from("users").update(row).eq("id", id);
   if (error) console.error("updateUser", error);
 }
@@ -482,6 +483,7 @@ export async function updateRegistration(id, patch) {
   if ("dietary" in patch) row.dietary = patch.dietary;
   if ("accessibility" in patch) row.accessibility = patch.accessibility;
   if ("comments" in patch) row.comments = patch.comments;
+  if ("organisation" in patch) row.organisation = patch.organisation;
   if ("reflectionEmailSentAt" in patch) row.reflection_email_sent_at = patch.reflectionEmailSentAt;
   const { error } = await supabase.from("registrations").update(row).eq("id", id);
   if (error) console.error("updateRegistration", error);
@@ -667,6 +669,13 @@ export async function emailReflectionsReport({ toEmail, toName, entries }) {
   if (!supabaseConfigured) return { ok: false };
   const { error } = await supabase.functions.invoke("admin-email-reflections-report", { body: { toEmail, toName, entries } });
   if (error) { console.error("emailReflectionsReport", error); return { ok: false }; }
+  return { ok: true };
+}
+
+export async function sendRegistrationConfirmation({ eventId, name, email }) {
+  if (!supabaseConfigured) return { ok: false };
+  const { error } = await supabase.functions.invoke("send-registration-confirmation", { body: { eventId, name, email } });
+  if (error) { console.error("sendRegistrationConfirmation", error); return { ok: false }; }
   return { ok: true };
 }
 
