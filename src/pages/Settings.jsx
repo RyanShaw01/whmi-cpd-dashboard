@@ -395,22 +395,24 @@ export default function Settings({
         </div>
       </div>
 
-      <div className="whmi-card p-4 space-y-3">
-        <div>
-          <div className="font-semibold text-[13px] mb-1">Brand Colours</div>
-          <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose which Western Health brand colour is used for icons and highlighted sections.</div>
-        </div>
-        {[["primary", "Primary accent"], ["secondary", "Secondary accent"], ["success", "Positive / success"]].map(([key, label]) => (
-          <div key={key} className="flex items-center justify-between gap-3">
-            <span className="text-[12.5px] font-semibold">{label}</span>
-            <div className="flex gap-2">
-              {Object.entries(BRAND_HEX).map(([name, hex]) => (
-                <button key={name} onClick={() => onColorChange({ ...colorPrefs, [key]: name })} title={name} className="w-7 h-7 rounded-full" style={{ background: hex, outline: colorPrefs[key] === name ? "2px solid var(--text)" : "1px solid var(--border)", outlineOffset: 2 }} />
-              ))}
-            </div>
+      {canManageUsers && (
+        <div className="whmi-card p-4 space-y-3">
+          <div>
+            <div className="font-semibold text-[13px] mb-1">Brand Colours</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose which Western Health brand colour is used for icons and highlighted sections.</div>
           </div>
-        ))}
-      </div>
+          {[["primary", "Primary accent"], ["secondary", "Secondary accent"], ["success", "Positive / success"]].map(([key, label]) => (
+            <div key={key} className="flex items-center justify-between gap-3">
+              <span className="text-[12.5px] font-semibold">{label}</span>
+              <div className="flex gap-2">
+                {Object.entries(BRAND_HEX).map(([name, hex]) => (
+                  <button key={name} onClick={() => onColorChange({ ...colorPrefs, [key]: name })} title={name} className="w-7 h-7 rounded-full" style={{ background: hex, outline: colorPrefs[key] === name ? "2px solid var(--text)" : "1px solid var(--border)", outlineOffset: 2 }} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="whmi-card p-4">
         <div className="font-semibold text-[13px] mb-1">Dashboard Layout</div>
@@ -435,17 +437,19 @@ export default function Settings({
       <div className="whmi-card overflow-hidden">
         {t("emailReminders", "Automated Email Reminders", "One-week, one-day, and one-hour reminders before events")}
         {canManageUsers && t("autoWaitlist", "Automatic Waitlist Promotion", "Move waitlisted staff to confirmed when a place opens")}
-        {t("autoApproveCerts", "Auto-approve Certificates", "Skip manual approval once reflection is confirmed")}
+        {canManageUsers && t("autoApproveCerts", "Auto-approve Certificates", "Skip manual approval once reflection is confirmed")}
         {canManageUsers && t("weeklyDigest", "Weekly Digest", "Summary email of CPD activity every Monday")}
-        <div className="flex items-center justify-between p-4 gap-3">
-          <div className="min-w-0">
-            <div className="font-semibold text-[13px]">Keep Western Health CPD Separate</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>In the Reflection tab, keep Western Health CPD reflections in their own section, separate from other activities you've added.</div>
+        {canManageUsers && (
+          <div className="flex items-center justify-between p-4 gap-3">
+            <div className="min-w-0">
+              <div className="font-semibold text-[13px]">Keep Western Health CPD Separate</div>
+              <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>In the Reflection tab, keep Western Health CPD reflections in their own section, separate from other activities you've added.</div>
+            </div>
+            <button onClick={toggleSeparateWhReflections} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: separateWhReflections ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+              <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: separateWhReflections ? "20px" : "3px", width: 18, height: 18 }} />
+            </button>
           </div>
-          <button onClick={toggleSeparateWhReflections} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: separateWhReflections ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
-            <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: separateWhReflections ? "20px" : "3px", width: 18, height: 18 }} />
-          </button>
-        </div>
+        )}
       </div>
 
       {canManageUsers && (

@@ -167,5 +167,6 @@
 }
 .whmi-btn-ghost:hover { background: var(--border); }
 .whmi-row-hover:hover { background: var(--surface-2); }
+.whmi-preview-banner:hover { filter: brightness(0.92); }
 .whmi-fade-in { animation: whmiFade .25s ease; }
 @keyframes whmiFade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }

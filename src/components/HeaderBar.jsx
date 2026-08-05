@@ -80,7 +80,7 @@ export default function HeaderBar({
       {previewSession && (
         <button
           onClick={onExitPreview}
-          className="sticky top-0 z-40 w-full flex items-center justify-between px-6 py-2 gap-3 whmi-row-hover text-left transition"
+          className="whmi-preview-banner sticky top-0 z-40 w-full flex items-center justify-between px-6 py-2 gap-3 text-left transition"
           style={{ background: "#D9534F", color: "white" }}
           title="Click anywhere to exit preview"
         >
