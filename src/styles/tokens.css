@@ -48,6 +48,21 @@
   font-family: var(--font-body);
   min-height: 100%;
 }
+/* Card colour override — an independent theme just for card/popup/form surfaces (events,
+   modals, panels), separate from the page background theme. Declared directly on .whmi-card
+   itself so it wins over whatever --surface/--text the page background theme cascaded down. */
+.whmi-root[data-card-theme="light"] .whmi-card {
+  --surface: #FFFFFF; --surface-2: #F0F2F5; --border: #E4E7EC;
+  --text: #1A1D23; --text-dim: #6B7280; --text-faint: #9CA3AF;
+}
+.whmi-root[data-card-theme="dark"] .whmi-card {
+  --surface: #16181D; --surface-2: #1D2027; --border: #2A2D35;
+  --text: #F2F3F5; --text-dim: #A3A8B4; --text-faint: #6B7280;
+}
+.whmi-root[data-card-theme="navy"] .whmi-card {
+  --surface: #122744; --surface-2: #16305A; --border: #234270;
+  --text: #F2F5FA; --text-dim: #AAB9D6; --text-faint: #6E82AC;
+}
 .whmi-root h1, .whmi-root h2, .whmi-root h3, .whmi-root .disp {
   font-family: var(--font-display);
 }

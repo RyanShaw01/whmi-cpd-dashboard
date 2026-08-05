@@ -21,6 +21,7 @@ const userFromRow = (r) => ({
   onboarded: r.onboarded == null ? true : !!r.onboarded,
   themeMode: r.theme_mode || (r.dark_mode ? "dark" : "light"),
   mainThemeMode: r.main_theme_mode || (r.main_dark_mode == null ? null : (r.main_dark_mode ? "dark" : "light")),
+  cardThemeMode: r.card_theme_mode || null,
   isTest: !!r.is_test, createdAt: r.created_at,
   profession: r.profession, department: r.department, organisation: r.organisation,
 });
@@ -31,7 +32,8 @@ const userToRow = (u) => ({
   auth_id: u.authId ?? null, user_type: u.userType || "internal", verified: u.verified ?? false,
   secondary_email: u.secondaryEmail ?? null, cert_email_preference: u.certEmailPreference || "primary",
   onboarded: u.onboarded ?? false,
-  theme_mode: u.themeMode || "light", main_theme_mode: u.mainThemeMode === undefined ? null : u.mainThemeMode, is_test: u.isTest ?? false,
+  theme_mode: u.themeMode || "light", main_theme_mode: u.mainThemeMode === undefined ? null : u.mainThemeMode,
+  card_theme_mode: u.cardThemeMode === undefined ? null : u.cardThemeMode, is_test: u.isTest ?? false,
   profession: u.profession ?? null, department: u.department ?? null, organisation: u.organisation ?? null,
 });
 
@@ -201,6 +203,7 @@ export async function updateUser(id, patch) {
   if ("onboarded" in patch) row.onboarded = patch.onboarded;
   if ("themeMode" in patch) row.theme_mode = patch.themeMode;
   if ("mainThemeMode" in patch) row.main_theme_mode = patch.mainThemeMode;
+  if ("cardThemeMode" in patch) row.card_theme_mode = patch.cardThemeMode;
   if ("isTest" in patch) row.is_test = patch.isTest;
   if ("profession" in patch) row.profession = patch.profession;
   if ("department" in patch) row.department = patch.department;
@@ -346,6 +349,14 @@ export async function deleteBrainstormIdea(id) {
   if (!supabaseConfigured) return;
   const { error } = await supabase.from("brainstorm_ideas").delete().eq("id", id);
   if (error) console.error("deleteBrainstormIdea", error);
+}
+export async function updateBrainstormIdea(id, patch) {
+  if (!supabaseConfigured) return;
+  const row = {};
+  if ("content" in patch) row.content = patch.content;
+  if ("category" in patch) row.category = patch.category;
+  const { error } = await supabase.from("brainstorm_ideas").update(row).eq("id", id);
+  if (error) console.error("updateBrainstormIdea", error);
 }
 /* ---------------------------------------------------------------------- */
 /* app_settings (generic admin/owner-configurable key/value store)        */

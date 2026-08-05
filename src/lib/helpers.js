@@ -136,6 +136,7 @@ export const ACTION_LABELS = {
   "file.uploaded": "uploaded a file",
   "file.deleted": "deleted a file",
   "brainstorm_idea.created": "added a CPD Brainstorming idea",
+  "brainstorm_idea.updated": "edited a CPD Brainstorming idea",
   "brainstorm_idea.deleted": "deleted a CPD Brainstorming idea",
 };
 

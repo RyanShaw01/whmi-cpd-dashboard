@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Lightbulb, Plus, X, QrCode, User, ChevronDown, ChevronRight } from "lucide-react";
 import EventQRCode from "../components/EventQRCode";
+import BrainstormIdeaModal from "../components/BrainstormIdeaModal";
 import { relativeTime } from "../lib/helpers";
 import { BRAINSTORM_CATEGORIES } from "../lib/brainstormCategories";
 
-export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea }) {
+export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea, onSaveIdea }) {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("topic");
   const [shareOpen, setShareOpen] = useState(false);
   const [openCats, setOpenCats] = useState({});
+  const [selectedIdea, setSelectedIdea] = useState(null);
   const isCatOpen = (id) => openCats[id] !== false;
   const toggleCat = (id) => setOpenCats(o => ({ ...o, [id]: !isCatOpen(id) }));
 
@@ -87,16 +89,23 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {catIdeas.map(idea => (
-                          <div key={idea.id} className="group relative rounded-2xl px-3 py-2 max-w-[280px]" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-                            <button onClick={() => onRequestDeleteIdea(idea)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition" style={{ background: "#D9534F" }} title="Delete idea">
+                          <div key={idea.id} className="group relative rounded-2xl max-w-[280px]" style={{ border: "1px solid var(--border)" }}>
+                            <button onClick={() => onRequestDeleteIdea(idea)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10" style={{ background: "#D9534F" }} title="Delete idea">
                               <X size={11} color="white" />
                             </button>
-                            <div className="text-[12px] break-words">{idea.content}</div>
-                            <div className="text-[10px] mt-1.5 flex items-center gap-1 flex-wrap" style={{ color: "var(--text-faint)" }}>
-                              <User size={9} />{idea.addedByName} · {relativeTime(idea.createdAt)}
-                            </div>
-                            {idea.source === "public" && <span className="whmi-badge mt-1" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Public link</span>}
-                            {idea.source === "member" && <span className="whmi-badge mt-1" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>Team suggestion</span>}
+                            <button
+                              onClick={() => setSelectedIdea(idea)}
+                              className="w-full text-left rounded-2xl px-3 py-2 transition whmi-row-hover"
+                              style={{ background: "var(--surface-2)" }}
+                              title="Click to view or edit"
+                            >
+                              <div className="text-[12px] break-words">{idea.content}</div>
+                              <div className="text-[10px] mt-1.5 flex items-center gap-1 flex-wrap" style={{ color: "var(--text-faint)" }}>
+                                <User size={9} />{idea.addedByName} · {relativeTime(idea.createdAt)}
+                              </div>
+                              {idea.source === "public" && <span className="whmi-badge mt-1" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Public link</span>}
+                              {idea.source === "member" && <span className="whmi-badge mt-1" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>Team suggestion</span>}
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -108,6 +117,13 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
           </tbody>
         </table>
       </div>
+
+      <BrainstormIdeaModal
+        idea={selectedIdea}
+        onClose={() => setSelectedIdea(null)}
+        onSave={onSaveIdea}
+        onRequestDelete={onRequestDeleteIdea}
+      />
     </div>
   );
 }

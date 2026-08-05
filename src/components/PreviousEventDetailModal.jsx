@@ -47,21 +47,27 @@ export default function PreviousEventDetailModal({
   const [recordingUrl, setRecordingUrl] = useState(event?.recordingUrl || "");
   const [savedNote, setSavedNote] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
   if (!event) return null;
 
   if (editing) {
+    const attemptCloseEdit = () => {
+      if (formDirty && !window.confirm("You have unsaved changes. Are you sure you want to leave without saving?")) return;
+      setEditing(false);
+    };
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={attemptCloseEdit}>
         <div className="whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
           <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
             <h2 className="disp text-[16px] font-extrabold">Edit Event</h2>
-            <button onClick={() => setEditing(false)} className="whmi-btn-ghost !p-2"><X size={14} /></button>
+            <button onClick={attemptCloseEdit} className="whmi-btn-ghost !p-2"><X size={14} /></button>
           </div>
           <div className="p-5">
             <EventForm
               event={event}
               onSave={(payload) => { onEdit(payload); setEditing(false); }}
-              onCancel={() => setEditing(false)}
+              onCancel={attemptCloseEdit}
+              onDirtyChange={setFormDirty}
               uploadedBy={session?.id}
               cpdTypes={cpdTypes}
               tags={tags}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Save, X, Plus } from "lucide-react";
 import { CAMPUS_OPTIONS, LOCATION_OPTIONS } from "../data/mockData";
 import { formatDuration } from "../lib/helpers";
@@ -26,12 +26,18 @@ const field = "text-[11px] font-semibold block mb-1";
 // DB rows use null for "not set"; text/number inputs need "" so they stay controlled.
 const nullsToEmpty = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v == null ? "" : v]));
 
-export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner }) {
-  const [form, setForm] = useState(event
+export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner, onDirtyChange }) {
+  const initialForm = event
     ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [] }
-    : { ...emptyEvent, status: initialStatus || emptyEvent.status });
+    : { ...emptyEvent, status: initialStatus || emptyEvent.status };
+  const [form, setForm] = useState(initialForm);
   const [newTag, setNewTag] = useState("");
   const isEdit = Boolean(event);
+  const initialFormRef = useRef(initialForm);
+  useEffect(() => {
+    onDirtyChange?.(JSON.stringify(form) !== JSON.stringify(initialFormRef.current));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const toggleTag = (t) => setForm(f => ({ ...f, tags: f.tags.includes(t) ? f.tags.filter(x => x !== t) : [...f.tags, t] }));

@@ -6,6 +6,7 @@ import RegistrationSuccessCard from "../components/RegistrationSuccessCard";
 import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl } from "../lib/helpers";
 
 const WH_DOMAIN = "@wh.org.au";
+const NAVY = "#152A4E";
 
 export default function PublicEventPage({ events, session, onPublicRegister, files }) {
   const { eventId } = useParams();
@@ -74,7 +75,9 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
         <div className="whmi-card overflow-hidden">
           {flyerUrl ? (
             <div className="relative h-40 flex items-center justify-center overflow-hidden" style={{ background: "var(--surface-2)" }}>
-              <img src={flyerUrl} alt="" className="max-w-full max-h-full object-contain" />
+              <img src={flyerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(28px) saturate(1.3) brightness(0.85)", transform: "scale(1.25)" }} />
+              <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.15)" }} />
+              <img src={flyerUrl} alt="" className="relative max-w-full max-h-full object-contain" style={{ boxShadow: "0 4px 24px rgba(0,0,0,.25)" }} />
               <button
                 onClick={() => setFlyerExpanded(true)}
                 className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
@@ -102,19 +105,19 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
               <div className="flex items-center gap-2"><UserCircle2 size={15} style={{ color: "var(--text-faint)" }} /><span>{event.presenter}</span></div>
             </div>
 
-            {event.openToExternal !== false && (
-              <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: event.externalPrice ? "var(--accent-primary)" : "rgba(156,203,59,.15)", color: event.externalPrice ? "#fff" : "var(--accent-success)" }}>
-                <span className="text-[13px] font-semibold flex items-center gap-1.5"><DollarSign size={14} />Cost</span>
-                <span className="text-[17px] font-extrabold">{event.externalPrice ? `$${Number(event.externalPrice).toFixed(2)} AUD` : "Free"}</span>
-              </div>
-            )}
-
             {event.status !== "Registration Open" ? (
               <div className="whmi-card p-3 text-[13px]" style={{ color: "var(--text-faint)" }}>Registration isn't open for this event yet; check back soon.</div>
             ) : submitted ? (
               <RegistrationSuccessCard event={event} />
             ) : !showForm ? (
-              <button onClick={() => setShowForm(true)} className="whmi-btn-primary w-full">Register for this Event</button>
+              <div className="space-y-1.5">
+                {event.openToExternal !== false && (
+                  <div className="flex items-center justify-end gap-1 text-[12px] font-semibold" style={{ color: event.externalPrice ? NAVY : "var(--accent-success)" }}>
+                    <DollarSign size={12} />{event.externalPrice ? `$${Number(event.externalPrice).toFixed(2)} AUD` : "Free"}
+                  </div>
+                )}
+                <button onClick={() => setShowForm(true)} className="w-full py-2.5 rounded-xl font-semibold text-[13.5px]" style={{ background: NAVY, color: "#fff" }}>Register for this Event</button>
+              </div>
             ) : (
               <form onSubmit={(e) => submit(e)} className="whmi-card p-4 space-y-3">
                 {session && (

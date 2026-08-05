@@ -49,7 +49,7 @@ import {
   fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog, sendReflectionReminder,
   fetchAvatarIcons, insertAvatarIcon, updateAvatarIcon, deleteAvatarIcon, uploadAvatarIconImage,
   fetchAvatarColors, insertAvatarColor, updateAvatarColor, deleteAvatarColor,
-  fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea,
+  fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea, updateBrainstormIdea,
   fetchAppSetting, upsertAppSetting,
   fetchPersonalReflections, insertPersonalReflection, deletePersonalReflection, emailReflectionCopy, emailReflectionsReport, sendRegistrationConfirmation,
 } from "./lib/db";
@@ -114,6 +114,7 @@ export default function App() {
   const [highlightId, setHighlightId] = useState(null);
   const [theme, setTheme] = useState("light"); // "light" | "dark" | "navy"
   const [mainTheme, setMainTheme] = useState(null); // null = match `theme`, else "light" | "dark" | "navy"
+  const [cardTheme, setCardTheme] = useState(null); // null = match page theme, else "light" | "dark" | "navy" — applies to card/popup/form surfaces only
   const [collapsed, setCollapsed] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -236,6 +237,7 @@ export default function App() {
         setSession(profile);
         setTheme(profile.themeMode || "light");
         setMainTheme(profile.mainThemeMode || null);
+        setCardTheme(profile.cardThemeMode || null);
         setPage(profile.role === "viewer" ? "mycpd" : "dashboard");
         await loadAppData();
         if (!mounted) return;
@@ -278,6 +280,11 @@ export default function App() {
   const handleSetMainTheme = (next) => {
     setMainTheme(next);
     if (session) handleProfileSave({ mainThemeMode: next });
+  };
+  // null = "match the page theme"; "light"/"dark"/"navy" = override for card/popup/form surfaces only.
+  const handleSetCardTheme = (next) => {
+    setCardTheme(next);
+    if (session) handleProfileSave({ cardThemeMode: next });
   };
   const handleCompleteOnboarding = async (updates) => {
     const patch = { ...updates, onboarded: true };
@@ -694,6 +701,11 @@ export default function App() {
     deleteBrainstormIdea(idea.id);
     pushAudit({ actorId: session?.id, action: "brainstorm_idea.deleted", entityType: "brainstorm_idea", entityId: idea.id, details: { content: idea.content } });
   });
+  const handleSaveBrainstormIdea = (idea, patch) => {
+    setBrainstormIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, ...patch } : i));
+    updateBrainstormIdea(idea.id, patch);
+    pushAudit({ actorId: session?.id, action: "brainstorm_idea.updated", entityType: "brainstorm_idea", entityId: idea.id, details: { content: patch.content } });
+  };
   const handlePublicBrainstormSubmit = (content, submitterName, category) => {
     const idea = { id: "idea" + Date.now(), content, category, addedByName: submitterName || "Anonymous", source: "public", createdAt: new Date().toISOString() };
     insertBrainstormIdea(idea);
@@ -1024,7 +1036,7 @@ export default function App() {
     } : {};
 
     mainContent = (
-      <div className={`whmi-root ${theme}`} style={{ minHeight: "100vh", ...rootVars }}>
+      <div className={`whmi-root ${theme}`} data-card-theme={cardTheme || undefined} style={{ minHeight: "100vh", ...rootVars }}>
         <div className="flex" style={{ minHeight: "100vh" }}>
           <Sidebar page={page} setPage={changePage} collapsed={collapsed} setCollapsed={setCollapsed} navItems={navItems} homePage={homePage} width={sidebarWidth} badgePages={badgePages} />
 
@@ -1100,13 +1112,14 @@ export default function App() {
               />
             )}
             {page === "brainstorm" && canManage && (
-              <Brainstorming ideas={brainstormIdeas} onAddIdea={handleAddBrainstormIdea} onRequestDeleteIdea={requestDeleteBrainstormIdea} />
+              <Brainstorming ideas={brainstormIdeas} onAddIdea={handleAddBrainstormIdea} onRequestDeleteIdea={requestDeleteBrainstormIdea} onSaveIdea={handleSaveBrainstormIdea} />
             )}
             {page === "help" && <HelpCentre role={viewSession.role} />}
             {page === "settings" && (
               <Settings
                 theme={theme} setTheme={handleSetTheme}
                 mainTheme={mainTheme} setMainTheme={handleSetMainTheme}
+                cardTheme={cardTheme} setCardTheme={handleSetCardTheme}
                 role={viewSession.role}
                 session={session} onProfileSave={handleProfileSave} showToast={showToast}
                 users={users} onUsersChange={handleUsersChange}

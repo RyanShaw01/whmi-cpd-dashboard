@@ -13,7 +13,7 @@ const CPD_CATEGORIES = [
 ];
 
 export default function Settings({
-  theme, setTheme, mainTheme, setMainTheme, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
+  theme, setTheme, mainTheme, setMainTheme, cardTheme, setCardTheme, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
   redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType, onReorderCpdTypes,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
   tags = [], onSaveTag, onDeleteTag, onReorderTags, onBackfillStaffLinks, auditLog = [],
@@ -391,6 +391,18 @@ export default function Settings({
             <button onClick={() => setMainTheme("light")} className={mainTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
             <button onClick={() => setMainTheme("dark")} className={mainTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
             <button onClick={() => setMainTheme("navy")} className={mainTheme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+          <div>
+            <div className="font-semibold text-[13px]">Appearance — Cards, Forms &amp; Popups</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the colour of cards, forms, and popups (events, modals, panels) separately, or leave them matching the page.</div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setCardTheme(null)} className={cardTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
+            <button onClick={() => setCardTheme("light")} className={cardTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+            <button onClick={() => setCardTheme("dark")} className={cardTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+            <button onClick={() => setCardTheme("navy")} className={cardTheme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
           </div>
         </div>
       </div>
