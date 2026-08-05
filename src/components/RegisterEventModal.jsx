@@ -11,7 +11,6 @@ export default function RegisterEventModal({ open, onClose, session, events, def
   const [attendanceType, setAttendanceType] = useState("In-person");
   const [dietary, setDietary] = useState(session?.dietaryRequirements || "");
   const [accessibility, setAccessibility] = useState(session?.accessibility || "");
-  const [comments, setComments] = useState("");
 
   const selectedEvent = openEvents.find(e => e.id === eventId);
 
@@ -23,7 +22,6 @@ export default function RegisterEventModal({ open, onClose, session, events, def
     setProfession(session?.profession || "");
     setDietary(session?.dietaryRequirements || "");
     setAccessibility(session?.accessibility || "");
-    setComments("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultEventId]);
 
@@ -35,7 +33,7 @@ export default function RegisterEventModal({ open, onClose, session, events, def
     onSubmit({
       eventId, name: name.trim(), email: email.trim(), profession: profession.trim(),
       attendanceType: selectedEvent?.mode === "Hybrid" ? attendanceType : null,
-      dietary: dietary.trim(), accessibility: accessibility.trim(), comments: comments.trim(),
+      dietary: dietary.trim(), accessibility: accessibility.trim(),
     });
   };
 
@@ -98,15 +96,11 @@ export default function RegisterEventModal({ open, onClose, session, events, def
           )}
           <div>
             <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Dietary Requirements</label>
-            <textarea value={dietary} onChange={e => setDietary(e.target.value)} rows={2} placeholder="None, vegetarian, allergies, etc." className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
+            <textarea value={dietary} onChange={e => setDietary(e.target.value)} rows={2} placeholder="Vegetarian, allergies, etc." className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
           </div>
           <div>
             <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Accessibility Requirements</label>
-            <textarea value={accessibility} onChange={e => setAccessibility(e.target.value)} rows={2} placeholder="None, wheelchair access, hearing loop, etc." className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
-          </div>
-          <div>
-            <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Additional Comments</label>
-            <textarea value={comments} onChange={e => setComments(e.target.value)} rows={2} className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
+            <textarea value={accessibility} onChange={e => setAccessibility(e.target.value)} rows={2} placeholder="Wheelchair access, hearing loop, etc." className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
             <p className="text-[10.5px] mt-1" style={{ color: "var(--text-faint)" }}>Dietary and accessibility answers are saved to your profile for next time.</p>
           </div>
           {openEvents.length === 0 && (

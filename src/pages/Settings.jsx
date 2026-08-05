@@ -13,7 +13,7 @@ const CPD_CATEGORIES = [
 ];
 
 export default function Settings({
-  dark, setDark, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
+  dark, setDark, mainDark, setMainDark, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
   redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType, onReorderCpdTypes,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
   tags = [], onSaveTag, onDeleteTag, onReorderTags, onBackfillStaffLinks, auditLog = [],
@@ -369,14 +369,27 @@ export default function Settings({
         </div>
       </div>
 
-      <div className="whmi-card p-4 flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <div className="font-semibold text-[13px]">Appearance</div>
-          <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Switch between light and dark mode</div>
+      <div className="whmi-card p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <div className="font-semibold text-[13px]">Appearance — Sidebar &amp; Header</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Switch between light and dark mode for the sidebar and top header bar.</div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setDark(false)} className={!dark ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+            <button onClick={() => setDark(true)} className={dark ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setDark(false)} className={!dark ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-          <button onClick={() => setDark(true)} className={dark ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+        <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+          <div>
+            <div className="font-semibold text-[13px]">Appearance — Main Page</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the main content area's theme separately, or leave it matching the sidebar and header.</div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setMainDark(null)} className={mainDark == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
+            <button onClick={() => setMainDark(false)} className={mainDark === false ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+            <button onClick={() => setMainDark(true)} className={mainDark === true ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+          </div>
         </div>
       </div>
 

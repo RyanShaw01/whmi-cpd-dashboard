@@ -110,6 +110,7 @@ export default function App() {
   }, [session?.id, session?.onboarded]);
   const [highlightId, setHighlightId] = useState(null);
   const [dark, setDark] = useState(false);
+  const [mainDark, setMainDark] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -229,6 +230,7 @@ export default function App() {
         if (!mounted || !profile) { setReady(true); return; }
         setSession(profile);
         setDark(!!profile.darkMode);
+        setMainDark(profile.mainDarkMode == null ? null : !!profile.mainDarkMode);
         setPage(profile.role === "viewer" ? "mycpd" : "dashboard");
         await loadAppData();
         if (!mounted) return;
@@ -266,6 +268,11 @@ export default function App() {
   const handleSetDark = (next) => {
     setDark(next);
     if (session) handleProfileSave({ darkMode: next });
+  };
+  // null = "match sidebar & header theme"; true/false = explicit override for the main page only.
+  const handleSetMainDark = (next) => {
+    setMainDark(next);
+    if (session) handleProfileSave({ mainDarkMode: next });
   };
   const handleCompleteOnboarding = async (updates) => {
     const patch = { ...updates, onboarded: true };
@@ -999,7 +1006,7 @@ export default function App() {
               testAccounts={users.filter(u => u.isTest)} onPreviewAs={setPreviewSession}
             />
 
-            <div data-tour="main-content">
+            <div data-tour="main-content" className={`whmi-root ${(mainDark == null ? dark : mainDark) ? "dark" : "light"}`} style={rootVars}>
             {page === "dashboard" && viewSession.role !== "viewer" && (
               <Dashboard
                 events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} certificates={certificates} files={files}
@@ -1053,6 +1060,7 @@ export default function App() {
             {page === "settings" && (
               <Settings
                 dark={dark} setDark={handleSetDark}
+                mainDark={mainDark} setMainDark={handleSetMainDark}
                 role={session.role}
                 session={session} onProfileSave={handleProfileSave} showToast={showToast}
                 users={users} onUsersChange={handleUsersChange}

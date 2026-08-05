@@ -128,15 +128,18 @@ export default function EventDetailModal({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3 text-[13px]">
-            <div className="flex items-center gap-2"><Calendar size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtDate(event.date)}</span></div>
-            <div className="flex items-center gap-2"><Clock size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(event.start, event.end)}</span></div>
-            <div className="flex items-center gap-2"><MapPin size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">
+          <div className="flex items-center gap-2 text-[13px]">
+            <MapPin size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">
               {event.campus && <strong>{event.campus}</strong>}
               {event.campus && eventLocationSuffix(event) ? " - " : ""}
               {eventLocationSuffix(event)}
-            </span></div>
-            <div className="flex items-start gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" />
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-[13px]">
+            <div className="flex items-center gap-2"><Calendar size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtDate(event.date)}</span></div>
+            <div className="flex items-center gap-2"><Clock size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(event.start, event.end)}</span></div>
+            <div className="flex items-start gap-2 col-span-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" />
               {(() => {
                 const presenters = splitPeopleList(event.presenter);
                 return presenters.length > 1 ? (
@@ -176,9 +179,9 @@ export default function EventDetailModal({
             {[
               { id: "overview", label: "Overview" },
               { id: "registrations", label: "Registrations" },
+              ...(canManage ? [{ id: "qr", label: "Links" }] : []),
               { id: "reflections", label: "Reflections" },
               { id: "certificates", label: "Certificates" },
-              ...(canManage ? [{ id: "qr", label: "Links/QR Codes" }] : []),
             ].map(t => (
               <button key={t.id} onClick={() => setRegTab(t.id)} className="px-3 py-2 text-[12.5px] font-semibold whitespace-nowrap" style={{ color: regTab === t.id ? "var(--text)" : "var(--text-faint)", borderBottom: regTab === t.id ? "2px solid var(--accent-secondary)" : "2px solid transparent" }}>
                 {t.label}
@@ -294,7 +297,7 @@ export default function EventDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
       <div
-        className={bannerUrl ? "whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative" : "whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"}
+        className={bannerUrl ? "whmi-card w-full max-w-5xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative" : "whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"}
         onClick={e => e.stopPropagation()}
       >
         <button onClick={onClose} className="absolute top-3 right-3 z-20 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,.4)" }}>
@@ -307,7 +310,6 @@ export default function EventDetailModal({
             </div>
             <div className="min-w-0">
               <div className="px-5 pt-5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--accent-secondary)" }}>{event.topic}</span>
                 <h2 className="disp text-[19px] font-extrabold leading-tight break-words">{event.title}</h2>
               </div>
               {infoBody}
@@ -317,7 +319,6 @@ export default function EventDetailModal({
           <>
             <div className="min-h-[92px] relative flex items-end p-5" style={{ background: "var(--accent-primary)" }}>
               <div className="min-w-0 pr-8">
-                <span className="text-white/80 text-[11px] font-semibold uppercase tracking-wide">{event.topic}</span>
                 <h2 className="disp text-white text-[19px] font-extrabold leading-tight break-words">{event.title}</h2>
               </div>
             </div>

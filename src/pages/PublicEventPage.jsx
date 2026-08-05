@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Calendar, Clock, MapPin, UserCircle2, CheckCircle2 } from "lucide-react";
 import ModeBadge from "../components/ModeBadge";
-import { CAMPUS_OPTIONS } from "../data/mockData";
-import { fmtDate, fmtTimeRange12h } from "../lib/helpers";
+import { fmtDate, fmtTimeRange12h, eventLocationSuffix } from "../lib/helpers";
 
 const WH_DOMAIN = "@wh.org.au";
 
@@ -13,12 +12,10 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState(session?.name || "");
   const [email, setEmail] = useState(session?.email || "");
-  const [profession, setProfession] = useState("");
-  const [campus, setCampus] = useState("");
+  const [profession, setProfession] = useState(session?.profession || "");
   const [attendanceType, setAttendanceType] = useState("In-person");
   const [dietary, setDietary] = useState(session?.dietaryRequirements || "");
   const [accessibility, setAccessibility] = useState(session?.accessibility || "");
-  const [comments, setComments] = useState("");
   const [askWhStaff, setAskWhStaff] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -49,11 +46,9 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
       name: name.trim(),
       email: email.trim(),
       profession: profession.trim(),
-      campus,
       attendanceType: event.mode === "Hybrid" ? attendanceType : null,
       dietary: dietary.trim(),
       accessibility: accessibility.trim(),
-      comments: comments.trim(),
       isWhStaffAnswer: whStaffAnswer,
     });
     setSubmitted(true);
@@ -76,7 +71,7 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[13.5px]">
               <div className="flex items-center gap-2"><Calendar size={15} style={{ color: "var(--text-faint)" }} /><span>{fmtDate(event.date)}</span></div>
               <div className="flex items-center gap-2"><Clock size={15} style={{ color: "var(--text-faint)" }} /><span>{fmtTimeRange12h(event.start, event.end)}</span></div>
-              <div className="flex items-center gap-2"><MapPin size={15} style={{ color: "var(--text-faint)" }} /><span className="break-words">{event.location}</span></div>
+              <div className="flex items-center gap-2"><MapPin size={15} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{event.campus && <strong>{event.campus}</strong>}{event.campus && eventLocationSuffix(event) ? " - " : ""}{eventLocationSuffix(event)}</span></div>
               <div className="flex items-center gap-2"><UserCircle2 size={15} style={{ color: "var(--text-faint)" }} /><span>{event.presenter}</span></div>
             </div>
 
@@ -95,24 +90,15 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
                 )}
                 <div>
                   <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Name</label>
-                  <input required disabled={!!session} value={name} onChange={e => setName(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
+                  <input required value={name} onChange={e => setName(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Email</label>
-                  <input required disabled={!!session} type="email" value={email} onChange={e => { setEmail(e.target.value); setAskWhStaff(false); }} className="whmi-input w-full px-2.5 py-2 mt-1" />
+                  <input required type="email" value={email} onChange={e => { setEmail(e.target.value); setAskWhStaff(false); }} className="whmi-input w-full px-2.5 py-2 mt-1" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Staff Profession</label>
-                    <input value={profession} onChange={e => setProfession(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Department / Campus</label>
-                    <select value={campus} onChange={e => setCampus(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1">
-                      <option value="">—</option>
-                      {CAMPUS_OPTIONS.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
-                    </select>
-                  </div>
+                <div>
+                  <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Profession</label>
+                  <input value={profession} onChange={e => setProfession(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
                 </div>
                 {event.mode === "Hybrid" && (
                   <div>
@@ -125,15 +111,11 @@ export default function PublicEventPage({ events, session, onPublicRegister }) {
                 )}
                 <div>
                   <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Dietary Requirements</label>
-                  <textarea value={dietary} onChange={e => setDietary(e.target.value)} rows={2} placeholder="None, vegetarian, allergies, etc." className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
+                  <textarea value={dietary} onChange={e => setDietary(e.target.value)} rows={2} placeholder="Vegetarian, allergies, etc." className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Accessibility Requirements</label>
-                  <textarea value={accessibility} onChange={e => setAccessibility(e.target.value)} rows={2} placeholder="None, wheelchair access, hearing loop, etc." className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Additional Comments</label>
-                  <textarea value={comments} onChange={e => setComments(e.target.value)} rows={2} className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
+                  <textarea value={accessibility} onChange={e => setAccessibility(e.target.value)} rows={2} placeholder="Wheelchair access, hearing loop, etc." className="whmi-input w-full px-2.5 py-2 mt-1 resize-none" />
                 </div>
 
                 {askWhStaff ? (
