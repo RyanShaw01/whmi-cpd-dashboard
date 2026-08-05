@@ -121,6 +121,13 @@ export default function EventDetailModal({
             )}
           </div>
 
+          {viewerUserType === "external" && event.externalPrice != null && !iRegistered && (
+            <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: "var(--accent-primary)", color: "#fff" }}>
+              <span className="text-[13px] font-semibold">Registration Fee</span>
+              <span className="text-[20px] font-extrabold">${Number(event.externalPrice).toFixed(2)} AUD</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3 text-[13px]">
             <div className="flex items-center gap-2"><Calendar size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtDate(event.date)}</span></div>
             <div className="flex items-center gap-2"><Clock size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(event.start, event.end)}</span></div>
@@ -216,7 +223,7 @@ export default function EventDetailModal({
           {regTab === "reflections" && (
             <div className="space-y-3">
               {canManage && (
-                <div className="max-w-md mx-auto">
+                <div className="max-w-xl mx-auto">
                   <EventQRCode event={event} path="/reflect" filenameSuffix="reflection-qr" layout="row" />
                 </div>
               )}

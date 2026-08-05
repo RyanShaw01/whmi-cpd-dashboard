@@ -103,6 +103,7 @@ const registrationFromRow = (r) => ({
   attendanceStatus: r.attendance_status, createdAt: r.created_at,
   profession: r.profession, campus: r.campus, attendanceType: r.attendance_type,
   accessibility: r.accessibility, comments: r.comments,
+  reflectionEmailSentAt: r.reflection_email_sent_at || null,
 });
 const registrationToRow = (r) => ({
   id: r.id, event_id: r.eventId, user_id: r.userId ?? null, external_participant_id: r.externalParticipantId ?? null,
@@ -478,6 +479,7 @@ export async function updateRegistration(id, patch) {
   if ("dietary" in patch) row.dietary = patch.dietary;
   if ("accessibility" in patch) row.accessibility = patch.accessibility;
   if ("comments" in patch) row.comments = patch.comments;
+  if ("reflectionEmailSentAt" in patch) row.reflection_email_sent_at = patch.reflectionEmailSentAt;
   const { error } = await supabase.from("registrations").update(row).eq("id", id);
   if (error) console.error("updateRegistration", error);
 }
@@ -643,6 +645,13 @@ export async function sendReflectionReminder({ name, email, eventId, eventTitle 
   });
   if (error) { console.error("sendReflectionReminder", error); return { ok: false }; }
   return { ok: true, ...data };
+}
+
+export async function emailReflectionsReport({ toEmail, toName, entries }) {
+  if (!supabaseConfigured) return { ok: false };
+  const { error } = await supabase.functions.invoke("admin-email-reflections-report", { body: { toEmail, toName, entries } });
+  if (error) { console.error("emailReflectionsReport", error); return { ok: false }; }
+  return { ok: true };
 }
 
 export async function sendCertificateEmail(certificateId, isResend = false) {

@@ -50,7 +50,7 @@ import {
   fetchAvatarColors, insertAvatarColor, updateAvatarColor, deleteAvatarColor,
   fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea,
   fetchAppSetting, upsertAppSetting,
-  fetchPersonalReflections, insertPersonalReflection, deletePersonalReflection, emailReflectionCopy,
+  fetchPersonalReflections, insertPersonalReflection, deletePersonalReflection, emailReflectionCopy, emailReflectionsReport,
 } from "./lib/db";
 import { setAvatarIcons as setRegistryIcons, setAvatarColors as setRegistryColors } from "./lib/avatarRegistry";
 
@@ -426,9 +426,21 @@ export default function App() {
     confirmLabel: "Send",
     onConfirm: async () => {
       const res = await sendReflectionReminder({ name: registration.name, email: registration.email, eventId: event.id, eventTitle: event.title });
-      if (res.ok) pushAudit({ actorId: session?.id, action: "reflection.reminder_sent", entityType: "event", entityId: event.id, details: { email: registration.email } });
+      if (res.ok) {
+        pushAudit({ actorId: session?.id, action: "reflection.reminder_sent", entityType: "event", entityId: event.id, details: { email: registration.email } });
+        const sentAt = new Date().toISOString();
+        setRegistrations(prev => prev.map(r => r.id === registration.id ? { ...r, reflectionEmailSentAt: sentAt } : r));
+        updateRegistration(registration.id, { reflectionEmailSentAt: sentAt });
+        showToast("Reminder sent.");
+      } else {
+        showToast("Couldn't send the reminder. Please try again.");
+      }
     },
   });
+  const handleSendReflectionsReport = async ({ email, name, entries }) => {
+    const res = await emailReflectionsReport({ toEmail: email, toName: name, entries });
+    showToast(res.ok ? "Report emailed." : "Couldn't send the report. Please try again.");
+  };
   const handleCreateEvent = (payload) => {
     setEvents(prev => [...prev, payload]);
     insertEvent(payload);
@@ -1014,6 +1026,12 @@ export default function App() {
                 onAddPersonalReflection={handleAddPersonalReflection}
                 onDeletePersonalReflection={requestDeletePersonalReflection}
                 onEmailCopy={handleEmailReflectionCopy}
+                canManage={canManage}
+                registrations={registrations}
+                previousEvents={previousEventsWithLiveStats}
+                users={users}
+                onResendReflectionReminder={handleSendReflectionReminder}
+                onSendReflectionsReport={handleSendReflectionsReport}
               />
             )}
             {page === "brainstorm" && canManage && (

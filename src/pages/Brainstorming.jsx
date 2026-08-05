@@ -8,6 +8,9 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("topic");
   const [shareOpen, setShareOpen] = useState(false);
+  const [openCats, setOpenCats] = useState({});
+  const isCatOpen = (id) => openCats[id] !== false;
+  const toggleCat = (id) => setOpenCats(o => ({ ...o, [id]: !isCatOpen(id) }));
 
   const submit = (e) => {
     e.preventDefault();
@@ -33,9 +36,9 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
           </div>
         </button>
         {shareOpen && (
-          <div className="mt-2 max-w-xs">
+          <div className="mt-2 max-w-xl">
             <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Share this link or QR code so staff can submit their own CPD ideas without logging in. Submissions are added to the list below, tagged with their name.</p>
-            <EventQRCode event={{ id: "brainstorm", title: "CPD Brainstorming Ideas" }} url={submitUrl} filenameSuffix="idea-form" />
+            <EventQRCode event={{ id: "brainstorm", title: "CPD Brainstorming Ideas" }} url={submitUrl} filenameSuffix="idea-form" layout="row" />
           </div>
         )}
       </div>
@@ -67,14 +70,18 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
             {BRAINSTORM_CATEGORIES.map(cat => {
               const catIdeas = ideas.filter(idea => (idea.category || "other") === cat.id);
               const Icon = cat.icon;
+              const open = isCatOpen(cat.id);
               return (
                 <tr key={cat.id} className="align-top" style={{ borderBottom: "1px solid var(--border)" }}>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5 font-semibold text-[12.5px]"><Icon size={14} style={{ color: "var(--accent-primary)" }} />{cat.label}</div>
+                    <button type="button" onClick={() => toggleCat(cat.id)} className="flex items-center gap-1.5 font-semibold text-[12.5px]">
+                      {open ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+                      <Icon size={14} style={{ color: "var(--accent-primary)" }} />{cat.label}
+                    </button>
                     <div className="text-[11px] mt-0.5" style={{ color: "var(--text-faint)" }}>{catIdeas.length} idea{catIdeas.length === 1 ? "" : "s"}</div>
                   </td>
                   <td className="px-4 py-3">
-                    {catIdeas.length === 0 ? (
+                    {!open ? null : catIdeas.length === 0 ? (
                       <span className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>No ideas in this category yet.</span>
                     ) : (
                       <div className="flex flex-wrap gap-2">

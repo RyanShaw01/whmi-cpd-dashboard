@@ -68,7 +68,7 @@ export default function RegisterEventModal({ open, onClose, session, events, def
                     </div>
                   )}
                   {session?.userType === "external" && ev.externalPrice != null && (
-                    <div className="text-[11.5px] mt-1 font-semibold" style={{ color: "var(--accent-primary)" }}>${Number(ev.externalPrice).toFixed(2)}</div>
+                    <div className="text-[11.5px] mt-1 font-semibold" style={{ color: "var(--accent-primary)" }}>${Number(ev.externalPrice).toFixed(2)} AUD</div>
                   )}
                   {ev.description && <p className="text-[11.5px] mt-1.5 line-clamp-2" style={{ color: "var(--text-faint)" }}>{ev.description}</p>}
                 </button>

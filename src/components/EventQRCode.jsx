@@ -90,10 +90,10 @@ export default function EventQRCode({ event, path = "", filenameSuffix = "qr", u
 
   if (layout === "row") {
     return (
-      <div className="whmi-card p-4 flex items-center gap-4">
+      <div className="whmi-card p-4 flex flex-col md:flex-row items-center md:items-start gap-4">
         <canvas ref={canvasRef} className="shrink-0" />
-        <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-          <p className="text-[11px] break-all" style={{ color: "var(--text-faint)" }}>{url}</p>
+        <div className="flex flex-col gap-1.5 min-w-0 flex-1 w-full">
+          <p className="text-[11px] break-all md:text-left text-center" style={{ color: "var(--text-faint)" }}>{url}</p>
           <button onClick={copyLink} className="whmi-btn-ghost flex items-center gap-1.5 w-full justify-center">
             {copiedLink ? <><Check size={13} />Copied!</> : <><Link2 size={13} />Copy Link</>}
           </button>

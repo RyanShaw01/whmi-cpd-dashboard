@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { NotebookPen, Plus, ChevronDown, ChevronRight, Trash2, Mail, X, Save, Building2 } from "lucide-react";
 import { REFLECTION_SECTIONS, REFLECTION_SHORT_FORM } from "../data/reflectionTemplate";
 import { fmtDate } from "../lib/helpers";
+import AdminReflectionsOverview from "../components/AdminReflectionsOverview";
 
 const SEPARATE_WH_STORAGE_KEY = "whmi_reflection_separate_wh";
 export const getSeparateWhDefault = () => {
@@ -12,8 +13,10 @@ export const setSeparateWhDefault = (value) => {
 };
 
 const SORT_OPTIONS = [
-  { id: "date", label: "Event Date" },
-  { id: "alpha", label: "Alphabetical" },
+  { id: "date-desc", label: "Event Date (Newest - Oldest)" },
+  { id: "date-asc", label: "Event Date (Oldest - Newest)" },
+  { id: "alpha-asc", label: "Alphabetical (A - Z)" },
+  { id: "alpha-desc", label: "Alphabetical (Z - A)" },
 ];
 
 function AddReflectionForm({ onCancel, onSubmit }) {
@@ -130,7 +133,7 @@ function personalToDisplaySections(r) {
   })).filter(s => s.items.length > 0);
 }
 
-function whToDisplaySections(r) {
+export function whToDisplaySections(r) {
   const items = [];
   if (r.content) items.push({ question: "Reflection", answer: r.content });
   if (r.mostValuable) items.push({ question: "Most valuable aspect", answer: r.mostValuable });
@@ -139,12 +142,16 @@ function whToDisplaySections(r) {
   return items.length > 0 ? [{ label: "Reflection", items }] : [];
 }
 
-export default function Reflection({ session, personalReflections = [], whReflections = [], onAddPersonalReflection, onDeletePersonalReflection, onEmailCopy }) {
+export default function Reflection({
+  session, personalReflections = [], whReflections = [], onAddPersonalReflection, onDeletePersonalReflection, onEmailCopy,
+  canManage, registrations = [], previousEvents = [], users = [], onResendReflectionReminder, onSendReflectionsReport,
+}) {
   const [adding, setAdding] = useState(false);
-  const [sortBy, setSortBy] = useState("date");
+  const [sortBy, setSortBy] = useState("date-desc");
   const [separateWh, setSeparateWh] = useState(getSeparateWhDefault);
   const [expandedId, setExpandedId] = useState(null);
   const [emailingId, setEmailingId] = useState(null);
+  const [view, setView] = useState("mine");
 
   const mine = useMemo(() => {
     const personal = personalReflections
@@ -158,7 +165,12 @@ export default function Reflection({ session, personalReflections = [], whReflec
 
   const sortList = (list) => {
     const sorted = [...list];
-    sorted.sort((a, b) => sortBy === "alpha" ? (a.name || "").localeCompare(b.name || "") : (b.date || "").localeCompare(a.date || ""));
+    sorted.sort((a, b) => {
+      if (sortBy === "alpha-asc") return (a.name || "").localeCompare(b.name || "");
+      if (sortBy === "alpha-desc") return (b.name || "").localeCompare(a.name || "");
+      if (sortBy === "date-asc") return (a.date || "").localeCompare(b.date || "");
+      return (b.date || "").localeCompare(a.date || "");
+    });
     return sorted;
   };
 
@@ -227,11 +239,28 @@ export default function Reflection({ session, personalReflections = [], whReflec
           <h1 className="disp text-[22px] font-extrabold flex items-center gap-2"><NotebookPen size={20} style={{ color: "var(--accent-primary)" }} />Reflection</h1>
           <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Your CPD reflections - from Western Health events and any activity you add yourself.</p>
         </div>
-        {!adding && (
+        {!adding && view === "mine" && (
           <button onClick={() => setAdding(true)} className="whmi-btn-primary flex items-center gap-1.5"><Plus size={15} />Add Reflection</button>
         )}
       </div>
 
+      {canManage && (
+        <div className="flex gap-1 border-b" style={{ borderColor: "var(--border)" }}>
+          {[{ id: "mine", label: "My Reflections" }, { id: "all", label: "All Staff Reflections" }].map(t => (
+            <button key={t.id} onClick={() => setView(t.id)} className="px-3 py-2 text-[12.5px] font-semibold whitespace-nowrap" style={{ color: view === t.id ? "var(--text)" : "var(--text-faint)", borderBottom: view === t.id ? "2px solid var(--accent-secondary)" : "2px solid transparent" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {view === "all" && canManage ? (
+        <AdminReflectionsOverview
+          registrations={registrations} previousEvents={previousEvents} reflections={whReflections} users={users}
+          onResend={onResendReflectionReminder} onSendReport={onSendReflectionsReport}
+        />
+      ) : (
+      <>
       {adding && (
         <AddReflectionForm
           onCancel={() => setAdding(false)}
@@ -276,6 +305,8 @@ export default function Reflection({ session, personalReflections = [], whReflec
           {combined.map(renderEntry)}
           {combined.length === 0 && <div className="whmi-card p-4 text-[12.5px] text-center" style={{ color: "var(--text-faint)" }}>No reflections yet.</div>}
         </div>
+      )}
+      </>
       )}
     </div>
   );

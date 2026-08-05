@@ -224,8 +224,9 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
               type="number" min="0" step="0.01" value={form.externalPrice}
               onChange={e => set("externalPrice", e.target.value)}
               placeholder="0.00"
-              className="whmi-input w-full pl-6 pr-2.5 py-2"
+              className="whmi-input w-full pl-6 pr-12 py-2"
             />
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>AUD</span>
           </div>
           <p className="text-[10.5px] mt-1" style={{ color: "var(--text-faint)" }}>Shown to external participants when registering. Internal WH staff never see a price.</p>
         </div>
