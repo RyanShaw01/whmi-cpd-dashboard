@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Mail, Award, Trash2 } from "lucide-react";
+import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Mail, Award, Trash2, Lock } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
 import EventFilesPanel from "./EventFilesPanel";
@@ -9,6 +9,24 @@ import EventForm from "./EventForm";
 import { fmtDate, eventLocationSuffix } from "../lib/helpers";
 
 const TABS = ["overview", "attendance", "files", "recording", "feedback", "reflections", "certificates"];
+
+const CERT_SORT_OPTIONS = [
+  { id: "date-desc", label: "Newest - Oldest" },
+  { id: "date-asc", label: "Oldest - Newest" },
+  { id: "alpha-asc", label: "Alphabetical (A - Z)" },
+  { id: "alpha-desc", label: "Alphabetical (Z - A)" },
+];
+function sortCerts(list, sortBy) {
+  const sorted = [...list];
+  sorted.sort((a, b) => {
+    if (sortBy === "alpha-asc") return (a.staff || "").localeCompare(b.staff || "");
+    if (sortBy === "alpha-desc") return (b.staff || "").localeCompare(a.staff || "");
+    const av = a.sentAt || a.date || "";
+    const bv = b.sentAt || b.date || "";
+    return sortBy === "date-asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+  return sorted;
+}
 
 function avg(nums) {
   const vals = nums.filter(n => n != null);
@@ -25,6 +43,7 @@ export default function PreviousEventDetailModal({
   onCreateCertificateFor, onSendReflectionReminder, initialTab,
 }) {
   const [tab, setTab] = useState(initialTab || "overview");
+  const [certSortBy, setCertSortBy] = useState("date-desc");
   const [recordingUrl, setRecordingUrl] = useState(event?.recordingUrl || "");
   const [savedNote, setSavedNote] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -57,6 +76,13 @@ export default function PreviousEventDetailModal({
       </div>
     );
   }
+
+  // Non-managers only get the full attendee/certificate/reflection lists if they're the ones
+  // managing the event; everyone else gets a read-only overview + feedback summary, plus
+  // recordings/files if they attended (or the event had a price, implying they paid to be there).
+  const myRegistration = session ? (registrations || []).find(r => r.eventId === event.id && r.userId === session.id) : null;
+  const viewerHasFileAccess = canManage || !!(myRegistration && (myRegistration.attendanceStatus === "Attended" || event.externalPrice != null));
+  const visibleTabs = canManage ? TABS : TABS.filter(t => !["attendance", "certificates", "reflections"].includes(t));
 
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
   // `event.attendance` is already live-computed with a seed-data fallback (Phase 10); reuse
@@ -148,7 +174,7 @@ export default function PreviousEventDetailModal({
           </div>
 
           <div className="flex gap-1 border-b overflow-x-auto whmi-scroll" style={{ borderColor: "var(--border)" }}>
-            {TABS.map(t => (
+            {visibleTabs.map(t => (
               <button key={t} onClick={() => setTab(t)} className="px-3 py-2 text-[12.5px] font-semibold capitalize whitespace-nowrap" style={{ color: tab === t ? "var(--text)" : "var(--text-faint)", borderBottom: tab === t ? "2px solid var(--accent-secondary)" : "2px solid transparent" }}>
                 {t}
               </button>
@@ -180,22 +206,42 @@ export default function PreviousEventDetailModal({
             />
           )}
 
-          {tab === "files" && <EventFilesPanel eventId={event.id} uploadedBy={session?.id} onFilesChange={onFilesChange} />}
+          {tab === "files" && (
+            viewerHasFileAccess ? (
+              <EventFilesPanel eventId={event.id} uploadedBy={session?.id} onFilesChange={onFilesChange} readOnly={!canManage} />
+            ) : (
+              <div className="whmi-card p-4 flex items-center gap-2 text-[12.5px]" style={{ color: "var(--text-faint)" }}>
+                <Lock size={14} className="shrink-0" />Files are only available to attendees of this event.
+              </div>
+            )
+          )}
 
           {tab === "recording" && (
-            <div className="space-y-2">
-              <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Recording Link</label>
-              <div className="flex gap-2">
-                <input value={recordingUrl} onChange={e => setRecordingUrl(e.target.value)} placeholder="https://teams.microsoft.com/..." className="whmi-input flex-1 px-2.5 py-2" />
-                <button onClick={saveRecording} className="whmi-btn-primary flex items-center gap-1.5 shrink-0"><Save size={13} />Save</button>
+            viewerHasFileAccess ? (
+              <div className="space-y-2">
+                {canManage && (
+                  <>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Recording Link</label>
+                    <div className="flex gap-2">
+                      <input value={recordingUrl} onChange={e => setRecordingUrl(e.target.value)} placeholder="https://teams.microsoft.com/..." className="whmi-input flex-1 px-2.5 py-2" />
+                      <button onClick={saveRecording} className="whmi-btn-primary flex items-center gap-1.5 shrink-0"><Save size={13} />Save</button>
+                    </div>
+                    {savedNote && <p className="text-[11px]" style={{ color: "var(--accent-success)" }}>Saved.</p>}
+                  </>
+                )}
+                {event.recordingUrl ? (
+                  <a href={event.recordingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[12.5px] font-semibold mt-1" style={{ color: "var(--accent-secondary)" }}>
+                    <Video size={14} />Open recording
+                  </a>
+                ) : !canManage && (
+                  <div className="whmi-card p-4 text-[12.5px]" style={{ color: "var(--text-faint)" }}>No recording has been added for this event.</div>
+                )}
               </div>
-              {savedNote && <p className="text-[11px]" style={{ color: "var(--accent-success)" }}>Saved.</p>}
-              {event.recordingUrl && (
-                <a href={event.recordingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[12.5px] font-semibold mt-1" style={{ color: "var(--accent-secondary)" }}>
-                  <Video size={14} />Open recording
-                </a>
-              )}
-            </div>
+            ) : (
+              <div className="whmi-card p-4 flex items-center gap-2 text-[12.5px]" style={{ color: "var(--text-faint)" }}>
+                <Lock size={14} className="shrink-0" />The recording is only available to attendees of this event.
+              </div>
+            )
           )}
 
           {tab === "feedback" && (
@@ -233,11 +279,16 @@ export default function PreviousEventDetailModal({
 
           {tab === "certificates" && (
             <div className="space-y-4">
+              <div className="flex justify-end">
+                <select value={certSortBy} onChange={e => setCertSortBy(e.target.value)} className="whmi-input px-2 py-1.5 text-[11.5px]">
+                  {CERT_SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </select>
+              </div>
               <div>
                 <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Sent ({sentCerts.length})</div>
                 {sentCerts.length === 0 && <div className="text-[12px] pb-2" style={{ color: "var(--text-faint)" }}>None yet.</div>}
                 <div className="space-y-1.5">
-                  {sentCerts.map(c => (
+                  {sortCerts(sentCerts, certSortBy).map(c => (
                     <div key={c.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
                       <div className="min-w-0">
                         <div className="text-[12.5px] font-semibold truncate">{c.staff}</div>
@@ -256,7 +307,7 @@ export default function PreviousEventDetailModal({
                 <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Awaiting Approval ({awaitingCerts.length})</div>
                 {awaitingCerts.length === 0 && <div className="text-[12px] pb-2" style={{ color: "var(--text-faint)" }}>None pending.</div>}
                 <div className="space-y-1.5">
-                  {awaitingCerts.map(c => (
+                  {sortCerts(awaitingCerts, certSortBy).map(c => (
                     <div key={c.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
                       <div className="min-w-0">
                         <div className="text-[12.5px] font-semibold truncate">{c.staff}</div>

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import {
   X, Calendar, Clock, MapPin, UserCircle2, ArrowUpRight, Download,
-  Eye, Send, AlertCircle, Link2, Trash2, Pencil, MessageSquareText,
+  Eye, Send, AlertCircle, Link2, Trash2, Pencil, MessageSquareText, ChevronDown, ClipboardList,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
@@ -13,8 +14,6 @@ import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
 import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix, splitPeopleList } from "../lib/helpers";
 import { previewCertificateTemplate } from "../lib/db";
-
-const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
 
 function exportAttendeesCsv(event, regs) {
   const headers = ["Name", "Email", "Profession", "Campus", "Attendance Type", "Status", "Dietary", "Accessibility", "Comments"];
@@ -30,6 +29,52 @@ function exportAttendeesCsv(event, regs) {
   URL.revokeObjectURL(link.href);
 }
 
+// Printable sign-in sheet: name + a checkbox to tick off on arrival + a blank signature line,
+// for events that want a physical roll call at the door alongside/instead of the digital list.
+async function exportAttendanceRollCall(event, regs) {
+  const doc = await PDFDocument.create();
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const regular = await doc.embedFont(StandardFonts.Helvetica);
+  const black = rgb(0.1, 0.1, 0.1);
+  const grey = rgb(0.55, 0.55, 0.55);
+  const sorted = [...regs].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+  let page = doc.addPage([595, 842]); // A4 portrait
+  let y = 800;
+  const drawHeader = () => {
+    page.drawText("Attendance Roll Call", { x: 40, y, size: 18, font: bold, color: black });
+    y -= 22;
+    page.drawText(event.title, { x: 40, y, size: 12, font: bold, color: black });
+    y -= 16;
+    page.drawText(`${fmtDate(event.date)} · ${fmtTimeRange12h(event.start, event.end)}`, { x: 40, y, size: 10, font: regular, color: grey });
+    y -= 26;
+    page.drawText("Present", { x: 40, y, size: 9, font: bold, color: black });
+    page.drawText("Name", { x: 85, y, size: 9, font: bold, color: black });
+    page.drawText("Signature", { x: 330, y, size: 9, font: bold, color: black });
+    y -= 6;
+    page.drawLine({ start: { x: 40, y }, end: { x: 555, y }, thickness: 0.75, color: grey });
+    y -= 16;
+  };
+  drawHeader();
+
+  for (const r of sorted) {
+    if (y < 60) { page = doc.addPage([595, 842]); y = 800; drawHeader(); }
+    page.drawRectangle({ x: 40, y: y - 2, width: 12, height: 12, borderColor: black, borderWidth: 1 });
+    const name = r.name.length > 40 ? r.name.slice(0, 39) + "…" : r.name;
+    page.drawText(name, { x: 85, y, size: 10.5, font: regular, color: black });
+    page.drawLine({ start: { x: 330, y: y - 3 }, end: { x: 555, y: y - 3 }, thickness: 0.5, color: grey });
+    y -= 26;
+  }
+
+  const bytes = await doc.save();
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${event.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-roll-call.pdf`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
 export default function EventDetailModal({
   event, onClose, registrations, canManage, onDelete, onStatusChange, onEdit, uploadedBy, session, cpdTypes, files, tags, onSaveTag, viewerUserType, onFilesChange,
   onUpdateBannerCrop, onRemoveBanner,
@@ -38,6 +83,7 @@ export default function EventDetailModal({
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
 }) {
   const [regTab, setRegTab] = useState("overview");
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [meetingUrlDraft, setMeetingUrlDraft] = useState("");
   const [previewingTemplate, setPreviewingTemplate] = useState(false);
@@ -92,17 +138,7 @@ export default function EventDetailModal({
     <div className="p-5 space-y-4 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
-              {canManage && onStatusChange ? (
-                <select
-                  value={event.status}
-                  onChange={e => onStatusChange(e.target.value)}
-                  className="whmi-input px-2 py-1 text-[12px] font-semibold"
-                >
-                  {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              ) : (
-                <StatusBadge status={event.status} />
-              )}
+              <StatusBadge status={event.status} />
               <ModeBadge mode={event.mode} />
             </div>
             {canManage && (
@@ -178,10 +214,8 @@ export default function EventDetailModal({
           <div className="flex gap-1 border-b overflow-x-auto whmi-scroll" style={{ borderColor: "var(--border)" }}>
             {[
               { id: "overview", label: "Overview" },
-              { id: "registrations", label: "Registrations" },
-              ...(canManage ? [{ id: "qr", label: "Links" }] : []),
-              { id: "reflections", label: "Reflections" },
-              { id: "certificates", label: "Certificates" },
+              ...(canManage ? [{ id: "registrations", label: "Registrations" }, { id: "qr", label: "Links" }] : []),
+              ...(canManage ? [{ id: "reflections", label: "Reflections" }, { id: "certificates", label: "Certificates" }] : []),
             ].map(t => (
               <button key={t.id} onClick={() => setRegTab(t.id)} className="px-3 py-2 text-[12.5px] font-semibold whitespace-nowrap" style={{ color: regTab === t.id ? "var(--text)" : "var(--text-faint)", borderBottom: regTab === t.id ? "2px solid var(--accent-secondary)" : "2px solid transparent" }}>
                 {t.label}
@@ -210,24 +244,64 @@ export default function EventDetailModal({
               )}
               <div className="flex gap-2 flex-wrap">
                 <button onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/event/${event.id}`); if (canManage) setRegTab("qr"); }} className="whmi-btn-ghost flex items-center gap-1.5"><ArrowUpRight size={14} />Copy Registration Link</button>
-                <button onClick={() => exportAttendeesCsv(event, eventRegistrations)} disabled={eventRegistrations.length === 0} className="whmi-btn-ghost flex items-center gap-1.5" style={{ opacity: eventRegistrations.length === 0 ? 0.5 : 1 }}><Download size={14} />Export Attendees</button>
+                <div className="relative">
+                  <button
+                    onClick={() => setExportMenuOpen(o => !o)}
+                    disabled={eventRegistrations.length === 0}
+                    className="whmi-btn-ghost flex items-center gap-1.5"
+                    style={{ opacity: eventRegistrations.length === 0 ? 0.5 : 1 }}
+                  >
+                    <Download size={14} />Export Attendees<ChevronDown size={12} />
+                  </button>
+                  {exportMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)} />
+                      <div className="absolute left-0 top-full mt-1 z-20 whmi-card p-1.5 w-64" style={{ boxShadow: "0 8px 24px rgba(0,0,0,.15)" }}>
+                        <button
+                          onClick={() => { exportAttendeesCsv(event, eventRegistrations); setExportMenuOpen(false); }}
+                          className="w-full text-left px-2.5 py-2 rounded-lg text-[12.5px] flex items-start gap-2 whmi-row-hover"
+                        >
+                          <Download size={14} className="shrink-0 mt-0.5" />
+                          <span><span className="font-semibold block">Excel / CSV</span><span style={{ color: "var(--text-faint)" }}>Full attendee details for spreadsheets.</span></span>
+                        </button>
+                        <button
+                          onClick={() => { exportAttendanceRollCall(event, eventRegistrations); setExportMenuOpen(false); }}
+                          className="w-full text-left px-2.5 py-2 rounded-lg text-[12.5px] flex items-start gap-2 whmi-row-hover"
+                        >
+                          <ClipboardList size={14} className="shrink-0 mt-0.5" />
+                          <span><span className="font-semibold block">Attendance Roll Call (PDF)</span><span style={{ color: "var(--text-faint)" }}>Printable sign-in sheet with checkboxes and a signature line.</span></span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}
 
           {regTab === "registrations" && (
-            <RegistrationsPanel
-              event={event} registrations={eventRegistrations} canManage={canManage}
-              onDelete={onDeleteRegistration} onUpdate={onUpdateRegistration} onUpdateAttendanceStatus={onUpdateAttendanceStatus}
-              dismissedPairs={dismissedRegistrationPairs} onMerge={onMergeRegistrations} onDismissPair={onDismissRegistrationPair}
-            />
+            <div className="space-y-3">
+              <RegistrationsPanel
+                event={event} registrations={eventRegistrations} canManage={canManage}
+                onDelete={onDeleteRegistration} onUpdate={onUpdateRegistration} onUpdateAttendanceStatus={onUpdateAttendanceStatus}
+                dismissedPairs={dismissedRegistrationPairs} onMerge={onMergeRegistrations} onDismissPair={onDismissRegistrationPair}
+              />
+              {canManage && (
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/event/${event.id}`); setRegTab("qr"); }}
+                  className="whmi-btn-ghost w-full flex items-center justify-center gap-1.5"
+                >
+                  <ArrowUpRight size={14} />Copy Registration Link / QR Code
+                </button>
+              )}
+            </div>
           )}
 
           {regTab === "reflections" && (
             <div className="space-y-3">
               {canManage && (
                 <div className="max-w-xl mx-auto">
-                  <EventQRCode event={event} path="/reflect" filenameSuffix="reflection-qr" layout="row" />
+                  <EventQRCode event={event} path="/reflect" filenameSuffix="reflection-qr" layout="row" size={130} />
                 </div>
               )}
               <ReflectionsPanel
@@ -257,7 +331,7 @@ export default function EventDetailModal({
                   <span className="font-semibold text-[13px]">Registration Link</span>
                   <InfoTooltip text="Scanning this code opens the public event page to register, no login required. Print it on posters, flyers, or event signage so people can sign up on the spot." />
                 </div>
-                <EventQRCode event={event} />
+                <EventQRCode event={event} size={130} />
                 <p className="text-[11.5px] text-center mt-3 max-w-xs" style={{ color: "var(--text-faint)" }}>
                   Scanning this code opens the public event page to register, no login required. Print it on posters or flyers.
                 </p>
@@ -268,7 +342,7 @@ export default function EventDetailModal({
                   <InfoTooltip text="Scanning this code joins the online meeting directly. Share it only with confirmed attendees closer to the event, since it goes straight to the Teams/Zoom call rather than a registration page." />
                 </div>
                 <EventQRCode
-                  event={event} url={event.meetingUrl} filenameSuffix="join-meeting"
+                  event={event} url={event.meetingUrl} filenameSuffix="join-meeting" size={130}
                   disabled={!event.meetingUrl} disabledMessage="Add a Teams/Zoom meeting link to this event to generate a join code."
                 />
                 {!event.meetingUrl && onEdit && (
@@ -305,12 +379,14 @@ export default function EventDetailModal({
         </button>
         {bannerUrl ? (
           <div className="grid grid-cols-1 md:grid-cols-[300px_1fr]">
-            <div className="w-full h-56 md:h-full flex items-center justify-center overflow-hidden" style={{ background: "var(--surface-2)" }}>
-              <img src={bannerUrl} alt="" className="max-w-full max-h-full object-contain" />
+            <div className="w-full h-56 md:h-full relative flex items-center justify-center overflow-hidden" style={{ background: "var(--surface-2)" }}>
+              <img src={bannerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(28px) saturate(1.3) brightness(0.85)", transform: "scale(1.25)" }} />
+              <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.15)" }} />
+              <img src={bannerUrl} alt="" className="relative max-w-full max-h-full object-contain" style={{ boxShadow: "0 4px 24px rgba(0,0,0,.25)" }} />
             </div>
             <div className="min-w-0">
               <div className="px-5 pt-5">
-                <h2 className="disp text-[19px] font-extrabold leading-tight break-words">{event.title}</h2>
+                <h2 className="disp text-[24px] font-extrabold leading-tight break-words" style={{ color: "var(--accent-primary)" }}>{event.title}</h2>
               </div>
               {infoBody}
             </div>
@@ -319,7 +395,7 @@ export default function EventDetailModal({
           <>
             <div className="min-h-[92px] relative flex items-end p-5" style={{ background: "var(--accent-primary)" }}>
               <div className="min-w-0 pr-8">
-                <h2 className="disp text-white text-[19px] font-extrabold leading-tight break-words">{event.title}</h2>
+                <h2 className="disp text-white text-[24px] font-extrabold leading-tight break-words">{event.title}</h2>
               </div>
             </div>
             {infoBody}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Search, Trash2 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import DuplicateWarnings from "./DuplicateWarnings";
@@ -6,14 +6,36 @@ import { findDuplicates } from "../lib/duplicates";
 
 const ATTENDANCE_STATUSES = ["Registered", "Attended", "No Show", "Cancelled", "Waitlisted"];
 
+const SORT_OPTIONS = [
+  { id: "date-desc", label: "Newest - Oldest" },
+  { id: "date-asc", label: "Oldest - Newest" },
+  { id: "alpha-asc", label: "Alphabetical (A - Z)" },
+  { id: "alpha-desc", label: "Alphabetical (Z - A)" },
+];
+
 export default function RegistrationsPanel({ event, registrations, canManage, dismissedPairs, onDelete, onUpdate, onUpdateAttendanceStatus, onMerge, onDismissPair }) {
   const [q, setQ] = useState("");
+  const [sortBy, setSortBy] = useState("date-desc");
   const query = q.trim().toLowerCase();
-  const filtered = query === ""
+  const searched = query === ""
     ? registrations
     : registrations.filter(r => [r.name, r.email, r.profession].filter(Boolean).some(v => v.toLowerCase().includes(query)));
+  const filtered = useMemo(() => {
+    const list = [...searched];
+    list.sort((a, b) => {
+      if (sortBy === "alpha-asc") return (a.name || "").localeCompare(b.name || "");
+      if (sortBy === "alpha-desc") return (b.name || "").localeCompare(a.name || "");
+      if (sortBy === "date-asc") return (a.createdAt || "").localeCompare(b.createdAt || "");
+      return (b.createdAt || "").localeCompare(a.createdAt || "");
+    });
+    return list;
+  }, [searched, sortBy]);
 
   const pairs = canManage ? findDuplicates(registrations, dismissedPairs || new Set()) : [];
+
+  const total = registrations.length;
+  const externalCount = registrations.filter(r => r.isExternal).length;
+  const staffCount = total - externalCount;
 
   if (registrations.length === 0) {
     return <div className="text-[12.5px] p-3" style={{ color: "var(--text-faint)" }}>No one has registered for this event yet.</div>;
@@ -21,9 +43,22 @@ export default function RegistrationsPanel({ event, registrations, canManage, di
 
   return (
     <div className="space-y-2">
-      <div className="whmi-input flex items-center gap-2 px-2.5 py-1.5">
-        <Search size={13} style={{ color: "var(--text-faint)" }} />
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search registrations..." className="bg-transparent outline-none w-full text-[12.5px]" style={{ color: "var(--text)" }} />
+      {canManage && (
+        <div className="whmi-card p-3 grid grid-cols-3 gap-2 text-center">
+          <div><div className="disp text-[16px] font-extrabold">{total}</div><div className="text-[10px]" style={{ color: "var(--text-faint)" }}>Total Registered</div></div>
+          <div><div className="disp text-[16px] font-extrabold">{staffCount}</div><div className="text-[10px]" style={{ color: "var(--text-faint)" }}>WH Staff</div></div>
+          <div><div className="disp text-[16px] font-extrabold">{externalCount}</div><div className="text-[10px]" style={{ color: "var(--text-faint)" }}>External</div></div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-1.5">
+        <div className="whmi-input flex items-center gap-2 px-2.5 py-1.5 flex-1">
+          <Search size={13} style={{ color: "var(--text-faint)" }} />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search registrations..." className="bg-transparent outline-none w-full text-[12.5px]" style={{ color: "var(--text)" }} />
+        </div>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2 py-1.5 text-[11.5px] shrink-0">
+          {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
       </div>
 
       {canManage && <DuplicateWarnings pairs={pairs} onMerge={onMerge} onDismiss={onDismissPair} />}

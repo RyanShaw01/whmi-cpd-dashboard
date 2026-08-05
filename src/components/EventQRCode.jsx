@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { Download, Lock, Link2, Copy, Check } from "lucide-react";
 
-export default function EventQRCode({ event, path = "", filenameSuffix = "qr", url: urlOverride, disabled = false, disabledMessage, layout = "column" }) {
+export default function EventQRCode({ event, path = "", filenameSuffix = "qr", url: urlOverride, disabled = false, disabledMessage, layout = "column", size = 180 }) {
   const canvasRef = useRef(null);
   const url = urlOverride || `${window.location.origin}/event/${event.id}${path}`;
   const [copiedLink, setCopiedLink] = useState(false);
@@ -10,9 +10,9 @@ export default function EventQRCode({ event, path = "", filenameSuffix = "qr", u
 
   useEffect(() => {
     if (canvasRef.current && !disabled) {
-      QRCode.toCanvas(canvasRef.current, url, { width: 180, margin: 1 }, () => {});
+      QRCode.toCanvas(canvasRef.current, url, { width: size, margin: 1 }, () => {});
     }
-  }, [url, disabled]);
+  }, [url, disabled, size]);
 
   const flattenedCanvas = () => {
     const canvas = canvasRef.current;
@@ -77,7 +77,7 @@ export default function EventQRCode({ event, path = "", filenameSuffix = "qr", u
   if (disabled) {
     return (
       <div className="whmi-card p-4 flex flex-col items-center gap-3" style={{ opacity: 0.5 }}>
-        <div className="rounded-lg flex flex-col items-center justify-center gap-2" style={{ width: 180, height: 180, background: "var(--surface-2)" }}>
+        <div className="rounded-lg flex flex-col items-center justify-center gap-2" style={{ width: size, height: size, background: "var(--surface-2)" }}>
           <Lock size={22} style={{ color: "var(--text-faint)" }} />
         </div>
         <p className="text-[11px] text-center" style={{ color: "var(--text-faint)" }}>{disabledMessage || "Not available yet."}</p>

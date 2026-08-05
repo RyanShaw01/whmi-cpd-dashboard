@@ -31,7 +31,7 @@ import Toast from "./components/Toast";
 import RegisterEventModal from "./components/RegisterEventModal";
 import EventFormModal from "./components/EventFormModal";
 import CreateCertificateModal from "./components/CreateCertificateModal";
-import { BRAND_HEX, CHARACTERS, NAV_FULL, NAV_VIEWER, DEFAULT_LAYOUT, DEFAULT_STAFF_FIELD_VISIBILITY } from "./data/mockData";
+import { BRAND_HEX, CHARACTERS, NAV_FULL, NAV_VIEWER, NAV_VIEWER_INTERNAL, DEFAULT_LAYOUT, DEFAULT_STAFF_FIELD_VISIBILITY } from "./data/mockData";
 import { TOUR_STEPS } from "./data/tourSteps";
 import { loadPersonal, savePersonal } from "./lib/storage";
 import { buildNotificationGroups } from "./lib/notifications";
@@ -104,7 +104,8 @@ export default function App() {
   // restored from a previous session/role (e.g. "staff" for a viewer) would otherwise render blank.
   useEffect(() => {
     if (!session?.onboarded) return;
-    const validIds = new Set((session.role === "viewer" ? NAV_VIEWER : NAV_FULL).map(n => n.id));
+    const viewerNav = session.userType === "internal" ? NAV_VIEWER_INTERNAL : NAV_VIEWER;
+    const validIds = new Set((session.role === "viewer" ? viewerNav : NAV_FULL).map(n => n.id));
     if (!validIds.has(page)) setPage(session.role === "viewer" ? "mycpd" : "dashboard");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id, session?.onboarded]);
@@ -979,10 +980,14 @@ export default function App() {
     // user props, and management-gated UI follow the preview; mutations, audit actorId,
     // and the Settings/ProfileMenu identity always stay on the real `session`.
     const viewSession = previewSession || session;
-    const navItems = viewSession.role === "viewer" ? NAV_VIEWER : NAV_FULL;
+    const navItems = viewSession.role === "viewer" ? (viewSession.userType === "internal" ? NAV_VIEWER_INTERNAL : NAV_VIEWER) : NAV_FULL;
     const homePage = viewSession.role === "viewer" ? "mycpd" : "dashboard";
     const sidebarWidth = collapsed ? (isNarrow ? 54 : 68) : (isNarrow ? 200 : 224);
     const canManage = viewSession.role === "admin" || viewSession.role === "owner";
+    // Internal viewers get read-only access to Upcoming/Previous Events, scoped to events WH
+    // has offered externally too — anything WH-internal-only stays admin/owner-visible only.
+    const viewerEvents = canManage ? eventsWithLiveCounts : eventsWithLiveCounts.filter(e => e.openToExternal && e.status === "Registration Open");
+    const viewerPreviousEvents = canManage ? previousEventsWithLiveStats : previousEventsWithLiveStats.filter(e => e.openToExternal);
     const badgePages = redDotsEnabled ? {
       upcoming: notificationGroups.some(g => g.id === "event-draft" || g.id === "event-approval"),
       certificates: notificationGroups.some(g => g.id === "cert-approval"),
@@ -1026,8 +1031,8 @@ export default function App() {
               <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
-            {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={canManage ? undefined : () => setSuggestIdeaOpen(true)} />}
-            {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} />}
+            {page === "upcoming" && (canManage || viewSession.userType === "internal") && <UpcomingEvents events={viewerEvents} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={canManage ? undefined : () => setSuggestIdeaOpen(true)} />}
+            {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} />}
             {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility} onSaveExternalParticipant={handleSaveExternalParticipant} onRequestDeleteExternalParticipant={requestDeleteExternalParticipant} />}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} />}
             {page === "certificates" && (

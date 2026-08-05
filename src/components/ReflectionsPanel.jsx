@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Search, Trash2, Download } from "lucide-react";
 import DuplicateWarnings from "./DuplicateWarnings";
 import { findDuplicates } from "../lib/duplicates";
 import { fmtDate } from "../lib/helpers";
+
+const SORT_OPTIONS = [
+  { id: "date-desc", label: "Newest - Oldest" },
+  { id: "date-asc", label: "Oldest - Newest" },
+  { id: "alpha-asc", label: "Alphabetical (A - Z)" },
+  { id: "alpha-desc", label: "Alphabetical (Z - A)" },
+];
 
 function exportReflectionsCsv(event, reflections) {
   const headers = ["Name", "Email", "Quality (0-10)", "Relevance (0-10)", "Appropriateness", "Reflection", "Most Valuable", "Improvements", "Future Topics", "Submitted"];
@@ -20,19 +27,35 @@ function exportReflectionsCsv(event, reflections) {
 
 export default function ReflectionsPanel({ event, reflections, canManage, dismissedPairs, onDelete, onMerge, onDismissPair }) {
   const [q, setQ] = useState("");
+  const [sortBy, setSortBy] = useState("date-desc");
   const query = q.trim().toLowerCase();
-  const filtered = query === ""
+  const searched = query === ""
     ? reflections
     : reflections.filter(r => [r.name, r.email, r.content].filter(Boolean).some(v => v.toLowerCase().includes(query)));
+  const filtered = useMemo(() => {
+    const list = [...searched];
+    list.sort((a, b) => {
+      if (sortBy === "alpha-asc") return (a.name || "").localeCompare(b.name || "");
+      if (sortBy === "alpha-desc") return (b.name || "").localeCompare(a.name || "");
+      if (sortBy === "date-asc") return (a.submittedAt || "").localeCompare(b.submittedAt || "");
+      return (b.submittedAt || "").localeCompare(a.submittedAt || "");
+    });
+    return list;
+  }, [searched, sortBy]);
 
   const pairs = canManage ? findDuplicates(reflections, dismissedPairs) : [];
 
   return (
     <div className="space-y-2">
       {reflections.length > 0 && (
-        <div className="whmi-input flex items-center gap-2 px-2.5 py-1.5">
-          <Search size={13} style={{ color: "var(--text-faint)" }} />
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search reflections..." className="bg-transparent outline-none w-full text-[12.5px]" style={{ color: "var(--text)" }} />
+        <div className="flex items-center gap-1.5">
+          <div className="whmi-input flex items-center gap-2 px-2.5 py-1.5 flex-1">
+            <Search size={13} style={{ color: "var(--text-faint)" }} />
+            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search reflections..." className="bg-transparent outline-none w-full text-[12.5px]" style={{ color: "var(--text)" }} />
+          </div>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2 py-1.5 text-[11.5px] shrink-0">
+            {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
         </div>
       )}
 
