@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { Download, Lock, Link2, Copy, Check } from "lucide-react";
 
-export default function EventQRCode({ event, path = "", filenameSuffix = "qr", url: urlOverride, disabled = false, disabledMessage }) {
+export default function EventQRCode({ event, path = "", filenameSuffix = "qr", url: urlOverride, disabled = false, disabledMessage, layout = "column" }) {
   const canvasRef = useRef(null);
   const url = urlOverride || `${window.location.origin}/event/${event.id}${path}`;
   const [copiedLink, setCopiedLink] = useState(false);
@@ -84,6 +84,28 @@ export default function EventQRCode({ event, path = "", filenameSuffix = "qr", u
         <button disabled className="whmi-btn-ghost flex items-center gap-1.5 w-full justify-center" style={{ cursor: "not-allowed" }}>
           <Download size={13} />Download JPEG
         </button>
+      </div>
+    );
+  }
+
+  if (layout === "row") {
+    return (
+      <div className="whmi-card p-4 flex items-center gap-4">
+        <canvas ref={canvasRef} className="shrink-0" />
+        <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+          <p className="text-[11px] break-all" style={{ color: "var(--text-faint)" }}>{url}</p>
+          <button onClick={copyLink} className="whmi-btn-ghost flex items-center gap-1.5 w-full justify-center">
+            {copiedLink ? <><Check size={13} />Copied!</> : <><Link2 size={13} />Copy Link</>}
+          </button>
+          {!!navigator.clipboard?.write && (
+            <button onClick={copyImage} className="whmi-btn-ghost flex items-center gap-1.5 w-full justify-center">
+              {copiedImage ? <><Check size={13} />Copied!</> : <><Copy size={13} />Copy QR Code</>}
+            </button>
+          )}
+          <button onClick={downloadJpeg} className="whmi-btn-ghost flex items-center gap-1.5 w-full justify-center">
+            <Download size={13} />Download JPEG
+          </button>
+        </div>
       </div>
     );
   }

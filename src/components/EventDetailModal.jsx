@@ -216,8 +216,8 @@ export default function EventDetailModal({
           {regTab === "reflections" && (
             <div className="space-y-3">
               {canManage && (
-                <div className="max-w-[200px] mx-auto">
-                  <EventQRCode event={event} path="/reflect" filenameSuffix="reflection-qr" />
+                <div className="max-w-md mx-auto">
+                  <EventQRCode event={event} path="/reflect" filenameSuffix="reflection-qr" layout="row" />
                 </div>
               )}
               <ReflectionsPanel

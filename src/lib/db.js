@@ -65,6 +65,7 @@ const eventFromRow = (r) => ({
   bannerZoom: r.banner_zoom == null ? 1 : Number(r.banner_zoom),
   externalPrice: r.external_price == null ? null : Number(r.external_price),
   reflectionEmailOffsetMinutes: r.reflection_email_offset_minutes == null ? 20 : Number(r.reflection_email_offset_minutes),
+  reflectionEmailOffsetDirection: r.reflection_email_offset_direction || "before",
 });
 const eventToRow = (e) => ({
   title: e.title, topic: e.topic, date: e.date, start_time: e.start, end_time: e.end,
@@ -82,6 +83,7 @@ const eventToRow = (e) => ({
   banner_focal_x: e.bannerFocalX ?? 50, banner_focal_y: e.bannerFocalY ?? 50, banner_zoom: e.bannerZoom ?? 1,
   external_price: e.externalPrice === "" || e.externalPrice == null ? null : Number(e.externalPrice),
   reflection_email_offset_minutes: e.reflectionEmailOffsetMinutes ?? 20,
+  reflection_email_offset_direction: e.reflectionEmailOffsetDirection || "before",
 });
 
 const certFromRow = (r) => ({
