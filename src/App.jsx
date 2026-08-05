@@ -936,6 +936,19 @@ export default function App() {
   const openEvent = (ev, initialTab) => { setSelectedEvent(ev); setEventInitialTab(initialTab || null); };
   const openArchiveEvent = (ev, initialTab) => { setSelectedArchiveEvent(ev); setArchiveInitialTab(initialTab || null); };
   const openStaff = (s) => setSelectedStaff(s);
+  const openCertificatesAwaiting = () => {
+    changePage("certificates");
+    const firstAwaiting = certificates.find(c => c.status === "Awaiting Approval");
+    setHighlightId(firstAwaiting?.id ?? null);
+  };
+  const openCurrentRegistrations = () => {
+    changePage("upcoming");
+    setHighlightId("registrations-section");
+  };
+  const openReportsFeedback = () => {
+    changePage("reports");
+    setHighlightId("feedback-section");
+  };
 
   // Recent Activity rows are clickable — jump to whatever record the audit entry refers to.
   // There's no stored before/after diff, so "see what changed" means opening the record at its
@@ -1040,6 +1053,10 @@ export default function App() {
                 onAddEvent={() => changePage("upcoming")}
                 onOpenRegister={() => handleOpenRegister()}
                 onActivityClick={navigateToEntity}
+                onOpenReports={() => changePage("reports")}
+                onOpenCurrentRegistrations={openCurrentRegistrations}
+                onOpenCertificatesAwaiting={openCertificatesAwaiting}
+                onOpenReportsFeedback={openReportsFeedback}
               />
             )}
             {page === "mycpd" && viewSession.userType === "external" && (
@@ -1049,10 +1066,16 @@ export default function App() {
               <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
-            {page === "upcoming" && (canManage || viewSession.userType === "internal") && <UpcomingEvents events={viewerEvents} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={canManage ? undefined : () => setSuggestIdeaOpen(true)} />}
+            {page === "upcoming" && (canManage || viewSession.userType === "internal") && (
+              <UpcomingEvents
+                events={viewerEvents} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={canManage ? undefined : () => setSuggestIdeaOpen(true)}
+                registrations={registrations} onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField} onUpdateAttendanceStatus={handleUpdateAttendanceStatus}
+                dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
+              />
+            )}
             {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} />}
             {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility} onSaveExternalParticipant={handleSaveExternalParticipant} onRequestDeleteExternalParticipant={requestDeleteExternalParticipant} />}
-            {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} />}
+            {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} highlightId={page === "reports" ? highlightId : null} />}
             {page === "certificates" && (
               <Certificates
                 certificates={certificates} canManage={canManage} onRequestDelete={requestDeleteCertificate} onApprove={handleApproveCertificate}

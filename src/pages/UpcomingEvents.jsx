@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardList, Lightbulb, LayoutGrid, List } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
+import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
 import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix } from "../lib/helpers";
 
 const SORT_OPTIONS = [
@@ -11,7 +12,11 @@ const SORT_OPTIONS = [
   { id: "name-desc", label: "Name (Z - A)" },
 ];
 
-export default function UpcomingEvents({ events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea }) {
+export default function UpcomingEvents({
+  events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea,
+  registrations, onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
+  dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
+}) {
   const [filter, setFilter] = useState("All");
   const [view, setView] = useState("grid");
   const [sortBy, setSortBy] = useState("date-asc");
@@ -28,14 +33,19 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
     return list;
   }, [filteredUnsorted, sortBy]);
   const highlightRef = useRef(null);
+  const registrationsRef = useRef(null);
 
   useEffect(() => {
-    if (!highlightId) return;
+    if (!highlightId || highlightId === "registrations-section") return;
     const ev = events.find(e => e.id === highlightId);
     if (ev) setFilter(ev.status);
   }, [highlightId, events]);
 
   useEffect(() => {
+    if (highlightId === "registrations-section" && registrationsRef.current) {
+      registrationsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     if (highlightId && highlightRef.current) highlightRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightId, filter]);
 
@@ -217,6 +227,16 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
           );
         })}
       </div>
+      )}
+
+      {canManage && registrations && (
+        <div ref={registrationsRef}>
+          <AllRegistrationsPanel
+            events={events.filter(e => e.status === "Registration Open")} registrations={registrations} canManage={canManage}
+            onDelete={onDeleteRegistration} onUpdate={onUpdateRegistration} onUpdateAttendanceStatus={onUpdateAttendanceStatus}
+            dismissedPairs={dismissedRegistrationPairs} onMerge={onMergeRegistrations} onDismissPair={onDismissRegistrationPair}
+          />
+        </div>
       )}
 
       {(onSuggestIdea || (canManage && onGoBrainstorm)) && (

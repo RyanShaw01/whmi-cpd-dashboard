@@ -29,7 +29,7 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
       </div>
 
       <div className="whmi-card p-4">
-        <button onClick={() => setShareOpen(x => !x)} className="w-full flex items-center justify-between mb-1">
+        <button onClick={() => setShareOpen(x => !x)} className="w-full flex items-center justify-between mb-1 -m-1 p-1 rounded-lg whmi-row-hover transition">
           <div className="flex items-center gap-2">
             {shareOpen ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
             <QrCode size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Collect Ideas From Staff</div>
@@ -62,7 +62,7 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
         <table className="w-full text-[13px]" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid var(--border)" }}>
-              <th className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide w-[170px]" style={{ color: "var(--text-faint)" }}>Category</th>
+              <th className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide w-[190px]" style={{ color: "var(--text-faint)" }}>Category</th>
               <th className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>Ideas</th>
             </tr>
           </thead>
@@ -74,9 +74,10 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea })
               return (
                 <tr key={cat.id} className="align-top" style={{ borderBottom: "1px solid var(--border)" }}>
                   <td className="px-4 py-3">
-                    <button type="button" onClick={() => toggleCat(cat.id)} className="flex items-center gap-1.5 font-semibold text-[12.5px]">
-                      {open ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
-                      <Icon size={14} style={{ color: "var(--accent-primary)" }} />{cat.label}
+                    <button type="button" onClick={() => toggleCat(cat.id)} className="flex items-center gap-1.5 font-semibold text-[12.5px] text-left -m-1 p-1 rounded-lg whmi-row-hover transition">
+                      {open ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" />}
+                      <Icon size={14} style={{ color: "var(--accent-primary)" }} className="shrink-0" />
+                      <span className="whitespace-nowrap text-left">{cat.label}</span>
                     </button>
                     <div className="text-[11px] mt-0.5" style={{ color: "var(--text-faint)" }}>{catIdeas.length} idea{catIdeas.length === 1 ? "" : "s"}</div>
                   </td>

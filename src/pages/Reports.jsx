@@ -1,9 +1,11 @@
+import { useEffect, useRef, useState } from "react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Download, Calendar, Users, AlertCircle, TrendingUp } from "lucide-react";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import StatCard from "../components/StatCard";
+import AllFeedbackPanel from "../components/AllFeedbackPanel";
 import { attendanceTrend, topicPopularity, monthlyHours, eventAttendedCount, avgFeedback } from "../lib/analytics";
 import { eventCpdHours, fmtDate } from "../lib/helpers";
 
@@ -84,7 +86,14 @@ async function exportPdf(rows, year, stats) {
   URL.revokeObjectURL(link.href);
 }
 
-export default function Reports({ events, previousEvents, registrations, reflections, primaryHex, secondaryHex, successHex, tags = [] }) {
+export default function Reports({ events, previousEvents, registrations, reflections, primaryHex, secondaryHex, successHex, tags = [], highlightId }) {
+  const feedbackRef = useRef(null);
+  useEffect(() => {
+    if (highlightId === "feedback-section" && feedbackRef.current) {
+      feedbackRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [highlightId]);
+
   const year = new Date().getFullYear();
   const eventsThisYear = [...events, ...previousEvents].filter(ev => new Date(`${ev.date}T00:00:00`).getFullYear() === year);
   const previousEventsThisYear = previousEvents.filter(ev => new Date(`${ev.date}T00:00:00`).getFullYear() === year);
@@ -120,6 +129,10 @@ export default function Reports({ events, previousEvents, registrations, reflect
         </div>
       </div>
 
+      <div ref={feedbackRef}>
+        <AllFeedbackPanel events={previousEventsThisYear} reflections={reflections} defaultOpen={highlightId === "feedback-section"} />
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={`Total Events (${year})`} value={eventsThisYear.length} icon={Calendar} accent={primaryHex} />
         <StatCard label="Total Attendance" value={attendedCount} icon={Users} accent={successHex} />
@@ -127,47 +140,48 @@ export default function Reports({ events, previousEvents, registrations, reflect
         <StatCard label="Avg. Feedback" value={feedbackAvg != null ? `${feedbackAvg} / 10` : "—"} icon={TrendingUp} accent={primaryHex} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="whmi-card p-5">
-          <h2 className="disp text-[15px] font-bold mb-1">Attendance Rate Trend</h2>
-          <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Percentage of registrants who attended</p>
-          <ResponsiveContainer width="100%" height={220}>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="whmi-card p-4">
+          <h2 className="disp text-[13.5px] font-bold mb-1">Attendance Rate Trend</h2>
+          <p className="text-[10.5px] mb-2" style={{ color: "var(--text-faint)" }}>Percentage of registrants who attended</p>
+          <ResponsiveContainer width="100%" height={160}>
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} width={28} />
               <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
               <Line type="monotone" dataKey="rate" stroke={secondaryHex} strokeWidth={2.5} dot={{ r: 3, fill: secondaryHex }} connectNulls />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="whmi-card p-5">
-          <h2 className="disp text-[15px] font-bold mb-1">Events by Topic</h2>
-          <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Most frequently delivered topics this year</p>
-          <ResponsiveContainer width="100%" height={220}>
+        <div className="whmi-card p-4">
+          <h2 className="disp text-[13.5px] font-bold mb-1">Events by Topic</h2>
+          <p className="text-[10.5px] mb-2" style={{ color: "var(--text-faint)" }}>Most frequently delivered topics this year</p>
+          <ResponsiveContainer width="100%" height={160}>
             <BarChart data={topicData} layout="vertical" margin={{ left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
-              <YAxis dataKey="topic" type="category" width={80} tick={{ fontSize: 11, fill: "var(--text-dim)" }} axisLine={false} tickLine={false} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="topic" type="category" width={70} tick={{ fontSize: 10, fill: "var(--text-dim)" }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
               <Bar dataKey="events" fill={successHex} radius={[0, 5, 5, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
 
-      <div className="whmi-card p-5">
-        <h2 className="disp text-[15px] font-bold mb-1">CPD Hours by Month</h2>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={hoursData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
-            <Bar dataKey="hours" fill={primaryHex} radius={[5, 5, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="whmi-card p-4">
+          <h2 className="disp text-[13.5px] font-bold mb-1">CPD Hours by Month</h2>
+          <p className="text-[10.5px] mb-2" style={{ color: "var(--text-faint)" }}>&nbsp;</p>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={hoursData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} width={28} />
+              <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+              <Bar dataKey="hours" fill={primaryHex} radius={[5, 5, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
