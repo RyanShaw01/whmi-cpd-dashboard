@@ -200,6 +200,9 @@ export default function Dashboard({ events, previousEvents, registrations, refle
                   <button onClick={() => openEvent(ev)} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--text)" }}>{ev.title}</button>
                   <span style={{ color: "var(--text-faint)" }}>·</span>
                   <span className="font-extrabold" style={{ color: primaryHex }}>{formatCountdown(ev.date, ev.start)}</span>
+                  <button onClick={() => openEvent(ev)} className="underline-offset-2 hover:underline" style={{ color: "var(--text-faint)" }}>
+                    ({fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)})
+                  </button>
                   {joinable && (
                     <a href={ev.meetingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] font-semibold" style={{ color: secondaryHex }}>
                       <Link2 size={12} />Join meeting here

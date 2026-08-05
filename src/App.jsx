@@ -41,7 +41,7 @@ import { supabase, supabaseConfigured } from "./lib/supabaseClient";
 import {
   fetchUsers, fetchStaff, fetchEvents, fetchPreviousEvents, fetchCertificates, fetchRegistrations, fetchExternalParticipants,
   insertUser, updateUser, deleteUser, insertStaff, updateStaff, deleteStaff, updateEventStatus, insertEvent, updateEvent, deleteEvent as deleteEventRow,
-  updateCertificateStatus, deleteCertificate as deleteCertificateRow, insertRegistration, updateRegistration, deleteRegistration, insertExternalParticipant,
+  updateCertificateStatus, deleteCertificate as deleteCertificateRow, insertRegistration, updateRegistration, deleteRegistration, insertExternalParticipant, updateExternalParticipant, deleteExternalParticipant,
   fetchReflections, insertReflection, deleteReflection, fetchDismissedPairs, insertDismissedPair,
   fetchAllFiles, deleteEventFile, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
   fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType, sendCertificateEmail,
@@ -115,6 +115,7 @@ export default function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedArchiveEvent, setSelectedArchiveEvent] = useState(null);
+  const [archiveInitialTab, setArchiveInitialTab] = useState(null);
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
   const [toast, setToast] = useState(null);
@@ -494,6 +495,14 @@ export default function App() {
     setStaffDirectory(prev => prev.filter(x => x.id !== s.id));
     deleteStaff(s.id);
     setSelectedStaff(null);
+  });
+  const handleSaveExternalParticipant = (participant, patch) => {
+    setExternalParticipants(prev => prev.map(p => p.id === participant.id ? { ...p, ...patch } : p));
+    updateExternalParticipant(participant.id, patch);
+  };
+  const requestDeleteExternalParticipant = (p) => requestDelete(`the external participant "${p.name}"`, () => {
+    setExternalParticipants(prev => prev.filter(x => x.id !== p.id));
+    deleteExternalParticipant(p.id);
   });
   const requestDeleteEvent = (ev) => requestDelete(`the event "${ev.title}"`, () => {
     setEvents(prev => prev.filter(e => e.id !== ev.id));
@@ -898,7 +907,7 @@ export default function App() {
   const rootVars = { "--accent-primary": primaryHex, "--accent-secondary": secondaryHex, "--accent-success": successHex };
 
   const openEvent = (ev) => setSelectedEvent(ev);
-  const openArchiveEvent = (ev) => setSelectedArchiveEvent(ev);
+  const openArchiveEvent = (ev, initialTab) => { setSelectedArchiveEvent(ev); setArchiveInitialTab(initialTab || null); };
   const openStaff = (s) => setSelectedStaff(s);
 
   // Recent Activity rows are clickable — jump to whatever record the audit entry refers to.
@@ -1009,7 +1018,7 @@ export default function App() {
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
             {page === "upcoming" && <UpcomingEvents events={eventsWithLiveCounts} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={canManage ? undefined : () => setSuggestIdeaOpen(true)} />}
             {page === "previous" && <PreviousEvents previousEvents={previousEventsWithLiveStats} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} />}
-            {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility} />}
+            {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility} onSaveExternalParticipant={handleSaveExternalParticipant} onRequestDeleteExternalParticipant={requestDeleteExternalParticipant} />}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} />}
             {page === "certificates" && (
               <Certificates
@@ -1082,6 +1091,7 @@ export default function App() {
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}
+          initialTab={archiveInitialTab}
           certificates={certificates} reflections={reflections} session={session} onEdit={handleUpdatePreviousEvent}
           canManage={canManage} onRequestDelete={requestDeletePreviousEvent}
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}

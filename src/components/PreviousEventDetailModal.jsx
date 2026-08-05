@@ -8,7 +8,7 @@ import RegistrationsPanel from "./RegistrationsPanel";
 import EventForm from "./EventForm";
 import { fmtDate, eventLocationSuffix } from "../lib/helpers";
 
-const TABS = ["overview", "attendance", "files", "recording", "reflections", "certificates"];
+const TABS = ["overview", "attendance", "files", "recording", "feedback", "reflections", "certificates"];
 
 function avg(nums) {
   const vals = nums.filter(n => n != null);
@@ -22,9 +22,9 @@ export default function PreviousEventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner,
-  onCreateCertificateFor, onSendReflectionReminder,
+  onCreateCertificateFor, onSendReflectionReminder, initialTab,
 }) {
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState(initialTab || "overview");
   const [recordingUrl, setRecordingUrl] = useState(event?.recordingUrl || "");
   const [savedNote, setSavedNote] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -142,7 +142,7 @@ export default function PreviousEventDetailModal({
             <StatButton value={noShow} label="No-show" onClick={() => setTab("attendance")} />
             <StatButton
               value={event.feedback != null ? <><Star size={14} fill="#F59E0B" color="#F59E0B" />{event.feedback}</> : "—"}
-              label="Avg Feedback" onClick={() => setTab("reflections")}
+              label="Avg Feedback" onClick={() => setTab("feedback")}
             />
             <StatButton value={`${sentCerts.length}/${eventCertificates.length}`} label="Certificates Sent" onClick={() => setTab("certificates")} />
           </div>
@@ -198,9 +198,11 @@ export default function PreviousEventDetailModal({
             </div>
           )}
 
-          {tab === "reflections" && (
+          {tab === "feedback" && (
             <div className="space-y-3">
-              {eventReflections.length > 0 && (
+              {eventReflections.length === 0 ? (
+                <div className="whmi-card p-4 text-[12.5px] text-center" style={{ color: "var(--text-faint)" }}>No feedback recorded yet.</div>
+              ) : (
                 <div className="whmi-card p-3 grid grid-cols-3 gap-2 text-center">
                   <div>
                     <div className="disp text-[15px] font-extrabold">{avgQuality != null ? `${avgQuality}/10` : "—"}</div>
@@ -218,12 +220,15 @@ export default function PreviousEventDetailModal({
                   </div>
                 </div>
               )}
-              <ReflectionsPanel
-                event={event} reflections={eventReflections} canManage
-                dismissedPairs={dismissedReflectionPairs} onDelete={onDeleteReflection}
-                onMerge={onMergeReflections} onDismissPair={onDismissReflectionPair}
-              />
             </div>
+          )}
+
+          {tab === "reflections" && (
+            <ReflectionsPanel
+              event={event} reflections={eventReflections} canManage
+              dismissedPairs={dismissedReflectionPairs} onDelete={onDeleteReflection}
+              onMerge={onMergeReflections} onDismissPair={onDismissReflectionPair}
+            />
           )}
 
           {tab === "certificates" && (

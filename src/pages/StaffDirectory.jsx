@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { Search, ArrowUp, ArrowDown, Plus, Shield, ChevronDown, ChevronRight, BarChart3, Users } from "lucide-react";
+import { Search, ArrowUp, ArrowDown, Plus, Shield, ChevronDown, ChevronRight, BarChart3, Users, Award, UserCircle2 } from "lucide-react";
 import StaffQuickStats from "../components/StaffQuickStats";
 import CharacterAvatar from "../components/CharacterAvatar";
+import ExternalParticipantModal from "../components/ExternalParticipantModal";
 
 const SORT_OPTIONS = [
   { id: "name", label: "Name" },
@@ -16,14 +17,15 @@ export const blankStaff = () => ({
   qualifiedYear: null, hoursLast3Years: null, eventsThisYear: null, lastAttended: null, attendedEventIds: [],
 });
 
-export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirectory: rawStaffDirectory, canManage, externalParticipants = [], certificates = [], users = [], fieldVisibility = {} }) {
+export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirectory: rawStaffDirectory, canManage, externalParticipants = [], certificates = [], users = [], fieldVisibility = {}, onSaveExternalParticipant, onRequestDeleteExternalParticipant }) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [desc, setDesc] = useState(false);
-  const [statsExpanded, setStatsExpanded] = useState(false);
+  const [statsExpanded, setStatsExpanded] = useState(true);
   const [staffExpanded, setStaffExpanded] = useState(false);
   const [externalsExpanded, setExternalsExpanded] = useState(false);
   const [recipientsExpanded, setRecipientsExpanded] = useState(false);
+  const [selectedExternal, setSelectedExternal] = useState(null);
 
   // Defends against genuine duplicate rows in the underlying staff data (e.g. "Add to Staff"
   // accidentally run twice for the same person before they had a staffId) — keep the first
@@ -153,7 +155,7 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
           <button onClick={() => setRecipientsExpanded(x => !x)} className="w-full flex items-center justify-between">
             <div className="flex items-center gap-2">
               {recipientsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
-              <div className="disp text-[13px] font-semibold">External Certificate Recipients</div>
+              <Award size={15} style={{ color: "var(--accent-primary)" }} /><div className="disp text-[13px] font-semibold">External Certificate Recipients</div>
             </div>
             <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{manualCertRecipients.length}</span>
           </button>
@@ -184,14 +186,14 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
           <button onClick={() => setExternalsExpanded(x => !x)} className="w-full flex items-center justify-between">
             <div className="flex items-center gap-2">
               {externalsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
-              <div className="disp text-[13px] font-semibold">External Participants</div>
+              <UserCircle2 size={15} style={{ color: "var(--accent-primary)" }} /><div className="disp text-[13px] font-semibold">External Participants</div>
             </div>
             <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{externalParticipants.length}</span>
           </button>
           {externalsExpanded && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
             {externalParticipants.map(p => (
-              <div key={p.id} className="whmi-card p-4 flex items-center gap-3">
+              <button key={p.id} onClick={() => setSelectedExternal(p)} className="whmi-card p-4 text-left whmi-row-hover transition flex items-center gap-3">
                 <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-success)" }}>
                   {p.name.split(" ").map(n => n[0]).join("")}
                 </div>
@@ -200,12 +202,19 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
                   <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{p.email}</div>
                   <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>External participant</div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
           )}
         </div>
       )}
+
+      <ExternalParticipantModal
+        participant={selectedExternal}
+        onClose={() => setSelectedExternal(null)}
+        onSave={onSaveExternalParticipant}
+        onRequestDelete={(p) => { onRequestDeleteExternalParticipant?.(p); setSelectedExternal(null); }}
+      />
     </div>
   );
 }

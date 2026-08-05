@@ -1,13 +1,32 @@
-import { useState, useEffect, useRef } from "react";
-import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardList, Lightbulb } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardList, Lightbulb, LayoutGrid, List } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix } from "../lib/helpers";
 
+const SORT_OPTIONS = [
+  { id: "date-asc", label: "Date (Closest - Furthest Away)" },
+  { id: "date-desc", label: "Date (Furthest Away - Closest)" },
+  { id: "name-asc", label: "Name (A - Z)" },
+  { id: "name-desc", label: "Name (Z - A)" },
+];
+
 export default function UpcomingEvents({ events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea }) {
   const [filter, setFilter] = useState("All");
+  const [view, setView] = useState("grid");
+  const [sortBy, setSortBy] = useState("date-asc");
   const statuses = ["All", "Registration Open", "Draft", "Awaiting Approval"];
-  const filtered = filter === "All" ? events : events.filter(e => e.status === filter);
+  const filteredUnsorted = filter === "All" ? events : events.filter(e => e.status === filter);
+  const filtered = useMemo(() => {
+    const list = [...filteredUnsorted];
+    list.sort((a, b) => {
+      if (sortBy === "name-asc") return (a.title || "").localeCompare(b.title || "");
+      if (sortBy === "name-desc") return (b.title || "").localeCompare(a.title || "");
+      if (sortBy === "date-desc") return (b.date || "").localeCompare(a.date || "");
+      return (a.date || "").localeCompare(b.date || "");
+    });
+    return list;
+  }, [filteredUnsorted, sortBy]);
   const highlightRef = useRef(null);
 
   useEffect(() => {
@@ -35,14 +54,66 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
         </div>
       </div>
 
-      <div className="flex items-center gap-2 whmi-scroll overflow-x-auto pb-1">
-        {statuses.map(s => (
-          <button key={s} onClick={() => setFilter(s)} className="whmi-nav-btn" style={{ background: filter === s ? "var(--surface-2)" : "transparent", color: filter === s ? "var(--text)" : "var(--text-dim)", border: "1px solid " + (filter === s ? "var(--border)" : "transparent") }}>
-            {s}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 whmi-scroll overflow-x-auto pb-1">
+          {statuses.map(s => (
+            <button key={s} onClick={() => setFilter(s)} className="whmi-nav-btn" style={{ background: filter === s ? "var(--surface-2)" : "transparent", color: filter === s ? "var(--text)" : "var(--text-dim)", border: "1px solid " + (filter === s ? "var(--border)" : "transparent") }}>
+              {s}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2.5 py-2 text-[12.5px]">
+            {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+          <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+            <button onClick={() => setView("grid")} className="px-2.5 py-2 flex items-center gap-1.5 text-[12px] font-semibold" style={{ background: view === "grid" ? "var(--accent-primary)" : "transparent", color: view === "grid" ? "white" : "var(--text-dim)" }} title="Grid view">
+              <LayoutGrid size={13} />
+            </button>
+            <button onClick={() => setView("list")} className="px-2.5 py-2 flex items-center gap-1.5 text-[12px] font-semibold" style={{ background: view === "list" ? "var(--accent-primary)" : "transparent", color: view === "list" ? "white" : "var(--text-dim)" }} title="List view">
+              <List size={13} />
+            </button>
+          </div>
+        </div>
       </div>
 
+      {view === "list" ? (
+        <div className="whmi-card overflow-x-auto whmi-scroll">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                {["Event", "Status", "Date", "Time", "Location", "Presenter", "Registered", ...(canManage && onRequestDelete ? [""] : [])].map((h, i) => (
+                  <th key={h || `col-${i}`} className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(ev => (
+                <tr
+                  key={ev.id} ref={ev.id === highlightId ? highlightRef : null}
+                  className="whmi-row-hover cursor-pointer" onClick={() => openEvent(ev)}
+                  style={{ borderBottom: "1px solid var(--border)", outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: -2 }}
+                >
+                  <td className="px-4 py-3 font-semibold break-words max-w-[260px]">{ev.title}<div className="text-[11px] font-normal mt-0.5" style={{ color: "var(--text-faint)" }}>{ev.topic}</div></td>
+                  <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
+                  <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtDate(ev.date)}</td>
+                  <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</td>
+                  <td className="px-4 py-3 break-words max-w-[180px]" style={{ color: "var(--text-dim)" }}>{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</td>
+                  <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{ev.presenter}</td>
+                  <td className="px-4 py-3">{ev.capacity == null ? ev.registered : `${ev.registered}/${ev.capacity}`}</td>
+                  {canManage && onRequestDelete && (
+                    <td className="px-4 py-3">
+                      <button onClick={(e) => { e.stopPropagation(); onRequestDelete(ev); }} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }} title="Delete event">
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {filtered.map(ev => {
           const joinable = ev.meetingUrl && canJoinMeeting(ev.date, ev.start, ev.end);
@@ -126,6 +197,7 @@ export default function UpcomingEvents({ events, openEvent, canManage, onRequest
           );
         })}
       </div>
+      )}
 
       {(onSuggestIdea || (canManage && onGoBrainstorm)) && (
         <div className="flex justify-center items-center gap-2 pt-2 flex-wrap">

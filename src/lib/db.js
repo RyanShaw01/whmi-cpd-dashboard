@@ -494,6 +494,19 @@ export async function insertExternalParticipant(p) {
   const { error } = await supabase.from("external_participants").insert({ id: p.id, name: p.name, email: p.email });
   if (error) console.error("insertExternalParticipant", error);
 }
+export async function updateExternalParticipant(id, patch) {
+  if (!supabaseConfigured) return;
+  const row = {};
+  if ("name" in patch) row.name = patch.name;
+  if ("email" in patch) row.email = patch.email;
+  const { error } = await supabase.from("external_participants").update(row).eq("id", id);
+  if (error) console.error("updateExternalParticipant", error);
+}
+export async function deleteExternalParticipant(id) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("external_participants").delete().eq("id", id);
+  if (error) console.error("deleteExternalParticipant", error);
+}
 
 /* ---------------------------------------------------------------------- */
 /* files (flyer / slides / handouts / supporting files)                   */
