@@ -1162,10 +1162,10 @@ export default function App() {
               />
             )}
             {page === "mycpd" && viewSession.userType === "external" && (
-              <ExternalDashboard user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
+              <ExternalDashboard user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycpd" && viewSession.userType !== "external" && (
-              <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
+              <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
             {page === "upcoming" && (canManage || viewSession.userType === "internal") && (

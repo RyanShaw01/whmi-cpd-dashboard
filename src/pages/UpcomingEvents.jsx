@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardList, Lightbulb, LayoutGrid, List } from "lucide-react";
+import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardList, Lightbulb, LayoutGrid, List, Users } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
@@ -215,7 +215,7 @@ export default function UpcomingEvents({
                     title="View registrations"
                   >
                     <div className="flex justify-between text-[11px] mb-1" style={{ color: "var(--text-faint)" }}>
-                      <span>{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
+                      <span className="flex items-center gap-1"><Users size={10} className="shrink-0" />{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
                       {ev.capacity != null && <span>{Math.round((ev.registered / ev.capacity) * 100)}%</span>}
                     </div>
                     {ev.capacity != null && (
@@ -227,7 +227,7 @@ export default function UpcomingEvents({
                 ) : (
                   <div>
                     <div className="flex justify-between text-[11px] mb-1" style={{ color: "var(--text-faint)" }}>
-                      <span>{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
+                      <span className="flex items-center gap-1"><Users size={10} className="shrink-0" />{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
                       {ev.capacity != null && <span>{Math.round((ev.registered / ev.capacity) * 100)}%</span>}
                     </div>
                     {ev.capacity != null && (
@@ -245,7 +245,13 @@ export default function UpcomingEvents({
                   </a>
                 ) : <span />}
                 {onOpenRegister && ev.status === "Registration Open" && (
-                  <button onClick={(e) => { e.stopPropagation(); onOpenRegister(ev.id); }} className="text-[12px] font-semibold px-1.5 py-0.5 -mx-1.5 rounded-lg whmi-row-hover transition flex items-center gap-1" style={{ color: "var(--accent-primary)" }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onOpenRegister(ev.id); }}
+                    className="text-[12px] font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 ml-auto"
+                    style={{ background: "#152A4E", color: "white" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "#1E3A63"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "#152A4E"; }}
+                  >
                     Register <span className="transition-transform">→</span>
                   </button>
                 )}

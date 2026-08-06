@@ -15,12 +15,6 @@ export function fmtDate(d) {
   return new Date(d + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
 }
 
-function ordinal(n) {
-  const suffixes = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
-}
-
 /* "HH:MM" -> "4pm" / "4:30pm", 12-hour, no leading zero. */
 export function fmtTime12h(hhmm) {
   if (!hhmm) return "";
@@ -41,9 +35,9 @@ export function fmtTimeRange12h(start, end) {
 }
 
 /*
- * Countdown to an event's start time. Events under a week away show the exact
- * day, date, and start time ("on Thursday 12th at 4pm"); further out shows a
- * whole-day count.
+ * Countdown to an event's start time, always relative (never a literal date/time — the
+ * exact date and time are shown separately alongside this, so repeating them here would
+ * be redundant): minutes, then hours, then days, then weeks the further out it gets.
  */
 export function formatCountdown(dateStr, startTime) {
   const target = new Date(`${dateStr}T${startTime}:00`);
@@ -52,13 +46,17 @@ export function formatCountdown(dateStr, startTime) {
 
   if (diffMs <= 0) return "Now";
 
-  if (diffMs < 7 * 86400000) {
-    const weekday = target.toLocaleDateString("en-AU", { weekday: "long" });
-    return `on ${weekday} ${ordinal(target.getDate())} at ${fmtTime12h(startTime)}`;
-  }
+  const minutes = diffMs / 60000;
+  if (minutes < 60) { const n = Math.max(1, Math.round(minutes)); return `in ${n} minute${n === 1 ? "" : "s"}`; }
 
-  const days = Math.round(diffMs / 86400000);
-  return `in ${days} days`;
+  const hours = diffMs / 3600000;
+  if (hours < 24) { const n = Math.round(hours); return `in ${n} hour${n === 1 ? "" : "s"}`; }
+
+  const days = diffMs / 86400000;
+  if (days < 7) { const n = Math.round(days); return `in ${n} day${n === 1 ? "" : "s"}`; }
+
+  const weeks = Math.round(days / 7);
+  return `in ${weeks} week${weeks === 1 ? "" : "s"}`;
 }
 
 /* Human-readable duration between two "HH:MM" times, e.g. "2 hr 30 min". */
@@ -108,7 +106,7 @@ export function eventCountdownText(dateStr, startTime, endTime) {
  * toggle), remembered across sessions via localStorage and settable both from the section
  * itself and from Settings > Appearance. Upcoming Events and the Dashboard's Up Next section
  * each get their own key, so picking a view in one doesn't change the other. */
-function makeViewPref(storageKey) {
+export function makeViewPref(storageKey) {
   return {
     get: () => { try { const v = localStorage.getItem(storageKey); return v === "list" ? "list" : "grid"; } catch { return "grid"; } },
     set: (value) => { try { localStorage.setItem(storageKey, value); } catch { /* ignore */ } },

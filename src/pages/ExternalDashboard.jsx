@@ -1,17 +1,16 @@
-import { Clock, Award, ChevronRight, Download, Video, ClipboardList, Link2, Lightbulb } from "lucide-react";
-import StatusBadge from "../components/StatusBadge";
+import { Video, Link2, Lightbulb } from "lucide-react";
 import PersonalStatsRow from "../components/PersonalStatsRow";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTime12h } from "../lib/helpers";
+import UpcomingEventsCards from "../components/UpcomingEventsCards";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting } from "../lib/helpers";
 
 // Landing page for external accounts (non @wh.org.au). Shows events they've registered for
 // (past + upcoming, recordings, certificates) plus a "Browse & Register" section covering
 // every event admins have opted into external visibility (events.open_to_external) — unlike
 // the internal viewer catalog, this is deliberately scoped to only externally-open events.
-export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, reflections, openEvent, onOpenRegister, onNavigatePage, onSuggestIdea }) {
+export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onNavigatePage, onSuggestIdea }) {
   const myRegisteredEventIds = new Set((registrations || []).filter(r => r.userId === user.id).map(r => r.eventId));
   const myUpcoming = events.filter(e => myRegisteredEventIds.has(e.id));
   const myPast = previousEvents.filter(e => myRegisteredEventIds.has(e.id));
-  const myCerts = certificates.filter(c => c.recipientEmail?.toLowerCase() === user.email.toLowerCase() || c.staff === user.name);
 
   const externallyOpenEvents = events.filter(e => e.status === "Registration Open" && e.openToExternal !== false);
   const dueSoonEvents = externallyOpenEvents
@@ -46,56 +45,31 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
         )}
       </div>
 
-      <div className="whmi-card p-4 text-[12px]" style={{ color: "var(--text-faint)" }}>
-        Your account is marked as an external CPD participant. If this should be a Western Health staff account, contact the education team.
-      </div>
-
       <PersonalStatsRow
         user={user} certificates={certificates} events={events} registrations={registrations} reflections={reflections}
         onNavigateCertificates={onNavigatePage ? () => onNavigatePage("mycertificates") : undefined}
       />
 
-      <div className="whmi-card p-5">
-        <h2 className="disp text-[15px] font-bold mb-3 flex items-center gap-1.5"><Clock size={16} style={{ color: "var(--accent-primary)" }} />Upcoming</h2>
-        <div className="space-y-2">
-          {myUpcoming.map(ev => (
-            <button key={ev.id} onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex items-center justify-between gap-3 p-3 rounded-xl text-left transition" style={{ border: "1px solid var(--border)" }}>
-              <div className="min-w-0">
-                <div className="font-semibold text-[13px] break-words">{ev.title}</div>
-                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>{fmtDate(ev.date)} · {fmtTime12h(ev.start)}</div>
-              </div>
-              <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />
-            </button>
-          ))}
-          {myUpcoming.length === 0 && <div className="text-[12.5px]" style={{ color: "var(--text-faint)" }}>No upcoming events registered.</div>}
-        </div>
-      </div>
+      <UpcomingEventsCards
+        title="Upcoming" events={myUpcoming} files={files} openEvent={openEvent}
+        storageKey="whmi_external_upcoming_view" mode="register" onOpenRegister={onOpenRegister}
+        registeredIds={myRegisteredEventIds} viewerUserType={user.userType}
+        emptyText="No upcoming events registered."
+      />
 
-      <div className="whmi-card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="disp text-[15px] font-bold flex items-center gap-1.5"><ClipboardList size={16} style={{ color: "var(--accent-primary)" }} />Browse &amp; Register</h2>
-          <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{browsableEvents.length} available</span>
+      <UpcomingEventsCards
+        title="Browse & Register" events={browsableEvents} files={files} openEvent={openEvent}
+        storageKey="whmi_external_browse_view" mode="register" onOpenRegister={onOpenRegister}
+        viewerUserType={user.userType}
+        emptyText="No externally-open events available right now."
+      />
+      {onSuggestIdea && (
+        <div className="flex justify-center -mt-3">
+          <button onClick={onSuggestIdea} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
+            <Lightbulb size={14} />Suggest a CPD idea
+          </button>
         </div>
-        <div className="space-y-2">
-          {browsableEvents.map(ev => (
-            <div key={ev.id} className="flex items-center justify-between gap-3 p-3 rounded-xl flex-wrap" style={{ border: "1px solid var(--border)" }}>
-              <button onClick={() => openEvent(ev)} className="min-w-0 text-left">
-                <div className="font-semibold text-[13px] break-words">{ev.title}</div>
-                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>{fmtDate(ev.date)} · {fmtTime12h(ev.start)}</div>
-              </button>
-              <button onClick={() => onOpenRegister(ev.id)} className="whmi-btn-primary !py-1.5 !px-3 text-[12px] shrink-0">Register</button>
-            </div>
-          ))}
-          {browsableEvents.length === 0 && <div className="text-[12.5px]" style={{ color: "var(--text-faint)" }}>No externally-open events available right now.</div>}
-        </div>
-        {onSuggestIdea && (
-          <div className="flex justify-center pt-3">
-            <button onClick={onSuggestIdea} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
-              <Lightbulb size={14} />Suggest a CPD idea
-            </button>
-          </div>
-        )}
-      </div>
+      )}
 
       <div className="whmi-card p-5">
         <h2 className="disp text-[15px] font-bold mb-3 flex items-center gap-1.5"><Video size={16} style={{ color: "var(--accent-secondary)" }} />Past CPD &amp; Recordings</h2>
@@ -117,25 +91,8 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
         </div>
       </div>
 
-      <div className="whmi-card p-5">
-        <h2 className="disp text-[15px] font-bold mb-3 flex items-center gap-1.5"><Award size={16} style={{ color: "var(--accent-success)" }} />My Certificates</h2>
-        {myCerts.length === 0 && <div className="text-[12.5px]" style={{ color: "var(--text-faint)" }}>No certificates yet.</div>}
-        <div className="space-y-2">
-          {myCerts.map(c => (
-            <div key={c.id} className="flex items-center justify-between gap-3 p-3 rounded-xl" style={{ border: "1px solid var(--border)" }}>
-              <div className="min-w-0">
-                <div className="font-semibold text-[13px] break-words">{c.event}</div>
-                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>{fmtDate(c.date)}</div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <StatusBadge status={c.status} />
-                {c.status === "Sent" && c.pdfUrl && (
-                  <a href={c.pdfUrl} target="_blank" rel="noreferrer" className="whmi-btn-ghost !p-2" title="Download PDF"><Download size={14} /></a>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="whmi-card p-4 text-[12px]" style={{ color: "var(--text-faint)" }}>
+        Your account is marked as an external CPD participant. If this should be a Western Health staff account, contact the education team.
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import {
   X, Calendar, Clock, MapPin, UserCircle2, ArrowUpRight, Download,
-  Eye, Send, AlertCircle, Link2, Trash2, Pencil, Copy, MessageSquareText, ChevronDown, ClipboardList, Maximize2,
+  Eye, Send, AlertCircle, Link2, Trash2, Pencil, Copy, MessageSquareText, ChevronDown, ClipboardList, Maximize2, Users,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
@@ -190,7 +190,7 @@ export default function EventDetailModal({
           </div>
 
           {viewerUserType === "external" && event.externalPrice != null && !iRegistered && (
-            <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: "var(--accent-primary)", color: "#fff" }}>
+            <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>
               <span className="text-[13px] font-semibold">Registration Fee</span>
               <span className="text-[20px] font-extrabold">${Number(event.externalPrice).toFixed(2)} AUD</span>
             </div>
@@ -261,7 +261,7 @@ export default function EventDetailModal({
                 || (viewerUserType === "external" ? event.showRegCountExternal : event.capacity != null)) && (
                 <div className="whmi-card p-3">
                   <div className="flex justify-between text-[12px] mb-1.5" style={{ color: "var(--text-dim)" }}>
-                    <span>{event.capacity == null ? `Registered: ${event.registered}` : `Registered ${event.registered}/${event.capacity}`}</span>
+                    <span className="flex items-center gap-1"><Users size={12} className="shrink-0" />{event.capacity == null ? `Registered: ${event.registered}` : `Registered ${event.registered}/${event.capacity}`}</span>
                     {event.waitlist > 0 && <span>{event.waitlist} on waitlist</span>}
                   </div>
                   {event.capacity != null && (
