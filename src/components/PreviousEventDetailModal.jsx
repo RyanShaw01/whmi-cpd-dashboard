@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Mail, Award, Trash2, Lock } from "lucide-react";
+import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Copy, Mail, Award, Trash2, Lock } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
 import EventFilesPanel from "./EventFilesPanel";
@@ -40,13 +40,15 @@ export default function PreviousEventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner,
-  onCreateCertificateFor, onSendReflectionReminder, initialTab, seriesEvents = [], onSwitchEvent,
+  onCreateCertificateFor, onSendReflectionReminder, initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
 }) {
   const [tab, setTab] = useState(initialTab || "overview");
   const [certSortBy, setCertSortBy] = useState("date-desc");
   const [recordingUrl, setRecordingUrl] = useState(event?.recordingUrl || "");
   const [savedNote, setSavedNote] = useState(false);
-  const [editing, setEditing] = useState(false);
+  // This modal remounts on every event change (App.jsx keys it by event.id), so a one-time
+  // useState initializer is enough to jump straight into edit mode for a freshly-duplicated event.
+  const [editing, setEditing] = useState(!!initialEditing);
   const [formDirty, setFormDirty] = useState(false);
   if (!event) return null;
 
@@ -160,6 +162,11 @@ export default function PreviousEventDetailModal({
             {canManage && (
               <button onClick={() => setEditing(true)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Edit event">
                 <Pencil size={13} color="white" />
+              </button>
+            )}
+            {canManage && onDuplicate && (
+              <button onClick={onDuplicate} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Duplicate event">
+                <Copy size={13} color="white" />
               </button>
             )}
             {canManage && onRequestDelete && (

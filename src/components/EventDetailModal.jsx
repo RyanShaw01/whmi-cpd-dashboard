@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import {
   X, Calendar, Clock, MapPin, UserCircle2, ArrowUpRight, Download,
-  Eye, Send, AlertCircle, Link2, Trash2, Pencil, MessageSquareText, ChevronDown, ClipboardList,
+  Eye, Send, AlertCircle, Link2, Trash2, Pencil, Copy, MessageSquareText, ChevronDown, ClipboardList,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
@@ -81,18 +81,19 @@ export default function EventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
-  initialTab, seriesEvents = [], onSwitchEvent,
+  initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
 }) {
   const [regTab, setRegTab] = useState(initialTab || "overview");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(!!initialEditing);
   const [formDirty, setFormDirty] = useState(false);
   const [meetingUrlDraft, setMeetingUrlDraft] = useState("");
   const [previewingTemplate, setPreviewingTemplate] = useState(false);
   // The modal stays mounted between opens (no key), so a fresh `initialTab` from a new
   // openEvent(ev, tab) call needs to be applied explicitly rather than relying on useState's
-  // one-time initializer.
-  useEffect(() => { if (event) setRegTab(initialTab || "overview"); }, [event?.id, initialTab]);
+  // one-time initializer. Same for initialEditing — e.g. jumping straight into edit mode for a
+  // freshly-duplicated event.
+  useEffect(() => { if (event) { setRegTab(initialTab || "overview"); setEditing(!!initialEditing); } }, [event?.id, initialTab, initialEditing]);
   if (!event) return null;
 
   const previewTemplate = async () => {
@@ -170,6 +171,11 @@ export default function EventDetailModal({
                 {onEdit && (
                   <button onClick={() => setEditing(true)} className="whmi-btn-ghost !p-2" title="Edit event">
                     <Pencil size={14} />
+                  </button>
+                )}
+                {onDuplicate && (
+                  <button onClick={onDuplicate} className="whmi-btn-ghost !p-2" title="Duplicate event">
+                    <Copy size={14} />
                   </button>
                 )}
                 {onDelete && (
@@ -424,7 +430,7 @@ export default function EventDetailModal({
         {bannerUrl ? (
           <div className="grid grid-cols-1 md:grid-cols-[300px_1fr]">
             <div className="w-full h-56 md:h-full relative flex items-center justify-center overflow-hidden" style={{ background: "var(--surface-2)" }}>
-              <img src={bannerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(28px) saturate(1.3) brightness(0.85)", transform: "scale(1.25)" }} />
+              <img src={bannerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(42px) saturate(1.3) brightness(0.85)", transform: "scale(1.35)" }} />
               <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.15)" }} />
               <img src={bannerUrl} alt="" className="relative max-w-full max-h-full object-contain" style={{ boxShadow: "0 4px 24px rgba(0,0,0,.25)" }} />
             </div>

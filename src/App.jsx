@@ -120,9 +120,11 @@ export default function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventInitialTab, setEventInitialTab] = useState(null);
+  const [eventInitialEditing, setEventInitialEditing] = useState(false);
   const [registrationSuccessEvent, setRegistrationSuccessEvent] = useState(null);
   const [selectedArchiveEvent, setSelectedArchiveEvent] = useState(null);
   const [archiveInitialTab, setArchiveInitialTab] = useState(null);
+  const [archiveInitialEditing, setArchiveInitialEditing] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
   const [toast, setToast] = useState(null);
@@ -955,8 +957,31 @@ export default function App() {
   const successHex = BRAND_HEX[colorPrefs.success] || BRAND_HEX.green;
   const rootVars = { "--accent-primary": primaryHex, "--accent-secondary": secondaryHex, "--accent-success": successHex };
 
-  const openEvent = (ev, initialTab) => { setSelectedEvent(ev); setEventInitialTab(initialTab || null); };
-  const openArchiveEvent = (ev, initialTab) => { setSelectedArchiveEvent(ev); setArchiveInitialTab(initialTab || null); };
+  const openEvent = (ev, initialTab, startEditing) => { setSelectedEvent(ev); setEventInitialTab(initialTab || null); setEventInitialEditing(!!startEditing); };
+  const openArchiveEvent = (ev, initialTab, startEditing) => { setSelectedArchiveEvent(ev); setArchiveInitialTab(initialTab || null); setArchiveInitialEditing(!!startEditing); };
+  // Duplicate keeps every configured field but starts a fresh registration count (no
+  // registrations are copied) and leaves any recurrence series behind — a duplicate always
+  // stands alone. It lands wherever its (unchanged) status naturally belongs — Upcoming or
+  // Previous — same as any other event.
+  const duplicateEventPayload = (event) => ({
+    ...event, id: "e" + Date.now(), title: `${event.title} (1)`,
+    registered: 0, waitlist: 0, recurrenceGroupId: null,
+  });
+  const handleDuplicateEvent = (event, fromPrevious) => requestConfirm({
+    title: "Duplicate this event?",
+    message: `Create a copy of "${event.title}" with all its details? You'll be able to edit the copy straight away.`,
+    confirmLabel: "Duplicate",
+    onConfirm: () => {
+      const dup = duplicateEventPayload(event);
+      if (fromPrevious) setPreviousEvents(prev => [...prev, dup]);
+      else setEvents(prev => [...prev, dup]);
+      insertEvent(dup);
+      pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: dup.id, details: { title: dup.title } });
+      showToast("Event duplicated.");
+      if (fromPrevious) openArchiveEvent(dup, null, true);
+      else openEvent(dup, null, true);
+    },
+  });
   const openStaff = (s) => setSelectedStaff(s);
   const openCertificatesAwaiting = () => {
     changePage("certificates");
@@ -1167,8 +1192,9 @@ export default function App() {
         {showTour && <OnboardingTour steps={TOUR_STEPS} onFinish={() => setShowTour(false)} />}
 
         <EventDetailModal
-          event={selectedEvent} onClose={() => setSelectedEvent(null)} registrations={registrations} initialTab={eventInitialTab}
+          event={selectedEvent} onClose={() => setSelectedEvent(null)} registrations={registrations} initialTab={eventInitialTab} initialEditing={eventInitialEditing}
           seriesEvents={eventsWithLiveCounts} onSwitchEvent={openEvent}
+          onDuplicate={selectedEvent ? () => handleDuplicateEvent(selectedEvent, false) : undefined}
           canManage={canManage} onDelete={selectedEvent ? () => requestDeleteEvent(selectedEvent) : undefined}
           onStatusChange={handleStatusChange} onEdit={handleUpdateEvent} uploadedBy={session.id} session={session}
           onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField}
@@ -1181,8 +1207,9 @@ export default function App() {
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}
-          initialTab={archiveInitialTab}
+          initialTab={archiveInitialTab} initialEditing={archiveInitialEditing}
           seriesEvents={previousEventsWithLiveStats} onSwitchEvent={openArchiveEvent}
+          onDuplicate={selectedArchiveEvent ? () => handleDuplicateEvent(selectedArchiveEvent, true) : undefined}
           certificates={certificates} reflections={reflections} session={session} onEdit={handleUpdatePreviousEvent}
           canManage={canManage} onRequestDelete={requestDeletePreviousEvent}
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}

@@ -75,7 +75,7 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
         <div className="whmi-card overflow-hidden">
           {flyerUrl ? (
             <div className="relative h-40 flex items-center justify-center overflow-hidden" style={{ background: "var(--surface-2)" }}>
-              <img src={flyerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(28px) saturate(1.3) brightness(0.85)", transform: "scale(1.25)" }} />
+              <img src={flyerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(42px) saturate(1.3) brightness(0.85)", transform: "scale(1.35)" }} />
               <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.15)" }} />
               <img src={flyerUrl} alt="" className="relative max-w-full max-h-full object-contain" style={{ boxShadow: "0 4px 24px rgba(0,0,0,.25)" }} />
               <button

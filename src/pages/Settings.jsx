@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload } from "lucide-react";
+import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload, Users, SlidersHorizontal } from "lucide-react";
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
@@ -11,6 +11,29 @@ const CPD_CATEGORIES = [
   "Audit & QA", "Skill Development/ Workplace Learning", "Skill Development",
   "Professional Activity/ Organised Program", "Organised Program", "Self-Directed Learning",
 ];
+
+// Admin/owner Settings has grown into a long list of cards; this groups related ones under a
+// single collapsible section (collapsed by default) so the page reads as a handful of
+// categories instead of a wall of cards. Purely a display wrapper — none of the cards inside
+// change their own behaviour.
+function SettingsGroup({ title, description, icon: Icon, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between gap-3 py-2.5 px-3 -mx-1 rounded-xl whmi-row-hover transition text-left" style={{ border: "1px solid var(--border)" }}>
+        <div className="flex items-center gap-2.5 min-w-0">
+          {open ? <ChevronDown size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /> : <ChevronRight size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" />}
+          {Icon && <Icon size={16} style={{ color: "var(--accent-primary)" }} className="shrink-0" />}
+          <div className="min-w-0">
+            <div className="font-bold text-[13.5px]">{title}</div>
+            {description && <div className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>{description}</div>}
+          </div>
+        </div>
+      </button>
+      {open && <div className="mt-3 space-y-3">{children}</div>}
+    </div>
+  );
+}
 
 export default function Settings({
   theme, setTheme, mainTheme, setMainTheme, cardTheme, setCardTheme, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
@@ -408,25 +431,6 @@ export default function Settings({
         </div>
       </div>
 
-      {canManageUsers && (
-        <div className="whmi-card p-4 space-y-3">
-          <div>
-            <div className="font-semibold text-[13px] mb-1">Brand Colours</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose which Western Health brand colour is used for icons and highlighted sections.</div>
-          </div>
-          {[["primary", "Primary accent"], ["secondary", "Secondary accent"], ["success", "Positive / success"]].map(([key, label]) => (
-            <div key={key} className="flex items-center justify-between gap-3">
-              <span className="text-[12.5px] font-semibold">{label}</span>
-              <div className="flex gap-2">
-                {Object.entries(BRAND_HEX).map(([name, hex]) => (
-                  <button key={name} onClick={() => onColorChange({ ...colorPrefs, [key]: name })} title={name} className="w-7 h-7 rounded-full" style={{ background: hex, outline: colorPrefs[key] === name ? "2px solid var(--text)" : "1px solid var(--border)", outlineOffset: 2 }} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="whmi-card p-4">
         <div className="font-semibold text-[13px] mb-1">Dashboard Layout</div>
         <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Reorder your dashboard sections, saved automatically.</div>
@@ -466,6 +470,24 @@ export default function Settings({
       </div>
 
       {canManageUsers && (
+      <SettingsGroup title="Team & Access" description="Brand colours, staff/viewer accounts, preview-as, notification badges" icon={Users}>
+        <div className="whmi-card p-4 space-y-3">
+          <div>
+            <div className="font-semibold text-[13px] mb-1">Brand Colours</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose which Western Health brand colour is used for icons and highlighted sections.</div>
+          </div>
+          {[["primary", "Primary accent"], ["secondary", "Secondary accent"], ["success", "Positive / success"]].map(([key, label]) => (
+            <div key={key} className="flex items-center justify-between gap-3">
+              <span className="text-[12.5px] font-semibold">{label}</span>
+              <div className="flex gap-2">
+                {Object.entries(BRAND_HEX).map(([name, hex]) => (
+                  <button key={name} onClick={() => onColorChange({ ...colorPrefs, [key]: name })} title={name} className="w-7 h-7 rounded-full" style={{ background: hex, outline: colorPrefs[key] === name ? "2px solid var(--text)" : "1px solid var(--border)", outlineOffset: 2 }} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
         <div className="whmi-card p-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <BellOff size={15} style={{ color: "var(--accent-primary)" }} className="shrink-0" />
@@ -478,9 +500,7 @@ export default function Settings({
             <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: redDotsEnabled ? "20px" : "3px", width: 18, height: 18 }} />
           </button>
         </div>
-      )}
 
-      {canManageUsers && (
         <div className="whmi-card p-4">
           <div className="flex items-center gap-2 mb-1"><Shield size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Team Access</div></div>
           <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Admins have full rights. Owners can do everything except change code. Viewers can only see their own certificates and CPD history.</div>
@@ -529,9 +549,7 @@ export default function Settings({
             <button onClick={() => setAddMemberOpen(true)} className="whmi-btn-primary flex items-center gap-1.5"><UserPlus size={13} />Add Member</button>
           </div>
         </div>
-      )}
 
-      {canManageUsers && (
         <div className="whmi-card p-4">
           <div className="flex items-center gap-2 mb-1"><Eye size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Preview As</div></div>
           <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>See the app as a staff (internal) or external viewer would, without logging out. Test accounts are hidden from Team Access above.</div>
@@ -562,9 +580,11 @@ export default function Settings({
             <button onClick={() => onCreateTestAccount("external")} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px]"><Plus size={12} />Test External Account</button>
           </div>
         </div>
+      </SettingsGroup>
       )}
 
       {canManageUsers && (
+      <SettingsGroup title="CPD Configuration" description="CPD types & appellation codes, staff information fields, tags" icon={SlidersHorizontal}>
         <div className="whmi-card p-4">
           <button onClick={() => setCpdTypesExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
@@ -638,9 +658,7 @@ export default function Settings({
             </>
           )}
         </div>
-      )}
 
-      {canManageUsers && (
         <div className="whmi-card p-4">
           <button onClick={() => setStaffFieldsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
@@ -667,9 +685,7 @@ export default function Settings({
             </>
           )}
         </div>
-      )}
 
-      {canManageUsers && (
         <div className="whmi-card p-4">
           <button onClick={() => setTagsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
@@ -725,9 +741,11 @@ export default function Settings({
             </>
           )}
         </div>
+      </SettingsGroup>
       )}
 
       {canManageUsers && (
+      <SettingsGroup title="Avatars" description="Avatar icons and colours people can choose for their profile" icon={Image}>
         <div className="whmi-card p-4">
           <button onClick={() => setAvatarIconsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
@@ -810,9 +828,7 @@ export default function Settings({
             </>
           )}
         </div>
-      )}
 
-      {canManageUsers && (
         <div className="whmi-card p-4">
           <button onClick={() => setAvatarColorsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
@@ -875,9 +891,11 @@ export default function Settings({
             </>
           )}
         </div>
+      </SettingsGroup>
       )}
 
       {canManageUsers && (
+      <SettingsGroup title="System" description="Audit log and developer-only configuration" icon={History}>
         <div className="whmi-card p-4">
           <button onClick={() => setAuditLogExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
@@ -907,9 +925,7 @@ export default function Settings({
             </>
           )}
         </div>
-      )}
 
-      {canManageUsers && (
         <div className="whmi-card p-4 flex items-center justify-between gap-3">
           <div>
             <div className="font-semibold text-[13px]">Developer Mode</div>
@@ -919,6 +935,7 @@ export default function Settings({
             <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: devMode ? "20px" : "3px", width: 18, height: 18 }} />
           </button>
         </div>
+      </SettingsGroup>
       )}
 
       <div className="whmi-card p-4">
