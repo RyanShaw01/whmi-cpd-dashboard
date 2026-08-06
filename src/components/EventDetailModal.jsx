@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import {
   X, Calendar, Clock, MapPin, UserCircle2, ArrowUpRight, Download,
-  Eye, Send, AlertCircle, Link2, Trash2, Pencil, Copy, MessageSquareText, ChevronDown, ClipboardList,
+  Eye, Send, AlertCircle, Link2, Trash2, Pencil, Copy, MessageSquareText, ChevronDown, ClipboardList, Maximize2,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
@@ -89,6 +89,7 @@ export default function EventDetailModal({
   const [formDirty, setFormDirty] = useState(false);
   const [meetingUrlDraft, setMeetingUrlDraft] = useState("");
   const [previewingTemplate, setPreviewingTemplate] = useState(false);
+  const [posterExpanded, setPosterExpanded] = useState(false);
   // The modal stays mounted between opens (no key), so a fresh `initialTab` from a new
   // openEvent(ev, tab) call needs to be applied explicitly rather than relying on useState's
   // one-time initializer. Same for initialEditing — e.g. jumping straight into edit mode for a
@@ -433,6 +434,9 @@ export default function EventDetailModal({
               <img src={bannerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(42px) saturate(1.3) brightness(0.85)", transform: "scale(1.35)" }} />
               <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.15)" }} />
               <img src={bannerUrl} alt="" className="relative max-w-full max-h-full object-contain" style={{ boxShadow: "0 4px 24px rgba(0,0,0,.25)" }} />
+              <button onClick={() => setPosterExpanded(true)} className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center z-10" style={{ background: "rgba(0,0,0,.45)" }} title="View full poster" type="button">
+                <Maximize2 size={14} color="white" />
+              </button>
             </div>
             <div className="min-w-0">
               <div className="px-5 pt-5">
@@ -452,6 +456,14 @@ export default function EventDetailModal({
           </>
         )}
       </div>
+      {posterExpanded && bannerUrl && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,.85)" }} onClick={() => setPosterExpanded(false)}>
+          <img src={bannerUrl} alt="" className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
+          <button onClick={() => setPosterExpanded(false)} className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
+            <X size={18} color="white" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

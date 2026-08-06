@@ -3,7 +3,7 @@ import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardLis
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
-import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText } from "../lib/helpers";
 
 const SORT_OPTIONS = [
   { id: "date-asc", label: "Date (Closest - Furthest Away)" },
@@ -129,6 +129,7 @@ export default function UpcomingEvents({
           const joinable = ev.meetingUrl && canJoinMeeting(ev.date, ev.start, ev.end);
           const needsAttention = canManage && (ev.status === "Draft" || ev.status === "Awaiting Approval");
           const bannerUrl = eventBannerUrl(files, ev.id);
+          const countdown = eventCountdownText(ev.date, ev.start, ev.end);
           return (
             <div
               key={ev.id}
@@ -174,7 +175,16 @@ export default function UpcomingEvents({
                 </div>
                 <div className="font-bold text-[14px] leading-snug mb-1.5 break-words">{ev.title}</div>
                 <div className="text-[12px] grid grid-cols-2 gap-x-3 gap-y-1.5" style={{ color: "var(--text-dim)" }}>
-                  <div className="flex items-center gap-1.5"><Calendar size={12} className="shrink-0" /><span className="break-words">{fmtDate(ev.date)}</span></div>
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[13px] font-semibold"><Calendar size={12} className="shrink-0" /><span className="break-words">{fmtDate(ev.date)}</span></div>
+                    {countdown && (
+                      countdown.happening ? (
+                        <span className="whmi-badge mt-1" style={{ background: "rgba(217,83,79,.15)", color: "#D9534F" }}>{countdown.text}</span>
+                      ) : (
+                        <div className="text-[10.5px] mt-0.5" style={{ color: "var(--text-faint)" }}>{countdown.text}</div>
+                      )
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5"><Clock size={12} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(ev.start, ev.end)}</span></div>
                   <div className="flex items-start gap-1.5"><MapPin size={12} className="shrink-0 mt-0.5" /><span className="break-words">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></div>
                   <div className="flex items-start gap-1.5"><UserCircle2 size={12} className="shrink-0 mt-0.5" /><span className="break-words">{ev.presenter}</span></div>

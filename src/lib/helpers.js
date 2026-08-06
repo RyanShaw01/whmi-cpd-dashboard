@@ -85,6 +85,25 @@ export function canJoinMeeting(dateStr, startTime, endTime) {
   return now >= opensAt && now <= end;
 }
 
+/* Faint countdown text shown under an event card's date: weeks away, then days once under
+ * 3 weeks out, then hours once under 2 days out, and "Happening now" (flagged via `happening`
+ * so the caller can render it in an obviously-coloured box) while the event is in progress. */
+export function eventCountdownText(dateStr, startTime, endTime) {
+  if (!dateStr || !startTime) return null;
+  const start = new Date(`${dateStr}T${startTime}:00`);
+  const end = endTime ? new Date(`${dateStr}T${endTime}:00`) : new Date(start.getTime() + 3600000);
+  const now = new Date();
+  if (now >= start && now <= end) return { text: "Happening now", happening: true };
+  const diffMs = start - now;
+  if (diffMs <= 0) return null; // already finished
+  const hours = diffMs / 3600000;
+  if (hours < 48) return { text: `in ${Math.max(1, Math.round(hours))} hour${Math.round(hours) === 1 ? "" : "s"}`, happening: false };
+  const days = diffMs / 86400000;
+  if (days < 21) return { text: `in ${Math.round(days)} day${Math.round(days) === 1 ? "" : "s"}`, happening: false };
+  const weeks = Math.round(days / 7);
+  return { text: `in ${weeks} week${weeks === 1 ? "" : "s"}`, happening: false };
+}
+
 /* Whether an event has finished, independent of its admin-set status;
  * "Leave Feedback" eligibility follows wall-clock time, not manual lifecycle state. */
 export function hasEventEnded(dateStr, endTime) {
