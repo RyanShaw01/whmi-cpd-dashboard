@@ -3,7 +3,7 @@ import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardLis
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
-import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, fmtTimeRange12h, fmtTime12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
 
 const SORT_OPTIONS = [
   { id: "date-asc", label: "Date (Closest - Furthest Away)" },
@@ -89,42 +89,41 @@ export default function UpcomingEvents({
       </div>
 
       {view === "list" ? (
-        <div className="whmi-card p-2 space-y-1">
+        <div className="whmi-card p-3 space-y-1.5">
           {filtered.length === 0 && <div className="text-[12.5px] p-4 text-center" style={{ color: "var(--text-faint)" }}>No events match this filter.</div>}
           {filtered.map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
             const needsAttention = canManage && (ev.status === "Draft" || ev.status === "Awaiting Approval");
+            const [weekday, day, month] = fmtDate(ev.date).split(" ");
             return (
               <div
                 key={ev.id} ref={ev.id === highlightId ? highlightRef : null}
                 className="group relative"
-                style={{ outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: 1, borderRadius: 10 }}
+                style={{ outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: 1, borderRadius: 12 }}
               >
-                <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex items-center gap-3 p-2 rounded-lg text-left transition">
+                <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex items-center gap-3.5 p-2 rounded-xl text-left transition">
                   {needsAttention && (
                     <span className="absolute top-1.5 left-1.5 z-10 w-2 h-2 rounded-full" style={{ background: "#D9534F" }} title="Needs attention" />
                   )}
-                  {/* Small date box, filled with a blurred crop of the event's own poster when it has one. */}
-                  <div className="w-11 h-11 rounded-lg shrink-0 relative overflow-hidden flex flex-col items-center justify-center" style={!bannerUrl ? { background: "var(--accent-primary)" } : undefined}>
+                  {/* Date thumbnail — filled with a softly-blurred crop of the event's own poster
+                      when it has one (matches the promo material's colour without needing the
+                      full image to be legible), with the month/day overlaid top-left. */}
+                  <div className="w-[70px] h-[70px] rounded-xl shrink-0 relative overflow-hidden p-2 flex flex-col items-start justify-start" style={!bannerUrl ? { background: "var(--accent-primary)" } : undefined}>
                     {bannerUrl && (
-                      <>
-                        <img src={bannerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(4px) saturate(1.2) brightness(0.75)", transform: "scale(1.3)" }} />
-                        <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.2)" }} />
-                      </>
+                      <img src={bannerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(3px) saturate(1.25) brightness(0.9)", transform: "scale(1.15)" }} />
                     )}
-                    <span className="relative text-white text-[8px] font-bold uppercase leading-none">{fmtDate(ev.date).split(" ")[2]}</span>
-                    <span className="relative text-white text-[14px] font-extrabold leading-none mt-0.5">{fmtDate(ev.date).split(" ")[1]}</span>
+                    <span className="relative text-white text-[10px] font-bold uppercase leading-none" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{month}</span>
+                    <span className="relative text-white text-[22px] font-extrabold leading-none mt-0.5" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{day}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-[12.5px] truncate">{ev.title}</span>
-                      <StatusBadge status={ev.status} />
-                    </div>
-                    <div className="flex items-center gap-x-2.5 gap-y-0.5 text-[11px] flex-wrap mt-0.5" style={{ color: "var(--text-faint)" }}>
-                      <span className="flex items-center gap-1"><Clock size={10} className="shrink-0" />{fmtTimeRange12h(ev.start, ev.end)}</span>
-                      <span className="flex items-center gap-1 truncate"><MapPin size={10} className="shrink-0" />{ev.campus || eventLocationSuffix(ev) || "—"}</span>
-                      <span className="whitespace-nowrap">{ev.capacity == null ? `Reg: ${ev.registered}` : `Reg: ${ev.registered}/${ev.capacity}`}</span>
-                    </div>
+                    <div className="font-bold text-[14.5px] leading-snug break-words">{ev.title}</div>
+                    <div className="text-[12.5px] mt-0.5" style={{ color: "var(--text-faint)" }}>{weekday}, {day} {month} at {fmtTime12h(ev.start)}</div>
+                    {canManage && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <StatusBadge status={ev.status} />
+                        <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{ev.capacity == null ? `Reg: ${ev.registered}` : `Reg: ${ev.registered}/${ev.capacity}`}</span>
+                      </div>
+                    )}
                   </div>
                 </button>
                 {canManage && onRequestDelete && (
