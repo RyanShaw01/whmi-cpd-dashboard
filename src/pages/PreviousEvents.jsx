@@ -52,13 +52,14 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           )}
-          {view === "table" && (
-            <div className="flex items-center gap-1.5">
-              <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2.5 py-2 text-[12.5px]">
-                {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-            </div>
-          )}
+          {/* Kept mounted (just hidden) in calendar view rather than unrendered, so the
+              Table/Calendar toggle and Add Past Event button to its right don't shift position
+              when switching views. */}
+          <div className="flex items-center gap-1.5" style={{ visibility: view === "table" ? "visible" : "hidden" }}>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2.5 py-2 text-[12.5px]" tabIndex={view === "table" ? 0 : -1}>
+              {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </div>
           <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
             <button onClick={() => setView("table")} className="px-2.5 py-2 flex items-center gap-1.5 text-[12px] font-semibold" style={{ background: view === "table" ? "var(--accent-primary)" : "transparent", color: view === "table" ? "white" : "var(--text-dim)" }}>
               <Table2 size={13} />Table
@@ -67,22 +68,24 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
               <CalendarDays size={13} />Calendar
             </button>
           </div>
-          {canManage && onRequestDeleteMultiple && view === "table" && (
-            selecting ? (
-              <>
-                <button
-                  onClick={() => { if (selectedIds.size) onRequestDeleteMultiple(previousEvents.filter(ev => selectedIds.has(ev.id))); exitSelecting(); }}
-                  disabled={selectedIds.size === 0}
-                  className="whmi-btn-ghost flex items-center gap-1.5"
-                  style={{ color: "#D9534F", opacity: selectedIds.size === 0 ? 0.5 : 1 }}
-                >
-                  <Trash2 size={14} />Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : "Selected"}
-                </button>
-                <button onClick={exitSelecting} className="whmi-btn-ghost">Cancel</button>
-              </>
-            ) : (
-              <button onClick={() => setSelecting(true)} className="whmi-btn-ghost flex items-center gap-1.5"><CheckSquare size={14} />Select</button>
-            )
+          {canManage && onRequestDeleteMultiple && (
+            <div style={{ visibility: view === "table" ? "visible" : "hidden" }} className="flex items-center gap-2">
+              {selecting ? (
+                <>
+                  <button
+                    onClick={() => { if (selectedIds.size) onRequestDeleteMultiple(previousEvents.filter(ev => selectedIds.has(ev.id))); exitSelecting(); }}
+                    disabled={selectedIds.size === 0}
+                    className="whmi-btn-ghost flex items-center gap-1.5"
+                    style={{ color: "#D9534F", opacity: selectedIds.size === 0 ? 0.5 : 1 }}
+                  >
+                    <Trash2 size={14} />Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : "Selected"}
+                  </button>
+                  <button onClick={exitSelecting} className="whmi-btn-ghost">Cancel</button>
+                </>
+              ) : (
+                <button onClick={() => setSelecting(true)} className="whmi-btn-ghost flex items-center gap-1.5"><CheckSquare size={14} />Select</button>
+              )}
+            </div>
           )}
           {canManage && onCreatePreviousEvent && (
             <button onClick={onCreatePreviousEvent} className="whmi-btn-primary flex items-center gap-1.5"><Plus size={15} />Add Past Event</button>

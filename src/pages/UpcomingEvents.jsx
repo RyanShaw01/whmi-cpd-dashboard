@@ -89,40 +89,57 @@ export default function UpcomingEvents({
       </div>
 
       {view === "list" ? (
-        <div className="whmi-card overflow-x-auto whmi-scroll">
-          <table className="w-full text-[12px]">
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                {["Event", "Status", "Date", "Time", "Location", "Presenter", "Registered", ...(canManage && onRequestDelete ? [""] : [])].map((h, i) => (
-                  <th key={h || `col-${i}`} className="text-left px-3 py-2 font-semibold text-[10.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(ev => (
-                <tr
-                  key={ev.id} ref={ev.id === highlightId ? highlightRef : null}
-                  className="whmi-row-hover cursor-pointer" onClick={() => openEvent(ev)}
-                  style={{ borderBottom: "1px solid var(--border)", outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: -2 }}
-                >
-                  <td className="px-3 py-1.5 font-semibold break-words max-w-[220px] leading-tight">{ev.title}<div className="text-[10px] font-normal" style={{ color: "var(--text-faint)" }}>{ev.topic}</div></td>
-                  <td className="px-3 py-1.5"><StatusBadge status={ev.status} /></td>
-                  <td className="px-3 py-1.5 whitespace-nowrap" style={{ color: "var(--text-dim)" }}>{fmtDate(ev.date)}</td>
-                  <td className="px-3 py-1.5 whitespace-nowrap" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</td>
-                  <td className="px-3 py-1.5 break-words max-w-[160px]" style={{ color: "var(--text-dim)" }}>{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</td>
-                  <td className="px-3 py-1.5 break-words max-w-[140px]" style={{ color: "var(--text-dim)" }}>{ev.presenter}</td>
-                  <td className="px-3 py-1.5 whitespace-nowrap">{ev.capacity == null ? ev.registered : `${ev.registered}/${ev.capacity}`}</td>
-                  {canManage && onRequestDelete && (
-                    <td className="px-3 py-1.5">
-                      <button onClick={(e) => { e.stopPropagation(); onRequestDelete(ev); }} className="whmi-btn-ghost !p-1" style={{ color: "#D9534F" }} title="Delete event">
-                        <Trash2 size={12} />
-                      </button>
-                    </td>
+        <div className="whmi-card p-2 space-y-1">
+          {filtered.length === 0 && <div className="text-[12.5px] p-4 text-center" style={{ color: "var(--text-faint)" }}>No events match this filter.</div>}
+          {filtered.map(ev => {
+            const bannerUrl = eventBannerUrl(files, ev.id);
+            const needsAttention = canManage && (ev.status === "Draft" || ev.status === "Awaiting Approval");
+            return (
+              <div
+                key={ev.id} ref={ev.id === highlightId ? highlightRef : null}
+                className="group relative"
+                style={{ outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: 1, borderRadius: 10 }}
+              >
+                <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex items-center gap-3 p-2 rounded-lg text-left transition">
+                  {needsAttention && (
+                    <span className="absolute top-1.5 left-1.5 z-10 w-2 h-2 rounded-full" style={{ background: "#D9534F" }} title="Needs attention" />
                   )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  {/* Small date box, filled with a blurred crop of the event's own poster when it has one. */}
+                  <div className="w-11 h-11 rounded-lg shrink-0 relative overflow-hidden flex flex-col items-center justify-center" style={!bannerUrl ? { background: "var(--accent-primary)" } : undefined}>
+                    {bannerUrl && (
+                      <>
+                        <img src={bannerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(4px) saturate(1.2) brightness(0.75)", transform: "scale(1.3)" }} />
+                        <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.2)" }} />
+                      </>
+                    )}
+                    <span className="relative text-white text-[8px] font-bold uppercase leading-none">{fmtDate(ev.date).split(" ")[2]}</span>
+                    <span className="relative text-white text-[14px] font-extrabold leading-none mt-0.5">{fmtDate(ev.date).split(" ")[1]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-[12.5px] truncate">{ev.title}</span>
+                      <StatusBadge status={ev.status} />
+                    </div>
+                    <div className="flex items-center gap-x-2.5 gap-y-0.5 text-[11px] flex-wrap mt-0.5" style={{ color: "var(--text-faint)" }}>
+                      <span className="flex items-center gap-1"><Clock size={10} className="shrink-0" />{fmtTimeRange12h(ev.start, ev.end)}</span>
+                      <span className="flex items-center gap-1 truncate"><MapPin size={10} className="shrink-0" />{ev.campus || eventLocationSuffix(ev) || "—"}</span>
+                      <span className="whitespace-nowrap">{ev.capacity == null ? `Reg: ${ev.registered}` : `Reg: ${ev.registered}/${ev.capacity}`}</span>
+                    </div>
+                  </div>
+                </button>
+                {canManage && onRequestDelete && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRequestDelete(ev); }}
+                    className="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition whmi-btn-ghost !p-1.5"
+                    style={{ color: "#D9534F" }}
+                    title="Delete event"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
