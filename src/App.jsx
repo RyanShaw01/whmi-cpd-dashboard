@@ -1299,7 +1299,7 @@ export default function App() {
         )}
         <RegisterEventModal
           open={registerModalOpen} onClose={() => setRegisterModalOpen(false)} session={session} events={eventsWithLiveCounts}
-          defaultEventId={registerDefaultEventId} onSubmit={handleSubmitRegistration}
+          defaultEventId={registerDefaultEventId} onSubmit={handleSubmitRegistration} files={files}
         />
         {registrationSuccessEvent && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setRegistrationSuccessEvent(null)}>
