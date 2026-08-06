@@ -3,7 +3,7 @@ import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardLis
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
-import { fmtDate, canJoinMeeting, fmtTimeRange12h, fmtTime12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
 
 const SORT_OPTIONS = [
   { id: "date-asc", label: "Date (Closest - Furthest Away)" },
@@ -94,7 +94,10 @@ export default function UpcomingEvents({
           {filtered.map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
             const needsAttention = canManage && (ev.status === "Draft" || ev.status === "Awaiting Approval");
-            const [weekday, day, month] = fmtDate(ev.date).split(" ");
+            // fmtDate() already returns e.g. "Mon, 10 Aug" with the comma baked in — only pull
+            // day/month out of it for the date box; re-adding a comma with the weekday token
+            // elsewhere double-punctuates it.
+            const [, day, month] = fmtDate(ev.date).split(" ");
             return (
               <div
                 key={ev.id} ref={ev.id === highlightId ? highlightRef : null}
@@ -117,7 +120,11 @@ export default function UpcomingEvents({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-[14.5px] leading-snug break-words">{ev.title}</div>
-                    <div className="text-[12.5px] mt-0.5" style={{ color: "var(--text-faint)" }}>{weekday}, {day} {month} at {fmtTime12h(ev.start)}</div>
+                    <div className="flex items-center gap-x-2.5 gap-y-0.5 text-[12px] flex-wrap mt-1" style={{ color: "var(--text-faint)" }}>
+                      <span className="flex items-center gap-1"><Calendar size={11} className="shrink-0" />{fmtDate(ev.date)}</span>
+                      <span className="flex items-center gap-1"><Clock size={11} className="shrink-0" />{fmtTimeRange12h(ev.start, ev.end)}</span>
+                      <span className="flex items-center gap-1 truncate"><MapPin size={11} className="shrink-0" />{ev.campus || eventLocationSuffix(ev) || "—"}</span>
+                    </div>
                     {canManage && (
                       <div className="flex items-center gap-2 mt-1">
                         <StatusBadge status={ev.status} />

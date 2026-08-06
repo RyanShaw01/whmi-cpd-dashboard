@@ -507,33 +507,33 @@ export default function Settings({
                 <div className="font-semibold text-[13px]">Sidebar &amp; Header</div>
                 <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Colour for the sidebar and top header bar.</div>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <button onClick={() => setTheme("light")} className={theme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-                <button onClick={() => setTheme("dark")} className={theme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
-                <button onClick={() => setTheme("navy")} className={theme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
-              </div>
+              <select value={theme} onChange={e => setTheme(e.target.value)} className="whmi-input px-2.5 py-1.5 text-[12.5px] shrink-0">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="navy">Navy</option>
+              </select>
             </div>
             <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
               <div className="min-w-0">
                 <div className="font-semibold text-[13px]">Main Page</div>
                 <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Colour for the main page.</div>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <button onClick={() => setMainTheme("light")} className={(mainTheme ?? theme) === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-                <button onClick={() => setMainTheme("dark")} className={(mainTheme ?? theme) === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
-                <button onClick={() => setMainTheme("navy")} className={(mainTheme ?? theme) === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
-              </div>
+              <select value={mainTheme ?? theme} onChange={e => setMainTheme(e.target.value)} className="whmi-input px-2.5 py-1.5 text-[12.5px] shrink-0">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="navy">Navy</option>
+              </select>
             </div>
             <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
               <div className="min-w-0">
                 <div className="font-semibold text-[13px]">Cards, Forms &amp; Popups</div>
                 <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Colour for cards, forms &amp; popups.</div>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <button onClick={() => setCardTheme("light")} className={(cardTheme ?? mainTheme ?? theme) === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-                <button onClick={() => setCardTheme("dark")} className={(cardTheme ?? mainTheme ?? theme) === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
-                <button onClick={() => setCardTheme("navy")} className={(cardTheme ?? mainTheme ?? theme) === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
-              </div>
+              <select value={cardTheme ?? mainTheme ?? theme} onChange={e => setCardTheme(e.target.value)} className="whmi-input px-2.5 py-1.5 text-[12.5px] shrink-0">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="navy">Navy</option>
+              </select>
             </div>
           </div>
         )}

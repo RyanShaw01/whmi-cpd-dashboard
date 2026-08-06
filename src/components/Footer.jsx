@@ -1,3 +1,5 @@
+import MailtoLink from "./MailtoLink";
+
 export default function Footer() {
   return (
     <footer className="px-6 py-5 mt-8 text-[11px] leading-relaxed" style={{ borderTop: "1px solid var(--border)", color: "var(--text-faint)" }}>
@@ -9,7 +11,7 @@ export default function Footer() {
       </p>
       <p className="mt-1.5">
         Having a problem or found something that doesn't look right? Email{" "}
-        <a href="mailto:whmieducation@wh.org.au" style={{ color: "var(--accent-primary)" }}>whmieducation@wh.org.au</a>.
+        <MailtoLink email="whmieducation@wh.org.au" style={{ color: "var(--accent-primary)" }} />.
       </p>
       <p className="mt-1.5">&copy; {new Date().getFullYear()} Western Health Medical Imaging. All rights reserved.</p>
     </footer>

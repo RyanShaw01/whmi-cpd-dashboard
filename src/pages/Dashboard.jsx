@@ -166,10 +166,10 @@ export default function Dashboard({
                       <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />
                     </div>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
-                      <span className="flex items-center gap-1"><Clock size={11} className="shrink-0" />{fmtTimeRange12h(ev.start, ev.end)}</span>
-                      <span className="flex items-center gap-1"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
-                      <span className="flex items-center gap-1"><UserCircle2 size={11} className="shrink-0" /><span className="truncate">{ev.presenter}</span></span>
-                      <span className="flex items-center gap-1 font-bold whitespace-nowrap"><Users size={11} className="shrink-0" />{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span>
+                      <span className="flex items-center gap-1 min-w-0"><Clock size={11} className="shrink-0" /><span className="truncate">{fmtTimeRange12h(ev.start, ev.end)}</span></span>
+                      <span className="flex items-center gap-1 min-w-0"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
+                      <span className="flex items-center gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0" /><span className="truncate">{ev.presenter}</span></span>
+                      <span className="flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap mt-2">
                       <StatusBadge status={ev.status} />

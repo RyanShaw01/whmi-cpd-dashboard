@@ -13,7 +13,8 @@ const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Regi
 
 // Imaging-modality tags are shown as their own group ahead of everything else in the Topics
 // picker, since they're the ones staff scan for first when tagging an event.
-const MODALITY_TAG_NAMES = ["X-Ray", "CT", "DSA", "MRI", "Ultrasound", "Nuclear medicine"];
+const MODALITY_TAG_NAMES = ["X-Ray", "CT", "DSA", "MRI", "Ultrasound", "Nuclear medicine", "Nuclear medicine bone"];
+const isModalityTag = (name) => MODALITY_TAG_NAMES.some(m => m.toLowerCase() === (name || "").toLowerCase());
 
 const RECURRENCE_FREQUENCIES = [
   { id: "daily", label: "Day(s)" },
@@ -200,17 +201,17 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       <div>
         <label className={field}>Topics</label>
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {tags.filter(t => MODALITY_TAG_NAMES.includes(t.name)).map(t => (
+          {tags.filter(t => isModalityTag(t.name)).map(t => (
             <button key={t.id} type="button" onClick={() => toggleTag(t.name)} className="whmi-badge" style={{ background: form.tags.includes(t.name) ? "var(--accent-primary)" : "var(--surface-2)", color: form.tags.includes(t.name) ? "white" : "var(--text-dim)" }}>
               {t.name}
             </button>
           ))}
         </div>
-        {tags.some(t => MODALITY_TAG_NAMES.includes(t.name)) && tags.some(t => !MODALITY_TAG_NAMES.includes(t.name)) && (
+        {tags.some(t => isModalityTag(t.name)) && tags.some(t => !isModalityTag(t.name)) && (
           <div className="my-2" style={{ borderTop: "1px solid var(--border)" }} />
         )}
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {tags.filter(t => !MODALITY_TAG_NAMES.includes(t.name)).map(t => (
+          {tags.filter(t => !isModalityTag(t.name)).map(t => (
             <button key={t.id} type="button" onClick={() => toggleTag(t.name)} className="whmi-badge" style={{ background: form.tags.includes(t.name) ? "var(--accent-primary)" : "var(--surface-2)", color: form.tags.includes(t.name) ? "white" : "var(--text-dim)" }}>
               {t.name}
             </button>

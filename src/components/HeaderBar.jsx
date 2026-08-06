@@ -10,7 +10,7 @@ const THEME_OPTIONS = [
   { id: "navy", label: "Navy", icon: MoonStar },
 ];
 
-function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme }) {
+function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme, cardTheme, setCardTheme }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -21,6 +21,10 @@ function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme }) {
   }, []);
 
   const CurrentIcon = THEME_OPTIONS.find(o => o.id === theme)?.icon || Sun;
+  const resolvedMain = mainTheme ?? theme;
+  const resolvedCard = cardTheme ?? resolvedMain;
+
+  const setOverall = (id) => { setTheme(id); setMainTheme(id); setCardTheme(id); };
 
   return (
     <div className="relative" ref={rootRef}>
@@ -29,37 +33,30 @@ function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme }) {
       </button>
       {open && (
         <div className="absolute right-0 top-11 whmi-card w-64 p-3 whmi-fade-in z-50">
-          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Sidebar &amp; Header</div>
+          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Overall</div>
           <div className="flex gap-1.5 mb-3">
             {THEME_OPTIONS.map(o => (
               <button
-                key={o.id} onClick={() => setTheme(o.id)}
+                key={o.id} onClick={() => setOverall(o.id)}
                 className="flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10.5px] font-semibold"
-                style={theme === o.id ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
+                style={theme === o.id && resolvedMain === o.id && resolvedCard === o.id ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
               >
                 <o.icon size={13} />{o.label}
               </button>
             ))}
           </div>
-          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Main Page</div>
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setMainTheme(null)}
-              className="flex-1 py-1.5 rounded-lg text-[10.5px] font-semibold"
-              style={mainTheme == null ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
-            >
-              Match
-            </button>
-            {THEME_OPTIONS.map(o => (
-              <button
-                key={o.id} onClick={() => setMainTheme(o.id)}
-                className="flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10.5px] font-semibold"
-                style={mainTheme === o.id ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
-              >
-                <o.icon size={13} />{o.label}
-              </button>
-            ))}
-          </div>
+          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-faint)" }}>Sidebar &amp; Header</div>
+          <select value={theme} onChange={e => setTheme(e.target.value)} className="whmi-input w-full px-2 py-1.5 text-[12px] mb-2.5">
+            {THEME_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-faint)" }}>Main Page</div>
+          <select value={resolvedMain} onChange={e => setMainTheme(e.target.value)} className="whmi-input w-full px-2 py-1.5 text-[12px] mb-2.5">
+            {THEME_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-faint)" }}>Cards &amp; Popups</div>
+          <select value={resolvedCard} onChange={e => setCardTheme(e.target.value)} className="whmi-input w-full px-2 py-1.5 text-[12px]">
+            {THEME_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
         </div>
       )}
     </div>
@@ -67,7 +64,7 @@ function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme }) {
 }
 
 export default function HeaderBar({
-  page, theme, setTheme, mainTheme, setMainTheme, navItems, user, onAvatarClick, events, previousEvents, staffDirectory, openEvent, openStaff,
+  page, theme, setTheme, mainTheme, setMainTheme, cardTheme, setCardTheme, navItems, user, onAvatarClick, events, previousEvents, staffDirectory, openEvent, openStaff,
   openArchiveEvent, certificates, reflections, files, onNavigatePage,
   canManage, notificationGroups, redDotsEnabled, onNavigateNotification, onAcknowledgeGroup, onAcknowledgeAll, recentNotifications = [],
   showSearch = true, previewSession, onExitPreview, testAccounts = [], onPreviewAs,
@@ -138,7 +135,7 @@ export default function HeaderBar({
             )}
           </div>
         )}
-        <ThemeMenu theme={theme} setTheme={setTheme} mainTheme={mainTheme} setMainTheme={setMainTheme} />
+        <ThemeMenu theme={theme} setTheme={setTheme} mainTheme={mainTheme} setMainTheme={setMainTheme} cardTheme={cardTheme} setCardTheme={setCardTheme} />
         <div data-tour="header-notifications">
           <NotificationBell
             groups={notificationGroups} redDotsEnabled={redDotsEnabled}

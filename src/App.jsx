@@ -1131,7 +1131,7 @@ export default function App() {
 
           <div className="flex-1 min-w-0">
             <HeaderBar
-              page={page} theme={theme} setTheme={handleSetTheme} mainTheme={mainTheme} setMainTheme={handleSetMainTheme} navItems={navItems} user={viewSession}
+              page={page} theme={theme} setTheme={handleSetTheme} mainTheme={mainTheme} setMainTheme={handleSetMainTheme} cardTheme={cardTheme} setCardTheme={handleSetCardTheme} navItems={navItems} user={viewSession}
               onAvatarClick={() => setProfileOpen(o => !o)}
               events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} staffDirectory={staffDirectory} openEvent={openEvent} openStaff={openStaff}
               openArchiveEvent={openArchiveEvent} certificates={certificates} reflections={reflections} files={files} onNavigatePage={changePage}
