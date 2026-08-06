@@ -104,16 +104,23 @@ export function eventCountdownText(dateStr, startTime, endTime) {
   return { text: `in ${weeks} week${weeks === 1 ? "" : "s"}`, happening: false };
 }
 
-/* Big-banner-card vs compact-list display for the Upcoming Events grid — a personal display
- * preference (like the due-soon toggle), remembered across sessions via localStorage and
- * settable both from the page itself and from Settings > Appearance. */
-const EVENT_CARD_VIEW_KEY = "whmi_upcoming_events_view";
-export const getEventCardViewDefault = () => {
-  try { const v = localStorage.getItem(EVENT_CARD_VIEW_KEY); return v === "list" ? "list" : "grid"; } catch { return "grid"; }
-};
-export const setEventCardViewDefault = (value) => {
-  try { localStorage.setItem(EVENT_CARD_VIEW_KEY, value); } catch { /* ignore */ }
-};
+/* Big-banner-card vs compact-list display — a personal display preference (like the due-soon
+ * toggle), remembered across sessions via localStorage and settable both from the section
+ * itself and from Settings > Appearance. Upcoming Events and the Dashboard's Up Next section
+ * each get their own key, so picking a view in one doesn't change the other. */
+function makeViewPref(storageKey) {
+  return {
+    get: () => { try { const v = localStorage.getItem(storageKey); return v === "list" ? "list" : "grid"; } catch { return "grid"; } },
+    set: (value) => { try { localStorage.setItem(storageKey, value); } catch { /* ignore */ } },
+  };
+}
+const upcomingEventsViewPref = makeViewPref("whmi_upcoming_events_view");
+export const getEventCardViewDefault = upcomingEventsViewPref.get;
+export const setEventCardViewDefault = upcomingEventsViewPref.set;
+
+const dashboardUpNextViewPref = makeViewPref("whmi_dashboard_upnext_view");
+export const getDashboardEventViewDefault = dashboardUpNextViewPref.get;
+export const setDashboardEventViewDefault = dashboardUpNextViewPref.set;
 
 /* Whether to show the plain-text "due soon" events list at the top of the Dashboard — a
  * personal display preference, not an admin setting, so it lives in localStorage rather than

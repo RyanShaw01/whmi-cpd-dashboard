@@ -5,11 +5,11 @@ import {
 } from "recharts";
 import {
   Clock, ClipboardList, Award, TrendingUp, ChevronRight, MapPin,
-  Calendar, UserPlus, Download, Link2, MessageSquareText, UserCircle2, CalendarCheck2,
+  Calendar, UserPlus, Download, Link2, MessageSquareText, UserCircle2, CalendarCheck2, LayoutGrid, List,
 } from "lucide-react";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, getShowDueSoonDefault } from "../lib/helpers";
+import { fmtDate, fmtTime12h, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, getShowDueSoonDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
 const QUICK_ACTIONS = [
@@ -50,6 +50,10 @@ export default function Dashboard({
   events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onOpenRegister, onActivityClick,
   onOpenReports, onOpenCurrentRegistrations, onOpenCertificatesAwaiting, onOpenReportsFeedback, onOpenOutstandingReflections, onOpenEventsCurrentlyOpen,
 }) {
+  // Up Next's own big-card/compact-list choice, independent of the Upcoming Events page's.
+  const [upNextView, setUpNextViewState] = useState(getDashboardEventViewDefault);
+  const setUpNextView = (v) => { setUpNextViewState(v); setDashboardEventViewDefault(v); };
+
   // Re-render every minute so countdowns (and join-meeting availability) stay fresh.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -89,10 +93,44 @@ export default function Dashboard({
     ),
     upNext: (
       <div key="upNext" className="whmi-card p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 gap-2">
           <h2 className="disp text-[15px] font-bold">Up Next</h2>
-          <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{events.length} upcoming</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{events.length} upcoming</span>
+            <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+              <button onClick={() => setUpNextView("grid")} className="px-2 py-1.5 flex items-center" style={{ background: upNextView === "grid" ? "var(--accent-primary)" : "transparent", color: upNextView === "grid" ? "white" : "var(--text-dim)" }} title="Big cards">
+                <LayoutGrid size={12} />
+              </button>
+              <button onClick={() => setUpNextView("list")} className="px-2 py-1.5 flex items-center" style={{ background: upNextView === "list" ? "var(--accent-primary)" : "transparent", color: upNextView === "list" ? "white" : "var(--text-dim)" }} title="Compact list">
+                <List size={12} />
+              </button>
+            </div>
+          </div>
         </div>
+        {upNextView === "list" ? (
+          <div className="space-y-1.5">
+            {events.slice(0, 6).map(ev => {
+              const bannerUrl = eventBannerUrl(files, ev.id);
+              const [weekday, day, month] = fmtDate(ev.date).split(" ");
+              return (
+                <button key={ev.id} onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex items-center gap-3.5 p-2 rounded-xl text-left transition">
+                  <div className="w-[58px] h-[58px] rounded-lg shrink-0 relative overflow-hidden p-1.5 flex flex-col items-start justify-start" style={!bannerUrl ? { background: primaryHex } : undefined}>
+                    {bannerUrl && (
+                      <img src={bannerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(3px) saturate(1.25) brightness(0.9)", transform: "scale(1.15)" }} />
+                    )}
+                    <span className="relative text-white text-[9px] font-bold uppercase leading-none" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{month}</span>
+                    <span className="relative text-white text-[17px] font-extrabold leading-none mt-0.5" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{day}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-[13px] break-words leading-snug">{ev.title}</div>
+                    <div className="text-[11.5px] mt-0.5" style={{ color: "var(--text-faint)" }}>{weekday}, {day} {month} at {fmtTime12h(ev.start)}</div>
+                  </div>
+                  <ChevronRight size={15} style={{ color: "var(--text-faint)" }} className="shrink-0" />
+                </button>
+              );
+            })}
+          </div>
+        ) : (
         <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
           {events.slice(0, 6).map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
@@ -132,6 +170,7 @@ export default function Dashboard({
             );
           })}
         </div>
+        )}
       </div>
     ),
     activity: (

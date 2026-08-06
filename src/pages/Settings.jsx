@@ -5,7 +5,7 @@ import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
 import { getSeparateWhDefault, setSeparateWhDefault } from "./Reflection";
 import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS, DEFAULT_LAYOUT, STAFF_FIELD_DEFS } from "../data/mockData";
-import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
+import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault, getEventCardViewDefault, setEventCardViewDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
 
 // Click-and-drag reordering for any of the arrow-reorderable lists below, as an addition
 // alongside the up/down buttons (not a replacement — arrows stay for keyboard/touch use).
@@ -86,6 +86,8 @@ export default function Settings({
   const toggleShowDueSoon = (next) => { setShowDueSoonState(next); setShowDueSoonDefault(next); };
   const [eventCardView, setEventCardViewState] = useState(getEventCardViewDefault);
   const setEventCardView = (next) => { setEventCardViewState(next); setEventCardViewDefault(next); };
+  const [dashboardEventView, setDashboardEventViewState] = useState(getDashboardEventViewDefault);
+  const setDashboardEventView = (next) => { setDashboardEventViewState(next); setDashboardEventViewDefault(next); };
   const [advancedAppearanceOpen, setAdvancedAppearanceOpen] = useState(false);
   const [profileName, setProfileName] = useState(session?.name || "");
   const [profileAvatarId, setProfileAvatarId] = useState(session?.avatarId || CHARACTERS[0].id);
@@ -408,6 +410,7 @@ export default function Settings({
     if (!redDotsEnabled) onToggleRedDots();
     toggleShowDueSoon(true);
     setEventCardView("grid");
+    setDashboardEventView("grid");
     setSeparateWhReflectionsState(true); setSeparateWhDefault(true);
     setToggles({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: false });
     showToast?.("Settings reverted to default.");
@@ -471,12 +474,23 @@ export default function Settings({
 
         <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="min-w-0">
-            <div className="font-semibold text-[13px]">Event Card Display</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Show Upcoming Events as big banner cards, or a smaller compact list.</div>
+            <div className="font-semibold text-[13px]">Upcoming Events Display</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Big banner cards, or a smaller compact list.</div>
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
             <button onClick={() => setEventCardView("grid")} className={eventCardView === "grid" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><LayoutGrid size={14} />Big Cards</button>
             <button onClick={() => setEventCardView("list")} className={eventCardView === "list" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><List size={14} />Compact List</button>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="min-w-0">
+            <div className="font-semibold text-[13px]">Dashboard Up Next Display</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Same choice, just for the Dashboard's Up Next section — set independently.</div>
+          </div>
+          <div className="flex gap-2 flex-wrap justify-end">
+            <button onClick={() => setDashboardEventView("grid")} className={dashboardEventView === "grid" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><LayoutGrid size={14} />Big Cards</button>
+            <button onClick={() => setDashboardEventView("list")} className={dashboardEventView === "list" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><List size={14} />Compact List</button>
           </div>
         </div>
 
