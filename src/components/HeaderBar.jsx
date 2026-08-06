@@ -69,7 +69,7 @@ function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme }) {
 export default function HeaderBar({
   page, theme, setTheme, mainTheme, setMainTheme, navItems, user, onAvatarClick, events, previousEvents, staffDirectory, openEvent, openStaff,
   openArchiveEvent, certificates, reflections, files, onNavigatePage,
-  canManage, notificationGroups, redDotsEnabled, onNavigateNotification, onAcknowledgeGroup, onAcknowledgeAll,
+  canManage, notificationGroups, redDotsEnabled, onNavigateNotification, onAcknowledgeGroup, onAcknowledgeAll, recentNotifications = [],
   showSearch = true, previewSession, onExitPreview, testAccounts = [], onPreviewAs,
 }) {
   const [previewMenuOpen, setPreviewMenuOpen] = useState(false);
@@ -143,6 +143,7 @@ export default function HeaderBar({
           <NotificationBell
             groups={notificationGroups} redDotsEnabled={redDotsEnabled}
             onNavigate={onNavigateNotification} onAcknowledgeGroup={onAcknowledgeGroup} onAcknowledgeAll={onAcknowledgeAll}
+            recentNotifications={recentNotifications}
           />
         </div>
         <button data-tour="header-profile" onClick={onAvatarClick} title="Your profile" className="flex items-center gap-1.5 whmi-row-hover rounded-full p-1 -m-1">

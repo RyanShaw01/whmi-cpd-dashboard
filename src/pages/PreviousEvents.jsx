@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Table2, CalendarDays, Plus, Trash2 } from "lucide-react";
+import { Table2, CalendarDays, Plus, Pencil, Trash2, CheckSquare, Square } from "lucide-react";
 import YearCalendar from "../components/YearCalendar";
 import { fmtDate, fmtTimeRange12h } from "../lib/helpers";
 
@@ -10,13 +10,17 @@ const SORT_OPTIONS = [
   { id: "name-desc", label: "Name (Z - A)" },
 ];
 
-export default function PreviousEvents({ previousEvents, onOpenArchive, canManage, onCreatePreviousEvent, onRequestDelete }) {
+export default function PreviousEvents({ previousEvents, onOpenArchive, canManage, onCreatePreviousEvent, onRequestDelete, onRequestDeleteMultiple }) {
   const years = [...new Set(previousEvents.map(ev => new Date(`${ev.date}T00:00:00`).getFullYear()))].sort((a, b) => b - a);
   const currentYear = new Date().getFullYear();
   const [view, setView] = useState("table");
   const [year, setYear] = useState("all");
   const [sortBy, setSortBy] = useState("date-desc");
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const calendarYear = year === "all" ? (years.includes(currentYear) ? currentYear : (years[0] || currentYear)) : year;
+  const toggleSelected = (id) => setSelectedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  const exitSelecting = () => { setSelecting(false); setSelectedIds(new Set()); };
 
   const filteredEvents = useMemo(() => {
     const list = year === "all" ? previousEvents : previousEvents.filter(ev => new Date(`${ev.date}T00:00:00`).getFullYear() === year);
@@ -63,6 +67,23 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
               <CalendarDays size={13} />Calendar
             </button>
           </div>
+          {canManage && onRequestDeleteMultiple && view === "table" && (
+            selecting ? (
+              <>
+                <button
+                  onClick={() => { if (selectedIds.size) onRequestDeleteMultiple(previousEvents.filter(ev => selectedIds.has(ev.id))); exitSelecting(); }}
+                  disabled={selectedIds.size === 0}
+                  className="whmi-btn-ghost flex items-center gap-1.5"
+                  style={{ color: "#D9534F", opacity: selectedIds.size === 0 ? 0.5 : 1 }}
+                >
+                  <Trash2 size={14} />Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : "Selected"}
+                </button>
+                <button onClick={exitSelecting} className="whmi-btn-ghost">Cancel</button>
+              </>
+            ) : (
+              <button onClick={() => setSelecting(true)} className="whmi-btn-ghost flex items-center gap-1.5"><CheckSquare size={14} />Select</button>
+            )
+          )}
           {canManage && onCreatePreviousEvent && (
             <button onClick={onCreatePreviousEvent} className="whmi-btn-primary flex items-center gap-1.5"><Plus size={15} />Add Past Event</button>
           )}
@@ -74,14 +95,22 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
           <table className="w-full text-[13px]">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                {["Event", "Date", "Time", "Location", "Presenter", "Attendance", "Feedback", ...(canManage && onRequestDelete ? [""] : [])].map((h, i) => (
+                {[...(selecting ? [""] : []), "Event", "Date", "Time", "Location", "Presenter", "Attendance", "Feedback", ...(canManage ? [""] : [])].map((h, i) => (
                   <th key={h || `col-${i}`} className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filteredEvents.map(ev => (
-                <tr key={ev.id} className="whmi-row-hover cursor-pointer" style={{ borderBottom: "1px solid var(--border)" }} onClick={() => onOpenArchive(ev)}>
+                <tr
+                  key={ev.id} className="whmi-row-hover cursor-pointer" style={{ borderBottom: "1px solid var(--border)" }}
+                  onClick={() => selecting ? toggleSelected(ev.id) : onOpenArchive(ev)}
+                >
+                  {selecting && (
+                    <td className="px-4 py-3" onClick={e => { e.stopPropagation(); toggleSelected(ev.id); }}>
+                      {selectedIds.has(ev.id) ? <CheckSquare size={16} style={{ color: "var(--accent-primary)" }} /> : <Square size={16} style={{ color: "var(--text-faint)" }} />}
+                    </td>
+                  )}
                   <td className="px-4 py-3 font-semibold break-words max-w-[260px]">{ev.title}<div className="text-[11px] font-normal mt-0.5" style={{ color: "var(--text-faint)" }}>{ev.topic}</div></td>
                   <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtDate(ev.date)}</td>
                   <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</td>
@@ -91,10 +120,10 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
                   <td className="px-4 py-3">
                     <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="View feedback">★ {ev.feedback}</button>
                   </td>
-                  {canManage && onRequestDelete && (
+                  {canManage && (
                     <td className="px-4 py-3">
-                      <button onClick={(e) => { e.stopPropagation(); onRequestDelete(ev); }} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }} title="Delete event">
-                        <Trash2 size={13} />
+                      <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, null, true); }} className="whmi-btn-ghost !p-1.5" title="Edit event (delete is available inside)">
+                        <Pencil size={13} />
                       </button>
                     </td>
                   )}

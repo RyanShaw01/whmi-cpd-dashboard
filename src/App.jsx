@@ -546,6 +546,14 @@ export default function App() {
     setSelectedArchiveEvent(null);
     pushAudit({ actorId: session?.id, action: "event.deleted", entityType: "event", entityId: ev.id, details: { title: ev.title } });
   });
+  const requestDeletePreviousEvents = (evs) => requestDelete(`${evs.length} selected past event${evs.length === 1 ? "" : "s"}`, () => {
+    const ids = new Set(evs.map(e => e.id));
+    setPreviousEvents(prev => prev.filter(e => !ids.has(e.id)));
+    evs.forEach(ev => {
+      deleteEventRow(ev.id);
+      pushAudit({ actorId: session?.id, action: "event.deleted", entityType: "event", entityId: ev.id, details: { title: ev.title } });
+    });
+  });
   const requestDeleteCertificate = (c) => requestDelete(`the certificate for "${c.staff}"`, () => {
     setCertificates(prev => prev.filter(x => x.id !== c.id));
     deleteCertificateRow(c.id);
@@ -873,12 +881,27 @@ export default function App() {
       registrations, reflections, acknowledged,
     });
   }, [previewSession, session, eventsWithLiveCounts, previousEventsWithLiveStats, registrations, reflections, acknowledged]);
-  const acknowledgeGroup = (g) => setAcknowledged(prev => new Set([...prev, ...g.ackKeys]));
-  const acknowledgeAllNotifications = (groups) => setAcknowledged(prev => {
-    const next = new Set(prev);
-    (groups || notificationGroups).forEach(g => g.ackKeys.forEach(k => next.add(k)));
-    return next;
+  // Keeps a short scrollback of recently cleared notifications (label + when), separate from
+  // `acknowledged` (which only tracks ackKeys so a resolved condition doesn't reappear) — this
+  // is purely so the bell can show "here's what you just dealt with" for a little while after.
+  const [recentNotifications, setRecentNotifications] = useState([]);
+  const logAcknowledged = (groups) => setRecentNotifications(prev => {
+    const entries = groups.map(g => ({ id: `${g.id}-${Date.now()}-${Math.random()}`, text: g.label, time: new Date().toISOString() }));
+    return [...entries, ...prev].slice(0, 15);
   });
+  const acknowledgeGroup = (g) => {
+    setAcknowledged(prev => new Set([...prev, ...g.ackKeys]));
+    logAcknowledged([g]);
+  };
+  const acknowledgeAllNotifications = (groups) => {
+    const list = groups || notificationGroups;
+    setAcknowledged(prev => {
+      const next = new Set(prev);
+      list.forEach(g => g.ackKeys.forEach(k => next.add(k)));
+      return next;
+    });
+    logAcknowledged(list);
+  };
   const navigateToNotification = (g) => {
     setPage(g.page);
     if (g.id === "registration") {
@@ -897,6 +920,8 @@ export default function App() {
       setHighlightId(g.items[0]?.id ?? null);
       setHighlightRegIds(null);
     }
+    // Clicking a notification deals with it — clear it from the bell, same as the X button.
+    acknowledgeGroup(g);
   };
   const changePage = (p) => { setPage(p); setHighlightId(null); };
 
@@ -1111,6 +1136,7 @@ export default function App() {
               canManage={canManage} notificationGroups={canManage ? notificationGroups : viewerNotificationGroups} redDotsEnabled={redDotsEnabled}
               onNavigateNotification={navigateToNotification} onAcknowledgeGroup={acknowledgeGroup}
               onAcknowledgeAll={() => acknowledgeAllNotifications(canManage ? notificationGroups : viewerNotificationGroups)}
+              recentNotifications={recentNotifications}
               showSearch={viewSession.role !== "viewer"}
               previewSession={previewSession} onExitPreview={() => setPreviewSession(null)}
               testAccounts={users.filter(u => u.isTest)} onPreviewAs={setPreviewSession}
@@ -1150,7 +1176,7 @@ export default function App() {
                 highlightRegIds={highlightRegIds}
               />
             )}
-            {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} />}
+            {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} onRequestDeleteMultiple={requestDeletePreviousEvents} />}
             {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility} onSaveExternalParticipant={handleSaveExternalParticipant} onRequestDeleteExternalParticipant={requestDeleteExternalParticipant} />}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} highlightId={page === "reports" ? highlightId : null} />}
             {page === "certificates" && (

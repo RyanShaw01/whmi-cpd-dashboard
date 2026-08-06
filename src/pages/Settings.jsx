@@ -502,25 +502,23 @@ export default function Settings({
             <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
               <div>
                 <div className="font-semibold text-[13px]">Main Page</div>
-                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the main content area's theme separately, or leave it matching the sidebar and header.</div>
+                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the main content area's theme separately from the sidebar and header.</div>
               </div>
               <div className="flex gap-2 flex-wrap justify-end">
-                <button onClick={() => setMainTheme(null)} className={mainTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
-                <button onClick={() => setMainTheme("light")} className={mainTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-                <button onClick={() => setMainTheme("dark")} className={mainTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
-                <button onClick={() => setMainTheme("navy")} className={mainTheme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
+                <button onClick={() => setMainTheme("light")} className={(mainTheme ?? theme) === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+                <button onClick={() => setMainTheme("dark")} className={(mainTheme ?? theme) === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+                <button onClick={() => setMainTheme("navy")} className={(mainTheme ?? theme) === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
               </div>
             </div>
             <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
               <div>
                 <div className="font-semibold text-[13px]">Cards, Forms &amp; Popups</div>
-                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the colour of cards, forms, and popups (events, modals, panels) separately, or leave them matching the page.</div>
+                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the colour of cards, forms, and popups (events, modals, panels) separately from the page.</div>
               </div>
               <div className="flex gap-2 flex-wrap justify-end">
-                <button onClick={() => setCardTheme(null)} className={cardTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
-                <button onClick={() => setCardTheme("light")} className={cardTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-                <button onClick={() => setCardTheme("dark")} className={cardTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
-                <button onClick={() => setCardTheme("navy")} className={cardTheme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
+                <button onClick={() => setCardTheme("light")} className={(cardTheme ?? mainTheme ?? theme) === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+                <button onClick={() => setCardTheme("dark")} className={(cardTheme ?? mainTheme ?? theme) === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+                <button onClick={() => setCardTheme("navy")} className={(cardTheme ?? mainTheme ?? theme) === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
               </div>
             </div>
           </div>
@@ -574,37 +572,7 @@ export default function Settings({
       </div>
 
       {canManageUsers && (
-      <SettingsGroup title="Team & Access" description="Brand colours, staff/viewer accounts, preview-as, notification badges" icon={Users}>
-        <div className="whmi-card p-4 space-y-3">
-          <div>
-            <div className="font-semibold text-[13px] mb-1">Brand Colours</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose which Western Health brand colour is used for icons and highlighted sections.</div>
-          </div>
-          {[["primary", "Primary accent"], ["secondary", "Secondary accent"], ["success", "Positive / success"]].map(([key, label]) => (
-            <div key={key} className="flex items-center justify-between gap-3">
-              <span className="text-[12.5px] font-semibold">{label}</span>
-              <div className="flex gap-2">
-                {Object.entries(BRAND_HEX).map(([name, hex]) => (
-                  <button key={name} onClick={() => onColorChange({ ...colorPrefs, [key]: name })} title={name} className="w-7 h-7 rounded-full" style={{ background: hex, outline: colorPrefs[key] === name ? "2px solid var(--text)" : "1px solid var(--border)", outlineOffset: 2 }} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="whmi-card p-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <BellOff size={15} style={{ color: "var(--accent-primary)" }} className="shrink-0" />
-            <div className="min-w-0">
-              <div className="font-semibold text-[13px]">Red Dot Notifications</div>
-              <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Show red dot badges on the sidebar and event/certificate rows that need action.</div>
-            </div>
-          </div>
-          <button onClick={onToggleRedDots} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: redDotsEnabled ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
-            <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: redDotsEnabled ? "20px" : "3px", width: 18, height: 18 }} />
-          </button>
-        </div>
-
+      <SettingsGroup title="Team & Access" description="Staff/viewer accounts, preview-as, brand colours, notification badges" icon={Users}>
         <div className="whmi-card p-4">
           <div className="flex items-center gap-2 mb-1"><Shield size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Team Access</div></div>
           <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Admins have full rights. Owners can do everything except change code. Viewers can only see their own certificates and CPD history.</div>
@@ -652,6 +620,36 @@ export default function Settings({
           <div className="flex justify-end">
             <button onClick={() => setAddMemberOpen(true)} className="whmi-btn-primary flex items-center gap-1.5"><UserPlus size={13} />Add Member</button>
           </div>
+        </div>
+
+        <div className="whmi-card p-4 space-y-3">
+          <div>
+            <div className="font-semibold text-[13px] mb-1">Brand Colours</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose which Western Health brand colour is used for icons and highlighted sections.</div>
+          </div>
+          {[["primary", "Primary accent"], ["secondary", "Secondary accent"], ["success", "Positive / success"]].map(([key, label]) => (
+            <div key={key} className="flex items-center justify-between gap-3">
+              <span className="text-[12.5px] font-semibold">{label}</span>
+              <div className="flex gap-2">
+                {Object.entries(BRAND_HEX).map(([name, hex]) => (
+                  <button key={name} onClick={() => onColorChange({ ...colorPrefs, [key]: name })} title={name} className="w-7 h-7 rounded-full" style={{ background: hex, outline: colorPrefs[key] === name ? "2px solid var(--text)" : "1px solid var(--border)", outlineOffset: 2 }} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="whmi-card p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <BellOff size={15} style={{ color: "var(--accent-primary)" }} className="shrink-0" />
+            <div className="min-w-0">
+              <div className="font-semibold text-[13px]">Red Dot Notifications</div>
+              <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Show red dot badges on the sidebar and event/certificate rows that need action.</div>
+            </div>
+          </div>
+          <button onClick={onToggleRedDots} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: redDotsEnabled ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+            <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: redDotsEnabled ? "20px" : "3px", width: 18, height: 18 }} />
+          </button>
         </div>
 
         <div className="whmi-card p-4">

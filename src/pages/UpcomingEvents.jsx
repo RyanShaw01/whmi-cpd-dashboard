@@ -90,11 +90,11 @@ export default function UpcomingEvents({
 
       {view === "list" ? (
         <div className="whmi-card overflow-x-auto whmi-scroll">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[12px]">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 {["Event", "Status", "Date", "Time", "Location", "Presenter", "Registered", ...(canManage && onRequestDelete ? [""] : [])].map((h, i) => (
-                  <th key={h || `col-${i}`} className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
+                  <th key={h || `col-${i}`} className="text-left px-3 py-2 font-semibold text-[10.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -105,17 +105,17 @@ export default function UpcomingEvents({
                   className="whmi-row-hover cursor-pointer" onClick={() => openEvent(ev)}
                   style={{ borderBottom: "1px solid var(--border)", outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: -2 }}
                 >
-                  <td className="px-4 py-3 font-semibold break-words max-w-[260px]">{ev.title}<div className="text-[11px] font-normal mt-0.5" style={{ color: "var(--text-faint)" }}>{ev.topic}</div></td>
-                  <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
-                  <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtDate(ev.date)}</td>
-                  <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</td>
-                  <td className="px-4 py-3 break-words max-w-[180px]" style={{ color: "var(--text-dim)" }}>{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</td>
-                  <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{ev.presenter}</td>
-                  <td className="px-4 py-3">{ev.capacity == null ? ev.registered : `${ev.registered}/${ev.capacity}`}</td>
+                  <td className="px-3 py-1.5 font-semibold break-words max-w-[220px] leading-tight">{ev.title}<div className="text-[10px] font-normal" style={{ color: "var(--text-faint)" }}>{ev.topic}</div></td>
+                  <td className="px-3 py-1.5"><StatusBadge status={ev.status} /></td>
+                  <td className="px-3 py-1.5 whitespace-nowrap" style={{ color: "var(--text-dim)" }}>{fmtDate(ev.date)}</td>
+                  <td className="px-3 py-1.5 whitespace-nowrap" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</td>
+                  <td className="px-3 py-1.5 break-words max-w-[160px]" style={{ color: "var(--text-dim)" }}>{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</td>
+                  <td className="px-3 py-1.5 break-words max-w-[140px]" style={{ color: "var(--text-dim)" }}>{ev.presenter}</td>
+                  <td className="px-3 py-1.5 whitespace-nowrap">{ev.capacity == null ? ev.registered : `${ev.registered}/${ev.capacity}`}</td>
                   {canManage && onRequestDelete && (
-                    <td className="px-4 py-3">
-                      <button onClick={(e) => { e.stopPropagation(); onRequestDelete(ev); }} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }} title="Delete event">
-                        <Trash2 size={13} />
+                    <td className="px-3 py-1.5">
+                      <button onClick={(e) => { e.stopPropagation(); onRequestDelete(ev); }} className="whmi-btn-ghost !p-1" style={{ color: "#D9534F" }} title="Delete event">
+                        <Trash2 size={12} />
                       </button>
                     </td>
                   )}

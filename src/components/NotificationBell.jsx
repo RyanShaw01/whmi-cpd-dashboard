@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { Bell, X, CheckCheck } from "lucide-react";
+import { Bell, X, CheckCheck, History } from "lucide-react";
+import { relativeTime } from "../lib/helpers";
 
-export default function NotificationBell({ groups, redDotsEnabled, onNavigate, onAcknowledgeGroup, onAcknowledgeAll }) {
+export default function NotificationBell({ groups, redDotsEnabled, onNavigate, onAcknowledgeGroup, onAcknowledgeAll, recentNotifications = [] }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -66,6 +67,22 @@ export default function NotificationBell({ groups, redDotsEnabled, onNavigate, o
               );
             })}
           </div>
+
+          {recentNotifications.length > 0 && (
+            <div className="mt-3 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+              <div className="flex items-center gap-1.5 mb-1.5 px-1 text-[10.5px] font-bold uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>
+                <History size={11} />Recently Cleared
+              </div>
+              <div className="space-y-1">
+                {recentNotifications.map(n => (
+                  <div key={n.id} className="flex items-center justify-between gap-2 p-1.5 rounded-lg text-[11.5px]" style={{ color: "var(--text-faint)" }}>
+                    <span className="truncate">{n.text}</span>
+                    <span className="shrink-0">{relativeTime(n.time)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
