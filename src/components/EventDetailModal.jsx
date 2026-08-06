@@ -81,7 +81,7 @@ export default function EventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
-  initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
+  initialTab, initialEditing, highlightMissing, seriesEvents = [], onSwitchEvent, onDuplicate,
 }) {
   const [regTab, setRegTab] = useState(initialTab || "overview");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -153,6 +153,7 @@ export default function EventDetailModal({
               files={files}
               onUpdateBannerCrop={onUpdateBannerCrop}
               onRemoveBanner={onRemoveBanner}
+              highlightMissing={highlightMissing}
             />
           </div>
         </div>

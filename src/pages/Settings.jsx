@@ -1,11 +1,39 @@
-import { useState, useEffect } from "react";
-import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload, Users, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload, Users, SlidersHorizontal, GripVertical, LayoutGrid, List } from "lucide-react";
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
 import { getSeparateWhDefault, setSeparateWhDefault } from "./Reflection";
 import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS, DEFAULT_LAYOUT, STAFF_FIELD_DEFS } from "../data/mockData";
-import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault } from "../lib/helpers";
+import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
+
+// Click-and-drag reordering for any of the arrow-reorderable lists below, as an addition
+// alongside the up/down buttons (not a replacement — arrows stay for keyboard/touch use).
+// Dropping onto another row snaps the dragged row into that row's position.
+function useDragReorder(list, onReorder) {
+  const dragIndex = useRef(null);
+  const [overIndex, setOverIndex] = useState(null);
+  const dragProps = (index) => ({
+    draggable: true,
+    onDragStart: () => { dragIndex.current = index; },
+    onDragOver: (e) => { e.preventDefault(); setOverIndex(index); },
+    onDragLeave: () => setOverIndex(o => (o === index ? null : o)),
+    onDragEnd: () => { dragIndex.current = null; setOverIndex(null); },
+    onDrop: (e) => {
+      e.preventDefault();
+      const from = dragIndex.current;
+      dragIndex.current = null;
+      setOverIndex(null);
+      if (from === null || from === index) return;
+      const next = [...list];
+      const [moved] = next.splice(from, 1);
+      next.splice(index, 0, moved);
+      onReorder(next);
+    },
+    style: { cursor: "grab", outline: overIndex === index ? "2px solid var(--accent-primary)" : "none", outlineOffset: -2 },
+  });
+  return dragProps;
+}
 
 const CPD_CATEGORIES = [
   "Audit & QA", "Skill Development/ Workplace Learning", "Skill Development",
@@ -56,6 +84,8 @@ export default function Settings({
   };
   const [showDueSoon, setShowDueSoonState] = useState(getShowDueSoonDefault);
   const toggleShowDueSoon = (next) => { setShowDueSoonState(next); setShowDueSoonDefault(next); };
+  const [eventCardView, setEventCardViewState] = useState(getEventCardViewDefault);
+  const setEventCardView = (next) => { setEventCardViewState(next); setEventCardViewDefault(next); };
   const [advancedAppearanceOpen, setAdvancedAppearanceOpen] = useState(false);
   const [profileName, setProfileName] = useState(session?.name || "");
   const [profileAvatarId, setProfileAvatarId] = useState(session?.avatarId || CHARACTERS[0].id);
@@ -234,6 +264,11 @@ export default function Settings({
     [newOrder[idx], newOrder[swapIdx]] = [newOrder[swapIdx], newOrder[idx]];
     onLayoutChange(newOrder);
   };
+  const layoutDragProps = useDragReorder(layoutOrder, onLayoutChange);
+  const cpdTypeDragProps = useDragReorder(cpdTypes, onReorderCpdTypes);
+  const tagDragProps = useDragReorder(tags, onReorderTags);
+  const avatarIconDragProps = useDragReorder(avatarIcons, onReorderAvatarIcons);
+  const avatarColorDragProps = useDragReorder(avatarColors, onReorderAvatarColors);
 
   const handleAddMember = ({ firstName, lastName, userType, isEducationTeam, email, secondaryEmail }) => {
     const brandColors = Object.keys(BRAND_HEX);
@@ -372,6 +407,7 @@ export default function Settings({
     onLayoutChange(DEFAULT_LAYOUT);
     if (!redDotsEnabled) onToggleRedDots();
     toggleShowDueSoon(true);
+    setEventCardView("grid");
     setSeparateWhReflectionsState(true); setSeparateWhDefault(true);
     setToggles({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: false });
     showToast?.("Settings reverted to default.");
@@ -433,6 +469,17 @@ export default function Settings({
           </button>
         </div>
 
+        <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="min-w-0">
+            <div className="font-semibold text-[13px]">Event Card Display</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Show Upcoming Events as big banner cards, or a smaller compact list.</div>
+          </div>
+          <div className="flex gap-2 flex-wrap justify-end">
+            <button onClick={() => setEventCardView("grid")} className={eventCardView === "grid" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><LayoutGrid size={14} />Big Cards</button>
+            <button onClick={() => setEventCardView("list")} className={eventCardView === "list" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><List size={14} />Compact List</button>
+          </div>
+        </div>
+
         <button onClick={() => setAdvancedAppearanceOpen(x => !x)} className="w-full flex items-center justify-between gap-2 pt-3 -mx-1 px-1 py-1 rounded-lg whmi-row-hover transition" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             {advancedAppearanceOpen ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
@@ -492,8 +539,11 @@ export default function Settings({
               const sec = DASHBOARD_SECTIONS.find(s => s.id === id);
               if (!sec) return null;
               return (
-                <div key={id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
-                  <span className="text-[12.5px] font-semibold">{sec.label}</span>
+                <div key={id} {...layoutDragProps(idx)} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)", ...layoutDragProps(idx).style }}>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <GripVertical size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" />
+                    <span className="text-[12.5px] font-semibold">{sec.label}</span>
+                  </div>
                   <div className="flex gap-1">
                     <button onClick={() => moveSection(idx, -1)} disabled={idx === 0} className="whmi-btn-ghost !p-1.5" style={{ opacity: idx === 0 ? 0.4 : 1 }}><ArrowUp size={13} /></button>
                     <button onClick={() => moveSection(idx, 1)} disabled={idx === layoutOrder.length - 1} className="whmi-btn-ghost !p-1.5" style={{ opacity: idx === layoutOrder.length - 1 ? 0.4 : 1 }}><ArrowDown size={13} /></button>
@@ -675,8 +725,9 @@ export default function Settings({
                       </div>
                     </div>
                   ) : (
-                    <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
+                    <div key={t.id} {...cpdTypeDragProps(i)} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)", ...cpdTypeDragProps(i).style }}>
                       <div className="flex items-center gap-1.5 min-w-0">
+                        <GripVertical size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" />
                         <div className="flex flex-col shrink-0">
                           <button onClick={() => moveCpdType(i, -1)} disabled={i === 0} className="whmi-btn-ghost !p-0.5" style={{ opacity: i === 0 ? 0.3 : 1 }}><ArrowUp size={12} /></button>
                           <button onClick={() => moveCpdType(i, 1)} disabled={i === cpdTypes.length - 1} className="whmi-btn-ghost !p-0.5" style={{ opacity: i === cpdTypes.length - 1 ? 0.3 : 1 }}><ArrowDown size={12} /></button>
@@ -769,8 +820,11 @@ export default function Settings({
                       </div>
                     </div>
                   ) : (
-                    <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
-                      <div className="text-[12.5px] font-semibold truncate">{t.name}</div>
+                    <div key={t.id} {...tagDragProps(i)} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)", ...tagDragProps(i).style }}>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <GripVertical size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" />
+                        <div className="text-[12.5px] font-semibold truncate">{t.name}</div>
+                      </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => moveTag(i, -1)} disabled={i === 0} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === 0 ? 0.4 : 1 }}><ArrowUp size={13} /></button>
                         <button onClick={() => moveTag(i, 1)} disabled={i === tags.length - 1} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === tags.length - 1 ? 0.4 : 1 }}><ArrowDown size={13} /></button>
@@ -837,8 +891,9 @@ export default function Settings({
                       </div>
                     </div>
                   ) : (
-                    <div key={icon.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
+                    <div key={icon.id} {...avatarIconDragProps(i)} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)", ...avatarIconDragProps(i).style }}>
                       <div className="flex items-center gap-2.5 min-w-0">
+                        <GripVertical size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" />
                         <CharacterAvatar avatarId={icon.id} color="grey" size={32} />
                         <div className="text-[12.5px] font-semibold truncate">{icon.label}</div>
                       </div>
@@ -913,8 +968,9 @@ export default function Settings({
                       </div>
                     </div>
                   ) : (
-                    <div key={c.id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
+                    <div key={c.id} {...avatarColorDragProps(i)} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)", ...avatarColorDragProps(i).style }}>
                       <div className="flex items-center gap-2.5 min-w-0">
+                        <GripVertical size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" />
                         <div className="w-7 h-7 rounded-full shrink-0" style={{ background: c.hex, border: "1px solid var(--border)" }} />
                         <div className="text-[12.5px] font-semibold truncate">{c.name}</div>
                       </div>

@@ -56,7 +56,7 @@ const field = "text-[11px] font-semibold block mb-1";
 // DB rows use null for "not set"; text/number inputs need "" so they stay controlled.
 const nullsToEmpty = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v == null ? "" : v]));
 
-export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner, onDirtyChange }) {
+export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdTypes = [], tags = [], onSaveTag, initialStatus, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner, onDirtyChange, highlightMissing }) {
   const initialForm = event
     ? { ...emptyEvent, ...nullsToEmpty(event), tags: event.tags || [] }
     : { ...emptyEvent, status: initialStatus || emptyEvent.status };
@@ -81,6 +81,9 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
   }, [form]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  // Opened from an "event needs more detail" notification: ring the still-empty required
+  // fields so it's obvious at a glance what's left to fill in, without blocking anything else.
+  const missingStyle = (empty) => (highlightMissing && empty ? { outline: "2px solid #D9534F", outlineOffset: 1 } : undefined);
   const toggleTag = (t) => setForm(f => ({ ...f, tags: f.tags.includes(t) ? f.tags.filter(x => x !== t) : [...f.tags, t] }));
   const addCustomTag = () => {
     const t = newTag.trim();
@@ -131,7 +134,7 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
     <form onSubmit={submit} className="space-y-4">
       <div>
         <label className={field}>Event Title</label>
-        <input required value={form.title} onChange={e => set("title", e.target.value)} className="whmi-input w-full px-2.5 py-2" />
+        <input required value={form.title} onChange={e => set("title", e.target.value)} className="whmi-input w-full px-2.5 py-2" style={missingStyle(!form.title.trim())} />
       </div>
 
       <div>
@@ -229,20 +232,22 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       </div>
 
       <div className="space-y-5">
-        <PeopleListField label="Presenter(s)" value={form.presenter} onChange={v => set("presenter", v)} placeholder="Add a presenter" />
+        <div style={missingStyle(!form.presenter.trim())} className="rounded-xl">
+          <PeopleListField label="Presenter(s)" value={form.presenter} onChange={v => set("presenter", v)} placeholder="Add a presenter" />
+        </div>
         <PeopleListField label="Organisers" value={form.organisers} onChange={v => set("organisers", v)} placeholder="Add an organiser" />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className={field}>Date</label>
-          <input required type="date" value={form.date} onChange={e => set("date", e.target.value)} className="whmi-input w-full px-2.5 py-2" />
+          <input required type="date" value={form.date} onChange={e => set("date", e.target.value)} className="whmi-input w-full px-2.5 py-2" style={missingStyle(!form.date)} />
         </div>
-        <div>
+        <div style={missingStyle(!form.start)} className="rounded-lg">
           <label className={field}>Start Time</label>
           <TimeInput12h value={form.start} onChange={v => set("start", v)} />
         </div>
-        <div>
+        <div style={missingStyle(!form.end)} className="rounded-lg">
           <label className={field}>Finish Time</label>
           <TimeInput12h value={form.end} onChange={v => set("end", v)} />
         </div>
@@ -269,7 +274,7 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
 
       <div>
         <label className={field}>Location</label>
-        <input value={form.location} onChange={e => set("location", e.target.value)} list="location-options" placeholder="e.g. Sunshine Hospital, Education Wing" className="whmi-input w-full px-2.5 py-2" />
+        <input value={form.location} onChange={e => set("location", e.target.value)} list="location-options" placeholder="e.g. Sunshine Hospital, Education Wing" className="whmi-input w-full px-2.5 py-2" style={missingStyle(!form.location.trim() && !form.campus)} />
         <datalist id="location-options">
           {LOCATION_OPTIONS.map(l => <option key={l} value={l} />)}
         </datalist>

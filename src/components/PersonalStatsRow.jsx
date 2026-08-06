@@ -25,7 +25,7 @@ export default function PersonalStatsRow({ user, certificates, events, registrat
       <div className="relative">
         {outstanding.length > 0 ? (
           <Link to={`/event/${outstanding[0].id}/reflect`} className="block relative">
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full z-10" style={{ background: "#D9534F" }} />
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full z-10" style={{ background: "#D9534F" }} title={`${outstanding.length} outstanding reflection${outstanding.length === 1 ? "" : "s"}`} />
             <StatCard label="Outstanding Reflections" value={outstanding.length} icon={MessageSquareText} accent="#D9534F" />
           </Link>
         ) : (

@@ -3,7 +3,7 @@ import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardLis
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
-import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
 
 const SORT_OPTIONS = [
   { id: "date-asc", label: "Date (Closest - Furthest Away)" },
@@ -18,7 +18,8 @@ export default function UpcomingEvents({
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair, highlightRegIds,
 }) {
   const [filter, setFilter] = useState("All");
-  const [view, setView] = useState("grid");
+  const [view, setViewState] = useState(getEventCardViewDefault);
+  const setView = (v) => { setViewState(v); setEventCardViewDefault(v); };
   const [sortBy, setSortBy] = useState("date-asc");
   const statuses = ["All", "Registration Open", "Draft", "Awaiting Approval"];
   const filteredUnsorted = filter === "All" ? events : events.filter(e => e.status === filter);

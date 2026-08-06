@@ -2,7 +2,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 
 const BOTTOM_IDS = new Set(["help", "settings"]);
 
-export default function Sidebar({ page, setPage, collapsed, setCollapsed, navItems, homePage, width, badgePages = {} }) {
+export default function Sidebar({ page, setPage, collapsed, setCollapsed, navItems, homePage, width, badgePages = {}, badgeTooltips = {} }) {
   const generalItems = navItems.filter(n => !n.adminOnly && !BOTTOM_IDS.has(n.id));
   const adminItems = navItems.filter(n => n.adminOnly && !BOTTOM_IDS.has(n.id));
   const bottomItems = navItems.filter(n => BOTTOM_IDS.has(n.id));
@@ -11,14 +11,14 @@ export default function Sidebar({ page, setPage, collapsed, setCollapsed, navIte
     <button
       key={n.id}
       onClick={() => setPage(n.id)}
-      title={collapsed ? n.label : undefined}
+      title={badgePages[n.id] ? badgeTooltips[n.id] : (collapsed ? n.label : undefined)}
       className={`whmi-side-btn relative ${page === n.id ? "active" : ""}`}
       style={{ justifyContent: collapsed ? "center" : "flex-start" }}
     >
       <span className="relative shrink-0">
         <n.icon size={16} />
         {badgePages[n.id] && (
-          <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full" style={{ background: "#D9534F" }} />
+          <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full" style={{ background: "#D9534F" }} title={badgeTooltips[n.id]} />
         )}
       </span>
       {!collapsed && <span className="truncate">{n.label}</span>}

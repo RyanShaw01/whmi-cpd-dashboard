@@ -121,6 +121,7 @@ export default function App() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventInitialTab, setEventInitialTab] = useState(null);
   const [eventInitialEditing, setEventInitialEditing] = useState(false);
+  const [eventHighlightMissing, setEventHighlightMissing] = useState(false);
   const [registrationSuccessEvent, setRegistrationSuccessEvent] = useState(null);
   const [selectedArchiveEvent, setSelectedArchiveEvent] = useState(null);
   const [archiveInitialTab, setArchiveInitialTab] = useState(null);
@@ -886,6 +887,12 @@ export default function App() {
       // with just the new registrations outlined once it's scrolled into view.
       setHighlightId("registrations-section");
       setHighlightRegIds(new Set(g.items.map(i => i.id)));
+    } else if (g.id === "event-draft" || g.id === "event-approval") {
+      // "Needs more detail" — jump straight into edit mode on the first such event, with
+      // whichever required fields are still empty rung, rather than just highlighting the card.
+      const ev = g.items[0];
+      setHighlightRegIds(null);
+      if (ev) openEvent(ev, null, true, true);
     } else {
       setHighlightId(g.items[0]?.id ?? null);
       setHighlightRegIds(null);
@@ -967,7 +974,7 @@ export default function App() {
   const successHex = BRAND_HEX[colorPrefs.success] || BRAND_HEX.green;
   const rootVars = { "--accent-primary": primaryHex, "--accent-secondary": secondaryHex, "--accent-success": successHex };
 
-  const openEvent = (ev, initialTab, startEditing) => { setSelectedEvent(ev); setEventInitialTab(initialTab || null); setEventInitialEditing(!!startEditing); };
+  const openEvent = (ev, initialTab, startEditing, highlightMissing) => { setSelectedEvent(ev); setEventInitialTab(initialTab || null); setEventInitialEditing(!!startEditing); setEventHighlightMissing(!!highlightMissing); };
   const openArchiveEvent = (ev, initialTab, startEditing) => { setSelectedArchiveEvent(ev); setArchiveInitialTab(initialTab || null); setArchiveInitialEditing(!!startEditing); };
   // Duplicate keeps every configured field but starts a fresh registration count (no
   // registrations are copied) and leaves any recurrence series behind — a duplicate always
@@ -1085,11 +1092,15 @@ export default function App() {
       upcoming: notificationGroups.some(g => g.id === "event-draft" || g.id === "event-approval"),
       certificates: notificationGroups.some(g => g.id === "cert-approval"),
     } : {};
+    const badgeTooltips = {
+      upcoming: "Some events need more detail or are awaiting approval",
+      certificates: "Some CPD certificates are awaiting approval",
+    };
 
     mainContent = (
       <div className={`whmi-root ${theme}`} data-card-theme={cardTheme || undefined} style={{ minHeight: "100vh", ...rootVars }}>
         <div className="flex" style={{ minHeight: "100vh" }}>
-          <Sidebar page={page} setPage={changePage} collapsed={collapsed} setCollapsed={setCollapsed} navItems={navItems} homePage={homePage} width={sidebarWidth} badgePages={badgePages} />
+          <Sidebar page={page} setPage={changePage} collapsed={collapsed} setCollapsed={setCollapsed} navItems={navItems} homePage={homePage} width={sidebarWidth} badgePages={badgePages} badgeTooltips={badgeTooltips} />
 
           <div className="flex-1 min-w-0">
             <HeaderBar
@@ -1203,7 +1214,7 @@ export default function App() {
         {showTour && <OnboardingTour steps={TOUR_STEPS} onFinish={() => setShowTour(false)} />}
 
         <EventDetailModal
-          event={selectedEvent} onClose={() => setSelectedEvent(null)} registrations={registrations} initialTab={eventInitialTab} initialEditing={eventInitialEditing}
+          event={selectedEvent} onClose={() => setSelectedEvent(null)} registrations={registrations} initialTab={eventInitialTab} initialEditing={eventInitialEditing} highlightMissing={eventHighlightMissing}
           seriesEvents={eventsWithLiveCounts} onSwitchEvent={openEvent}
           onDuplicate={selectedEvent ? () => handleDuplicateEvent(selectedEvent, false) : undefined}
           canManage={canManage} onDelete={selectedEvent ? () => requestDeleteEvent(selectedEvent) : undefined}
