@@ -367,6 +367,7 @@ export async function updateBrainstormIdea(id, patch) {
   const row = {};
   if ("content" in patch) row.content = patch.content;
   if ("category" in patch) row.category = patch.category;
+  if ("addedByName" in patch) row.added_by_name = patch.addedByName;
   const { error } = await supabase.from("brainstorm_ideas").update(row).eq("id", id);
   if (error) console.error("updateBrainstormIdea", error);
 }

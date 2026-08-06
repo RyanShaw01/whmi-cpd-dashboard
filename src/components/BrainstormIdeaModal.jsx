@@ -6,12 +6,13 @@ import { relativeTime } from "../lib/helpers";
 export default function BrainstormIdeaModal({ idea, onClose, onSave, onRequestDelete }) {
   const [content, setContent] = useState(idea?.content || "");
   const [category, setCategory] = useState(idea?.category || "other");
+  const [addedByName, setAddedByName] = useState(idea?.addedByName || "");
   if (!idea) return null;
 
   const submit = (e) => {
     e.preventDefault();
     if (!content.trim()) return;
-    onSave(idea, { content: content.trim(), category });
+    onSave(idea, { content: content.trim(), category, addedByName: addedByName.trim() || null });
     onClose();
   };
 
@@ -33,8 +34,12 @@ export default function BrainstormIdeaModal({ idea, onClose, onSave, onRequestDe
               {BRAINSTORM_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-faint)" }}>
-            <User size={11} />Added by {idea.addedByName || "Someone"} · {relativeTime(idea.createdAt)}
+          <div>
+            <label className="text-[11px] font-semibold flex items-center gap-1" style={{ color: "var(--text-faint)" }}><User size={11} />Proposed by</label>
+            <input value={addedByName} onChange={e => setAddedByName(e.target.value)} placeholder="Someone" className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12.5px]" />
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] flex-wrap" style={{ color: "var(--text-faint)" }}>
+            {relativeTime(idea.createdAt)}
             {idea.source === "public" && <span className="whmi-badge" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Public link</span>}
             {idea.source === "member" && <span className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>Team suggestion</span>}
           </div>

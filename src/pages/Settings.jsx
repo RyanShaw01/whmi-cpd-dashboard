@@ -44,7 +44,7 @@ export default function Settings({
   avatarColors = [], onSaveAvatarColor, onDeleteAvatarColor, onReorderAvatarColors,
   staffFieldVisibility = {}, onToggleStaffField,
 }) {
-  const [toggles, setToggles] = useState({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: true });
+  const [toggles, setToggles] = useState({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: false });
   const [devMode, setDevMode] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [staffFieldsExpanded, setStaffFieldsExpanded] = useState(false);

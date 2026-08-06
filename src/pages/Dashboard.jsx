@@ -81,10 +81,10 @@ export default function Dashboard({
       <div key="stats" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard label="CPD Hours Delivered (YTD)" value={hoursYtd} sub={`${previousEvents.length} events this year`} icon={Clock} accent={primaryHex} onClick={onOpenReports} />
         <StatCard label="Current Registrations" value={currentRegistrations} sub={`across ${openEvents.length} open events`} icon={ClipboardList} accent={successHex} onClick={onOpenCurrentRegistrations} />
-        <StatCard label="Certificates Awaiting Approval" value={awaitingCerts.length} sub={oldestCertDays != null ? `oldest: ${oldestCertDays} days` : undefined} icon={Award} accent={secondaryHex} onClick={onOpenCertificatesAwaiting} />
-        <StatCard label="Avg. Feedback Rating" value={feedbackAvg != null ? `${feedbackAvg} / 10` : "—"} sub="from last 6 events" icon={TrendingUp} accent={primaryHex} onClick={onOpenReportsFeedback} />
-        <StatCard label="Outstanding Reflections" value={outstanding.count} sub={`across ${outstanding.eventCount} events`} icon={MessageSquareText} accent={secondaryHex} onClick={onOpenOutstandingReflections} />
         <StatCard label="Events Currently Open" value={openEvents.length} sub="accepting registrations" icon={CalendarCheck2} accent={successHex} onClick={onOpenEventsCurrentlyOpen} />
+        <StatCard label="Certificates Awaiting Approval" value={awaitingCerts.length} sub={oldestCertDays != null ? `oldest: ${oldestCertDays} days` : undefined} icon={Award} accent={secondaryHex} onClick={onOpenCertificatesAwaiting} />
+        <StatCard label="Outstanding Reflections" value={outstanding.count} sub={`across ${outstanding.eventCount} events`} icon={MessageSquareText} accent={secondaryHex} onClick={onOpenOutstandingReflections} />
+        <StatCard label="Avg. Feedback Rating" value={feedbackAvg != null ? `${feedbackAvg} / 10` : "—"} sub="from last 6 events" icon={TrendingUp} accent={primaryHex} onClick={onOpenReportsFeedback} />
       </div>
     ),
     upNext: (
@@ -93,13 +93,13 @@ export default function Dashboard({
           <h2 className="disp text-[15px] font-bold">Up Next</h2>
           <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{events.length} upcoming</span>
         </div>
-        <div className="space-y-3">
-          {events.slice(0, 4).map(ev => {
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
+          {events.slice(0, 6).map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
             return (
               <button key={ev.id} onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col p-3 rounded-xl text-left transition" style={{ border: "1px solid var(--border)" }}>
                 {bannerUrl && (
-                  <div className="w-full h-20 rounded-lg mb-3 overflow-hidden">
+                  <div className="w-full h-20 rounded-lg mb-3 overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                     <img
                       src={bannerUrl} alt="" className="w-full h-full object-cover"
                       style={{

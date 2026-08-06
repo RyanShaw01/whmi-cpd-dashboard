@@ -38,7 +38,7 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea, o
           </div>
         </button>
         {shareOpen && (
-          <div className="mt-2 max-w-xl">
+          <div className="mt-2 max-w-xl mx-auto text-center">
             <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Share this link or QR code so staff can submit their own CPD ideas without logging in. Submissions are added to the list below, tagged with their name.</p>
             <EventQRCode event={{ id: "brainstorm", title: "CPD Brainstorming Ideas" }} url={submitUrl} filenameSuffix="idea-form" layout="row" />
           </div>
