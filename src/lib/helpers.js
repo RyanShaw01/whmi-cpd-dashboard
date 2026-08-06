@@ -104,6 +104,17 @@ export function eventCountdownText(dateStr, startTime, endTime) {
   return { text: `in ${weeks} week${weeks === 1 ? "" : "s"}`, happening: false };
 }
 
+/* Whether to show the plain-text "due soon" events list at the top of the Dashboard — a
+ * personal display preference, not an admin setting, so it lives in localStorage rather than
+ * the user's DB profile and applies immediately without a round-trip. */
+const SHOW_DUE_SOON_KEY = "whmi_dashboard_show_due_soon";
+export const getShowDueSoonDefault = () => {
+  try { const v = localStorage.getItem(SHOW_DUE_SOON_KEY); return v === null ? true : v === "true"; } catch { return true; }
+};
+export const setShowDueSoonDefault = (value) => {
+  try { localStorage.setItem(SHOW_DUE_SOON_KEY, String(value)); } catch { /* ignore */ }
+};
+
 /* Whether an event has finished, independent of its admin-set status;
  * "Leave Feedback" eligibility follows wall-clock time, not manual lifecycle state. */
 export function hasEventEnded(dateStr, endTime) {

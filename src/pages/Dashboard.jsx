@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix } from "../lib/helpers";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, getShowDueSoonDefault } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
 const QUICK_ACTIONS = [
@@ -199,7 +199,7 @@ export default function Dashboard({
         <h1 className="disp text-[22px] font-extrabold">Good afternoon, {userName}</h1>
         <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Here's what's happening across WHMI CPD today, {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}.</p>
 
-        {dueSoonEvents.length > 0 && (
+        {getShowDueSoonDefault() && dueSoonEvents.length > 0 && (
           <ul className="mt-2 space-y-0.5">
             {dueSoonEvents.slice(0, 5).map(ev => {
               const joinable = ev.meetingUrl && canJoinMeeting(ev.date, ev.start, ev.end);

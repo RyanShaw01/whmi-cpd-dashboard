@@ -4,8 +4,8 @@ import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
 import { getSeparateWhDefault, setSeparateWhDefault } from "./Reflection";
-import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS, STAFF_FIELD_DEFS } from "../data/mockData";
-import { relativeTime, ACTION_LABELS } from "../lib/helpers";
+import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS, DEFAULT_LAYOUT, STAFF_FIELD_DEFS } from "../data/mockData";
+import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault } from "../lib/helpers";
 
 const CPD_CATEGORIES = [
   "Audit & QA", "Skill Development/ Workplace Learning", "Skill Development",
@@ -54,6 +54,9 @@ export default function Settings({
     setSeparateWhReflectionsState(next);
     setSeparateWhDefault(next);
   };
+  const [showDueSoon, setShowDueSoonState] = useState(getShowDueSoonDefault);
+  const toggleShowDueSoon = (next) => { setShowDueSoonState(next); setShowDueSoonDefault(next); };
+  const [advancedAppearanceOpen, setAdvancedAppearanceOpen] = useState(false);
   const [profileName, setProfileName] = useState(session?.name || "");
   const [profileAvatarId, setProfileAvatarId] = useState(session?.avatarId || CHARACTERS[0].id);
   const [profileAvatarColor, setProfileAvatarColor] = useState(session?.avatarColor || "blue");
@@ -363,11 +366,25 @@ export default function Settings({
     );
   };
 
+  const revertAllToDefault = () => {
+    setTheme("light"); setMainTheme(null); setCardTheme(null);
+    onColorChange({ primary: "blue", secondary: "purple", success: "green" });
+    onLayoutChange(DEFAULT_LAYOUT);
+    if (!redDotsEnabled) onToggleRedDots();
+    toggleShowDueSoon(true);
+    setSeparateWhReflectionsState(true); setSeparateWhDefault(true);
+    setToggles({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: false });
+    showToast?.("Settings reverted to default.");
+  };
+
   return (
     <div className="whmi-fade-in p-6 max-w-[900px] mx-auto space-y-5">
-      <div>
-        <h1 className="disp text-[22px] font-extrabold">Settings</h1>
-        <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Preferences for your WHMI Education Team account.</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="disp text-[22px] font-extrabold">Settings</h1>
+          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Preferences for your WHMI Education Team account.</p>
+        </div>
+        <button onClick={revertAllToDefault} className="whmi-btn-ghost flex items-center gap-1.5 text-[12px]"><RotateCcw size={13} />Revert All Settings to Default</button>
       </div>
 
       <div className="whmi-card p-4">
@@ -396,60 +413,97 @@ export default function Settings({
       <div className="whmi-card p-4 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <div className="font-semibold text-[13px]">Appearance — Sidebar &amp; Header</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose light, dark, or navy for the sidebar and top header bar.</div>
+            <div className="font-semibold text-[13px]">Appearance</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose light, dark, or navy for the whole app. Use Advanced below to set the sidebar, main page, and cards separately.</div>
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
-            <button onClick={() => setTheme("light")} className={theme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-            <button onClick={() => setTheme("dark")} className={theme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
-            <button onClick={() => setTheme("navy")} className={theme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
+            <button onClick={() => { setTheme("light"); setMainTheme(null); setCardTheme(null); }} className={theme === "light" && mainTheme == null && cardTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+            <button onClick={() => { setTheme("dark"); setMainTheme(null); setCardTheme(null); }} className={theme === "dark" && mainTheme == null && cardTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+            <button onClick={() => { setTheme("navy"); setMainTheme(null); setCardTheme(null); }} className={theme === "navy" && mainTheme == null && cardTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
           </div>
         </div>
+
         <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
-          <div>
-            <div className="font-semibold text-[13px]">Appearance — Main Page</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the main content area's theme separately, or leave it matching the sidebar and header.</div>
+          <div className="min-w-0">
+            <div className="font-semibold text-[13px]">Dashboard Reminders</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Show the plain-text list of events coming up soon at the top of the Dashboard.</div>
           </div>
-          <div className="flex gap-2 flex-wrap justify-end">
-            <button onClick={() => setMainTheme(null)} className={mainTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
-            <button onClick={() => setMainTheme("light")} className={mainTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-            <button onClick={() => setMainTheme("dark")} className={mainTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
-            <button onClick={() => setMainTheme("navy")} className={mainTheme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
-          </div>
+          <button onClick={() => toggleShowDueSoon(!showDueSoon)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: showDueSoon ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+            <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: showDueSoon ? "20px" : "3px", width: 18, height: 18 }} />
+          </button>
         </div>
-        <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
-          <div>
-            <div className="font-semibold text-[13px]">Appearance — Cards, Forms &amp; Popups</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the colour of cards, forms, and popups (events, modals, panels) separately, or leave them matching the page.</div>
+
+        <button onClick={() => setAdvancedAppearanceOpen(x => !x)} className="w-full flex items-center justify-between gap-2 pt-3 -mx-1 px-1 py-1 rounded-lg whmi-row-hover transition" style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="flex items-center gap-2">
+            {advancedAppearanceOpen ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+            <span className="font-semibold text-[13px]">Advanced: Sidebar, Main Page &amp; Cards Separately</span>
           </div>
-          <div className="flex gap-2 flex-wrap justify-end">
-            <button onClick={() => setCardTheme(null)} className={cardTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
-            <button onClick={() => setCardTheme("light")} className={cardTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
-            <button onClick={() => setCardTheme("dark")} className={cardTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
-            <button onClick={() => setCardTheme("navy")} className={cardTheme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
+        </button>
+        {advancedAppearanceOpen && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+              <div>
+                <div className="font-semibold text-[13px]">Sidebar &amp; Header</div>
+                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose light, dark, or navy for the sidebar and top header bar.</div>
+              </div>
+              <div className="flex gap-2 flex-wrap justify-end">
+                <button onClick={() => setTheme("light")} className={theme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+                <button onClick={() => setTheme("dark")} className={theme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+                <button onClick={() => setTheme("navy")} className={theme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+              <div>
+                <div className="font-semibold text-[13px]">Main Page</div>
+                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the main content area's theme separately, or leave it matching the sidebar and header.</div>
+              </div>
+              <div className="flex gap-2 flex-wrap justify-end">
+                <button onClick={() => setMainTheme(null)} className={mainTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
+                <button onClick={() => setMainTheme("light")} className={mainTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+                <button onClick={() => setMainTheme("dark")} className={mainTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+                <button onClick={() => setMainTheme("navy")} className={mainTheme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+              <div>
+                <div className="font-semibold text-[13px]">Cards, Forms &amp; Popups</div>
+                <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the colour of cards, forms, and popups (events, modals, panels) separately, or leave them matching the page.</div>
+              </div>
+              <div className="flex gap-2 flex-wrap justify-end">
+                <button onClick={() => setCardTheme(null)} className={cardTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
+                <button onClick={() => setCardTheme("light")} className={cardTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
+                <button onClick={() => setCardTheme("dark")} className={cardTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
+                <button onClick={() => setCardTheme("navy")} className={cardTheme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <div className="whmi-card p-4">
-        <div className="font-semibold text-[13px] mb-1">Dashboard Layout</div>
-        <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Reorder your dashboard sections, saved automatically.</div>
-        <div className="space-y-1.5">
-          {layoutOrder.map((id, idx) => {
-            const sec = DASHBOARD_SECTIONS.find(s => s.id === id);
-            if (!sec) return null;
-            return (
-              <div key={id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
-                <span className="text-[12.5px] font-semibold">{sec.label}</span>
-                <div className="flex gap-1">
-                  <button onClick={() => moveSection(idx, -1)} disabled={idx === 0} className="whmi-btn-ghost !p-1.5" style={{ opacity: idx === 0 ? 0.4 : 1 }}><ArrowUp size={13} /></button>
-                  <button onClick={() => moveSection(idx, 1)} disabled={idx === layoutOrder.length - 1} className="whmi-btn-ghost !p-1.5" style={{ opacity: idx === layoutOrder.length - 1 ? 0.4 : 1 }}><ArrowDown size={13} /></button>
+      {role !== "viewer" && (
+        <div className="whmi-card p-4">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="font-semibold text-[13px]">Dashboard Layout</div>
+            <button onClick={() => onLayoutChange(DEFAULT_LAYOUT)} className="whmi-btn-ghost !py-1 !px-2 text-[11px] flex items-center gap-1"><RotateCcw size={11} />Reset to Default</button>
+          </div>
+          <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Reorder your dashboard sections, saved automatically. Only sections you have access to are listed here.</div>
+          <div className="space-y-1.5">
+            {layoutOrder.map((id, idx) => {
+              const sec = DASHBOARD_SECTIONS.find(s => s.id === id);
+              if (!sec) return null;
+              return (
+                <div key={id} className="flex items-center justify-between p-2.5 rounded-lg gap-2" style={{ background: "var(--surface-2)" }}>
+                  <span className="text-[12.5px] font-semibold">{sec.label}</span>
+                  <div className="flex gap-1">
+                    <button onClick={() => moveSection(idx, -1)} disabled={idx === 0} className="whmi-btn-ghost !p-1.5" style={{ opacity: idx === 0 ? 0.4 : 1 }}><ArrowUp size={13} /></button>
+                    <button onClick={() => moveSection(idx, 1)} disabled={idx === layoutOrder.length - 1} className="whmi-btn-ghost !p-1.5" style={{ opacity: idx === layoutOrder.length - 1 ? 0.4 : 1 }}><ArrowDown size={13} /></button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="whmi-card overflow-hidden">
         {t("emailReminders", "Automated Email Reminders", "One-week, one-day, and one-hour reminders before events")}
