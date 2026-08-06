@@ -81,7 +81,7 @@ export default function EventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
-  initialTab,
+  initialTab, seriesEvents = [], onSwitchEvent,
 }) {
   const [regTab, setRegTab] = useState(initialTab || "overview");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -105,7 +105,20 @@ export default function EventDetailModal({
     window.open(URL.createObjectURL(result.blob), "_blank");
   };
   const joinable = event.meetingUrl && canJoinMeeting(event.date, event.start, event.end);
-  const bannerUrl = eventBannerUrl(files, event.id);
+  // Grouped recurring events: siblings sharing this event's recurrenceGroupId, shown as tabs
+  // across the top so switching between occurrences doesn't mean leaving the modal. A poster
+  // isn't required on every occurrence — if this one has none, fall back to whichever grouped
+  // sibling is soonest upcoming and does have one.
+  const seriesSiblings = event.recurrenceGroupId && event.groupInUpcoming !== false
+    ? seriesEvents.filter(e => e.recurrenceGroupId === event.recurrenceGroupId).sort((a, b) => `${a.date}T${a.start}`.localeCompare(`${b.date}T${b.start}`))
+    : [];
+  const bannerUrl = eventBannerUrl(files, event.id) || (() => {
+    if (seriesSiblings.length === 0) return null;
+    const now = Date.now();
+    const nextUp = seriesSiblings.find(e => new Date(`${e.date}T${e.start || "00:00"}`).getTime() >= now && eventBannerUrl(files, e.id));
+    const anyWithBanner = nextUp || seriesSiblings.find(e => eventBannerUrl(files, e.id));
+    return anyWithBanner ? eventBannerUrl(files, anyWithBanner.id) : null;
+  })();
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
   const eventReflections = (reflections || []).filter(r => r.eventId === event.id);
   const myReflection = session ? eventReflections.find(r => r.email?.toLowerCase() === session.email.toLowerCase()) : null;
@@ -324,6 +337,11 @@ export default function EventDetailModal({
           )}
 
           {regTab === "certificates" && (
+            event.certificatesEnabled === false ? (
+              <div className="whmi-card p-3 text-[12.5px] flex items-center gap-2" style={{ color: "var(--text-faint)" }}>
+                <AlertCircle size={14} className="shrink-0" />CPD certificates are turned off for this event (see Edit Event). No certificate will be generated for attendees.
+              </div>
+            ) : (
             <div className="space-y-2 text-[12.5px]">
               <div className="flex items-center gap-2" style={{ color: "var(--text-dim)" }}>
                 <AlertCircle size={14} className="shrink-0" />Certificate approval mode: <strong style={{ color: "var(--text)" }}>Manual approval</strong>
@@ -333,6 +351,7 @@ export default function EventDetailModal({
                 <button className="whmi-btn-ghost flex items-center gap-1.5"><Send size={14} />Send Reflection Requests</button>
               </div>
             </div>
+            )
           )}
 
           {regTab === "qr" && canManage && (
@@ -388,6 +407,20 @@ export default function EventDetailModal({
         <button onClick={onClose} className="absolute top-3 right-3 z-20 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,.4)" }}>
           <X size={15} color="white" />
         </button>
+        {seriesSiblings.length > 1 && (
+          <div className="flex gap-1 px-4 pt-4 pb-1 overflow-x-auto whmi-scroll" style={{ borderBottom: "1px solid var(--border)" }}>
+            {seriesSiblings.map(sib => (
+              <button
+                key={sib.id} onClick={() => sib.id !== event.id && onSwitchEvent?.(sib)}
+                className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold whitespace-nowrap shrink-0 whmi-row-hover transition"
+                style={sib.id === event.id ? { background: "var(--accent-primary)", color: "white" } : { color: "var(--text-dim)" }}
+                title={sib.title}
+              >
+                {fmtDate(sib.date)}
+              </button>
+            ))}
+          </div>
+        )}
         {bannerUrl ? (
           <div className="grid grid-cols-1 md:grid-cols-[300px_1fr]">
             <div className="w-full h-56 md:h-full relative flex items-center justify-center overflow-hidden" style={{ background: "var(--surface-2)" }}>

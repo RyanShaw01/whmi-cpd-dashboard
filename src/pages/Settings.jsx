@@ -130,6 +130,7 @@ export default function Settings({
     [next[index], next[swapWith]] = [next[swapWith], next[index]];
     onReorderAvatarColors(next);
   };
+  const [auditLogExpanded, setAuditLogExpanded] = useState(false);
   const [expandedUserId, setExpandedUserId] = useState(null);
   const [sessionActionStatus, setSessionActionStatus] = useState({});
   const [cpdTypesExpanded, setCpdTypesExpanded] = useState(false);
@@ -375,7 +376,7 @@ export default function Settings({
             <div className="font-semibold text-[13px]">Appearance — Sidebar &amp; Header</div>
             <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Choose light, dark, or navy for the sidebar and top header bar.</div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <button onClick={() => setTheme("light")} className={theme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
             <button onClick={() => setTheme("dark")} className={theme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
             <button onClick={() => setTheme("navy")} className={theme === "navy" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><MoonStar size={14} />Navy</button>
@@ -386,7 +387,7 @@ export default function Settings({
             <div className="font-semibold text-[13px]">Appearance — Main Page</div>
             <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the main content area's theme separately, or leave it matching the sidebar and header.</div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <button onClick={() => setMainTheme(null)} className={mainTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
             <button onClick={() => setMainTheme("light")} className={mainTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
             <button onClick={() => setMainTheme("dark")} className={mainTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
@@ -398,7 +399,7 @@ export default function Settings({
             <div className="font-semibold text-[13px]">Appearance — Cards, Forms &amp; Popups</div>
             <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Set the colour of cards, forms, and popups (events, modals, panels) separately, or leave them matching the page.</div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <button onClick={() => setCardTheme(null)} className={cardTheme == null ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}>Match</button>
             <button onClick={() => setCardTheme("light")} className={cardTheme === "light" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Sun size={14} />Light</button>
             <button onClick={() => setCardTheme("dark")} className={cardTheme === "dark" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><Moon size={14} />Dark</button>
@@ -506,7 +507,7 @@ export default function Settings({
             { key: "external", label: "External", list: externalViewerUsers },
           ].map(group => (
             <div key={group.key} className="mb-3">
-              <button onClick={() => toggleTeamGroup(group.key)} className="w-full flex items-center justify-between mb-1.5 py-1">
+              <button onClick={() => toggleTeamGroup(group.key)} className="w-full flex items-center justify-between mb-1.5 py-1 px-1 -mx-1 rounded-lg whmi-row-hover transition">
                 <div className="flex items-center gap-2">
                   {teamGroupsExpanded[group.key] ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
                   <span className="text-[12px] font-semibold">{group.label}</span>
@@ -565,7 +566,7 @@ export default function Settings({
 
       {canManageUsers && (
         <div className="whmi-card p-4">
-          <button onClick={() => setCpdTypesExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+          <button onClick={() => setCpdTypesExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
               {cpdTypesExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
               <Award size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">CPD Types &amp; Appellation Codes</div>
@@ -641,7 +642,7 @@ export default function Settings({
 
       {canManageUsers && (
         <div className="whmi-card p-4">
-          <button onClick={() => setStaffFieldsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+          <button onClick={() => setStaffFieldsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
               {staffFieldsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
               <UserCircle2 size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Staff Information Fields</div>
@@ -670,7 +671,7 @@ export default function Settings({
 
       {canManageUsers && (
         <div className="whmi-card p-4">
-          <button onClick={() => setTagsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+          <button onClick={() => setTagsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
               {tagsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
               <BadgeCheck size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Tags</div>
@@ -728,7 +729,7 @@ export default function Settings({
 
       {canManageUsers && (
         <div className="whmi-card p-4">
-          <button onClick={() => setAvatarIconsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+          <button onClick={() => setAvatarIconsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
               {avatarIconsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
               <Image size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Avatar Icons</div>
@@ -813,7 +814,7 @@ export default function Settings({
 
       {canManageUsers && (
         <div className="whmi-card p-4">
-          <button onClick={() => setAvatarColorsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1">
+          <button onClick={() => setAvatarColorsExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
             <div className="flex items-center gap-2">
               {avatarColorsExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
               <Palette size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Avatar Colours</div>
@@ -878,23 +879,33 @@ export default function Settings({
 
       {canManageUsers && (
         <div className="whmi-card p-4">
-          <div className="flex items-center gap-2 mb-1"><History size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Audit Log</div></div>
-          <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Recent event, registration, certificate, file, and account activity, last 50 entries.</div>
-          {auditLog.length === 0 && <div className="text-[12px]" style={{ color: "var(--text-faint)" }}>No activity recorded yet.</div>}
-          <div className="space-y-1 max-h-80 overflow-y-auto whmi-scroll">
-            {auditLog.map(a => {
-              const actor = users.find(u => u.id === a.actorId);
-              return (
-                <div key={a.id} className="flex items-center justify-between gap-2 p-2 rounded-lg text-[12px]" style={{ background: "var(--surface-2)" }}>
-                  <div className="min-w-0">
-                    <span className="font-semibold">{actor?.name || "Unknown"}</span>
-                    <span style={{ color: "var(--text-faint)" }}>, {ACTION_LABELS[a.action] || a.action}</span>
-                  </div>
-                  <span className="text-[10.5px] shrink-0" style={{ color: "var(--text-faint)" }}>{relativeTime(a.createdAt)}</span>
-                </div>
-              );
-            })}
-          </div>
+          <button onClick={() => setAuditLogExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
+            <div className="flex items-center gap-2">
+              {auditLogExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <History size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Audit Log</div>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{auditLog.length}</span>
+          </button>
+          {auditLogExpanded && (
+            <>
+              <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>Recent event, registration, certificate, file, and account activity, last 50 entries.</div>
+              {auditLog.length === 0 && <div className="text-[12px]" style={{ color: "var(--text-faint)" }}>No activity recorded yet.</div>}
+              <div className="space-y-1 max-h-80 overflow-y-auto whmi-scroll">
+                {auditLog.map(a => {
+                  const actor = users.find(u => u.id === a.actorId);
+                  return (
+                    <div key={a.id} className="flex items-center justify-between gap-2 p-2 rounded-lg text-[12px]" style={{ background: "var(--surface-2)" }}>
+                      <div className="min-w-0">
+                        <span className="font-semibold">{actor?.name || "Unknown"}</span>
+                        <span style={{ color: "var(--text-faint)" }}>, {ACTION_LABELS[a.action] || a.action}</span>
+                      </div>
+                      <span className="text-[10.5px] shrink-0" style={{ color: "var(--text-faint)" }}>{relativeTime(a.createdAt)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
 

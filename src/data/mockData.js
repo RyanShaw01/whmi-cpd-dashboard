@@ -168,7 +168,7 @@ export const NAV_FULL = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "upcoming", label: "Upcoming Events", icon: Calendar },
   { id: "previous", label: "Previous Events", icon: Archive },
-  { id: "reflection", label: "Reflection", icon: NotebookPen },
+  { id: "reflection", label: "Reflections", icon: NotebookPen },
   { id: "staff", label: "Staff", icon: Users, adminOnly: true },
   { id: "certificates", label: "Certificates", icon: Award, adminOnly: true },
   { id: "brainstorm", label: "CPD Brainstorming", icon: Lightbulb, adminOnly: true },
@@ -179,7 +179,7 @@ export const NAV_FULL = [
 export const NAV_VIEWER = [
   { id: "mycpd", label: "My CPD", icon: Award },
   { id: "mycertificates", label: "My Certificates", icon: BadgeCheck },
-  { id: "reflection", label: "Reflection", icon: NotebookPen },
+  { id: "reflection", label: "Reflections", icon: NotebookPen },
   { id: "help", label: "Help Centre", icon: HelpCircle },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
@@ -190,7 +190,7 @@ export const NAV_VIEWER_INTERNAL = [
   { id: "mycertificates", label: "My Certificates", icon: BadgeCheck },
   { id: "upcoming", label: "Upcoming Events", icon: Calendar },
   { id: "previous", label: "Previous Events", icon: Archive },
-  { id: "reflection", label: "Reflection", icon: NotebookPen },
+  { id: "reflection", label: "Reflections", icon: NotebookPen },
   { id: "help", label: "Help Centre", icon: HelpCircle },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];

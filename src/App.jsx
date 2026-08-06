@@ -462,9 +462,16 @@ export default function App() {
     showToast(res.ok ? "Report emailed." : "Couldn't send the report. Please try again.");
   };
   const handleCreateEvent = (payload) => {
-    setEvents(prev => [...prev, payload]);
-    insertEvent(payload);
-    pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: payload.id, details: { title: payload.title } });
+    // Recurring events arrive as an array of occurrence payloads (EventForm generates one row
+    // per occurrence, all sharing a recurrenceGroupId) instead of a single event object.
+    const occurrences = Array.isArray(payload) ? payload : [payload];
+    setEvents(prev => [...prev, ...occurrences]);
+    occurrences.forEach(ev => insertEvent(ev));
+    if (occurrences.length > 1) {
+      pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: occurrences[0].id, details: { title: `${occurrences[0].title} (${occurrences.length} recurring events)` } });
+    } else {
+      pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: occurrences[0].id, details: { title: occurrences[0].title } });
+    }
   };
   const handleCreatePreviousEvent = (payload) => {
     setPreviousEvents(prev => [...prev, payload]);
@@ -675,11 +682,14 @@ export default function App() {
   };
 
   const handleAddPersonalReflection = (payload) => {
-    const reflection = { id: "pr" + Date.now(), userId: session.id, ...payload };
+    // Admins can add a reflection on behalf of another staff member from the "All Staff
+    // Reflections" view (targetUserId); otherwise it's always the logged-in user's own.
+    const { targetUserId, ...rest } = payload;
+    const reflection = { id: "pr" + Date.now(), userId: targetUserId || session.id, ...rest };
     setPersonalReflections(prev => [reflection, ...prev]);
     insertPersonalReflection(reflection);
     pushAudit({ actorId: session?.id, action: "reflection.created", entityType: "personal_reflection", entityId: reflection.id, details: { activityName: reflection.activityName } });
-    showToast("Reflection saved.");
+    showToast(targetUserId ? "Reflection added for staff member." : "Reflection saved.");
   };
   const requestDeletePersonalReflection = (reflection) => requestDelete(`your reflection for "${reflection.activityName}"`, () => {
     setPersonalReflections(prev => prev.filter(r => r.id !== reflection.id));
@@ -961,6 +971,12 @@ export default function App() {
     changePage("reports");
     setHighlightId("feedback-section");
   };
+  const openOutstandingReflections = () => {
+    changePage("reflection");
+  };
+  const openEventsCurrentlyOpen = () => {
+    changePage("upcoming");
+  };
 
   // Recent Activity rows are clickable — jump to whatever record the audit entry refers to.
   // There's no stored before/after diff, so "see what changed" means opening the record at its
@@ -1069,6 +1085,8 @@ export default function App() {
                 onOpenCurrentRegistrations={openCurrentRegistrations}
                 onOpenCertificatesAwaiting={openCertificatesAwaiting}
                 onOpenReportsFeedback={openReportsFeedback}
+                onOpenOutstandingReflections={openOutstandingReflections}
+                onOpenEventsCurrentlyOpen={openEventsCurrentlyOpen}
               />
             )}
             {page === "mycpd" && viewSession.userType === "external" && (
@@ -1150,6 +1168,7 @@ export default function App() {
 
         <EventDetailModal
           event={selectedEvent} onClose={() => setSelectedEvent(null)} registrations={registrations} initialTab={eventInitialTab}
+          seriesEvents={eventsWithLiveCounts} onSwitchEvent={openEvent}
           canManage={canManage} onDelete={selectedEvent ? () => requestDeleteEvent(selectedEvent) : undefined}
           onStatusChange={handleStatusChange} onEdit={handleUpdateEvent} uploadedBy={session.id} session={session}
           onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField}
@@ -1163,6 +1182,7 @@ export default function App() {
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}
           initialTab={archiveInitialTab}
+          seriesEvents={previousEventsWithLiveStats} onSwitchEvent={openArchiveEvent}
           certificates={certificates} reflections={reflections} session={session} onEdit={handleUpdatePreviousEvent}
           canManage={canManage} onRequestDelete={requestDeletePreviousEvent}
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}

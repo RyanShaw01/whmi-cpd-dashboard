@@ -11,13 +11,43 @@ import { eventBannerUrl } from "../lib/helpers";
 
 const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
 
+// Imaging-modality tags are shown as their own group ahead of everything else in the Topics
+// picker, since they're the ones staff scan for first when tagging an event.
+const MODALITY_TAG_NAMES = ["X-Ray", "CT", "DSA", "MRI", "Ultrasound", "Nuclear medicine"];
+
+const RECURRENCE_FREQUENCIES = [
+  { id: "daily", label: "Day(s)" },
+  { id: "weekly", label: "Week(s)" },
+  { id: "fortnightly", label: "Fortnight(s)" },
+  { id: "monthly", label: "Month(s)" },
+];
+
+// Builds the list of occurrence dates (YYYY-MM-DD) for a recurring series, starting from and
+// including the base event's own date. Capped at 52 to guard against a runaway series.
+function generateRecurrenceDates(startDateStr, freq, interval, endType, endCount, endDate) {
+  const step = Math.max(1, Number(interval) || 1);
+  const dates = [startDateStr];
+  const d = new Date(`${startDateStr}T00:00:00`);
+  const until = endType === "until" && endDate ? new Date(`${endDate}T23:59:59`) : null;
+  const maxCount = endType === "count" ? Math.min(52, Math.max(1, Number(endCount) || 1)) : 52;
+  while (dates.length < maxCount) {
+    if (freq === "daily") d.setDate(d.getDate() + step);
+    else if (freq === "weekly") d.setDate(d.getDate() + 7 * step);
+    else if (freq === "fortnightly") d.setDate(d.getDate() + 14 * step);
+    else if (freq === "monthly") d.setMonth(d.getMonth() + step);
+    if (until && d > until) break;
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
 const emptyEvent = {
   title: "", tags: [], description: "",
   presenter: "", organisers: "",
   date: "", start: "", end: "", location: "", campus: "", mode: "In-person",
   meetingUrl: "", room: "", level: "", capacity: "", onlineCapacity: "", inPersonCapacity: "",
   waitlist: 0, status: "Draft", registered: 0, reflectionAutoEmail: true, asmirtCode: "",
-  cpdTypeId: null, openToExternal: true, showRegCountExternal: false,
+  cpdTypeId: null, openToExternal: true, showRegCountExternal: false, certificatesEnabled: true,
   externalPrice: "", reflectionEmailOffsetMinutes: 20, reflectionEmailOffsetDirection: "before",
 };
 
@@ -33,6 +63,17 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
   const [form, setForm] = useState(initialForm);
   const [newTag, setNewTag] = useState("");
   const isEdit = Boolean(event);
+
+  // Recurrence only applies when creating a brand-new event — once a series exists each
+  // occurrence is just its own independent event row, edited individually.
+  const [recurring, setRecurring] = useState(false);
+  const [recurFreq, setRecurFreq] = useState("weekly");
+  const [recurInterval, setRecurInterval] = useState(1);
+  const [recurEndType, setRecurEndType] = useState("count"); // count | until
+  const [recurEndCount, setRecurEndCount] = useState(4);
+  const [recurEndDate, setRecurEndDate] = useState("");
+  const [groupInUpcoming, setGroupInUpcoming] = useState(true);
+  const [groupInPrevious, setGroupInPrevious] = useState(false);
   const initialFormRef = useRef(initialForm);
   useEffect(() => {
     onDirtyChange?.(JSON.stringify(form) !== JSON.stringify(initialFormRef.current));
@@ -53,9 +94,8 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
   const submit = (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.date || !form.start || !form.end) return;
-    const payload = {
+    const basePayload = {
       ...form,
-      id: form.id || "e" + Date.now(),
       topic: form.tags[0] || "",
       capacity: form.capacity === "" ? null : Number(form.capacity),
       onlineCapacity: form.onlineCapacity === "" ? null : Number(form.onlineCapacity),
@@ -68,7 +108,23 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       // instead, or a full-form save would silently revert any banner adjustment just made.
       ...(event ? { bannerFocalX: event.bannerFocalX, bannerFocalY: event.bannerFocalY, bannerZoom: event.bannerZoom } : {}),
     };
-    onSave(payload);
+
+    if (!isEdit && recurring) {
+      const dates = generateRecurrenceDates(form.date, recurFreq, recurInterval, recurEndType, recurEndCount, recurEndDate);
+      const recurrenceGroupId = "rg" + Date.now();
+      const occurrences = dates.map((date, i) => ({
+        ...basePayload,
+        id: "e" + Date.now() + "_" + i,
+        date,
+        recurrenceGroupId,
+        groupInUpcoming,
+        groupInPrevious,
+      }));
+      onSave(occurrences);
+      return;
+    }
+
+    onSave({ ...basePayload, id: form.id || "e" + Date.now() });
   };
 
   return (
@@ -90,10 +146,68 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
         </select>
       </div>
 
+      {!isEdit && (
+        <div className="p-3 rounded-xl" style={{ border: "1px solid var(--border)" }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[12.5px] font-semibold">Recurring Event</span>
+              <InfoTooltip text="Creates a whole series of events at once, each its own event card that can be edited or set to a different status independently. Grouped events show as tabs when you open any one of them." />
+            </div>
+            <button type="button" onClick={() => setRecurring(r => !r)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: recurring ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+              <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: recurring ? "20px" : "3px", width: 18, height: 18 }} />
+            </button>
+          </div>
+          {recurring && (
+            <div className="mt-3 space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="text-[11.5px] font-semibold shrink-0" style={{ color: "var(--text-dim)" }}>Repeat every</label>
+                <input type="number" min="1" step="1" value={recurInterval} onChange={e => setRecurInterval(e.target.value === "" ? "" : Number(e.target.value))} className="whmi-input px-2 py-1.5 w-16 text-center" />
+                <select value={recurFreq} onChange={e => setRecurFreq(e.target.value)} className="whmi-input px-2 py-1.5">
+                  {RECURRENCE_FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap text-[11.5px]" style={{ color: "var(--text-dim)" }}>
+                <label className="flex items-center gap-1.5 font-semibold">
+                  <input type="radio" checked={recurEndType === "count"} onChange={() => setRecurEndType("count")} />After
+                </label>
+                <input type="number" min="1" step="1" disabled={recurEndType !== "count"} value={recurEndCount} onChange={e => setRecurEndCount(e.target.value === "" ? "" : Number(e.target.value))} className="whmi-input px-2 py-1.5 w-16 text-center" style={{ opacity: recurEndType === "count" ? 1 : 0.5 }} />
+                <span>occurrences</span>
+                <label className="flex items-center gap-1.5 font-semibold">
+                  <input type="radio" checked={recurEndType === "until"} onChange={() => setRecurEndType("until")} />Until
+                </label>
+                <input type="date" disabled={recurEndType !== "until"} value={recurEndDate} onChange={e => setRecurEndDate(e.target.value)} className="whmi-input px-2 py-1.5" style={{ opacity: recurEndType === "until" ? 1 : 0.5 }} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-semibold">Group these events together in Upcoming Events</span>
+                <button type="button" onClick={() => setGroupInUpcoming(g => !g)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: groupInUpcoming ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: groupInUpcoming ? "20px" : "3px", width: 18, height: 18 }} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-semibold">Keep grouped once they move to Previous Events</span>
+                <button type="button" onClick={() => setGroupInPrevious(g => !g)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: groupInPrevious ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: groupInPrevious ? "20px" : "3px", width: 18, height: 18 }} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <label className={field}>Topics</label>
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {tags.map(t => (
+          {tags.filter(t => MODALITY_TAG_NAMES.includes(t.name)).map(t => (
+            <button key={t.id} type="button" onClick={() => toggleTag(t.name)} className="whmi-badge" style={{ background: form.tags.includes(t.name) ? "var(--accent-primary)" : "var(--surface-2)", color: form.tags.includes(t.name) ? "white" : "var(--text-dim)" }}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+        {tags.some(t => MODALITY_TAG_NAMES.includes(t.name)) && tags.some(t => !MODALITY_TAG_NAMES.includes(t.name)) && (
+          <div className="my-2" style={{ borderTop: "1px solid var(--border)" }} />
+        )}
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {tags.filter(t => !MODALITY_TAG_NAMES.includes(t.name)).map(t => (
             <button key={t.id} type="button" onClick={() => toggleTag(t.name)} className="whmi-badge" style={{ background: form.tags.includes(t.name) ? "var(--accent-primary)" : "var(--surface-2)", color: form.tags.includes(t.name) ? "white" : "var(--text-dim)" }}>
               {t.name}
             </button>
@@ -245,6 +359,16 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
         </div>
         <button type="button" onClick={() => set("showRegCountExternal", !form.showRegCountExternal)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: form.showRegCountExternal ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
           <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: form.showRegCountExternal ? "20px" : "3px", width: 18, height: 18 }} />
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between p-3 rounded-xl" style={{ border: "1px solid var(--border)" }}>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12.5px] font-semibold">Allow CPD certificates to be sent</span>
+          <InfoTooltip text="Turn off for events that don't carry a CPD certificate (e.g. informal sessions). Attendees can still leave feedback, but no certificate will be generated or sent for this event." />
+        </div>
+        <button type="button" onClick={() => set("certificatesEnabled", !form.certificatesEnabled)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: form.certificatesEnabled ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+          <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: form.certificatesEnabled ? "20px" : "3px", width: 18, height: 18 }} />
         </button>
       </div>
 

@@ -40,7 +40,7 @@ export default function PreviousEventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner,
-  onCreateCertificateFor, onSendReflectionReminder, initialTab,
+  onCreateCertificateFor, onSendReflectionReminder, initialTab, seriesEvents = [], onSwitchEvent,
 }) {
   const [tab, setTab] = useState(initialTab || "overview");
   const [certSortBy, setCertSortBy] = useState("date-desc");
@@ -49,6 +49,11 @@ export default function PreviousEventDetailModal({
   const [editing, setEditing] = useState(false);
   const [formDirty, setFormDirty] = useState(false);
   if (!event) return null;
+
+  // Recurring series that opted to stay grouped once occurrences move to Previous Events.
+  const seriesSiblings = event.recurrenceGroupId && event.groupInPrevious
+    ? seriesEvents.filter(e => e.recurrenceGroupId === event.recurrenceGroupId).sort((a, b) => `${a.date}T${a.start || ""}`.localeCompare(`${b.date}T${b.start || ""}`))
+    : [];
 
   if (editing) {
     const attemptCloseEdit = () => {
@@ -136,6 +141,20 @@ export default function PreviousEventDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
       <div className="whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
+        {seriesSiblings.length > 1 && (
+          <div className="flex gap-1 px-4 pt-3 pb-1 overflow-x-auto whmi-scroll" style={{ borderBottom: "1px solid var(--border)" }}>
+            {seriesSiblings.map(sib => (
+              <button
+                key={sib.id} onClick={() => sib.id !== event.id && onSwitchEvent?.(sib)}
+                className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold whitespace-nowrap shrink-0 whmi-row-hover transition"
+                style={sib.id === event.id ? { background: "var(--accent-primary)", color: "white" } : { color: "var(--text-dim)" }}
+                title={sib.title}
+              >
+                {fmtDate(sib.date)}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="min-h-[92px] relative flex items-end p-5" style={{ background: "var(--accent-primary)" }}>
           <div className="absolute top-3 right-3 flex items-center gap-2">
             {canManage && (
@@ -342,7 +361,7 @@ export default function PreviousEventDetailModal({
                             <Mail size={12} />Follow Up
                           </button>
                         )}
-                        {onCreateCertificateFor && (
+                        {onCreateCertificateFor && event.certificatesEnabled !== false && (
                           <button onClick={() => onCreateCertificateFor(r, event)} className="whmi-btn-ghost !py-1 !px-2 text-[11px] flex items-center gap-1" title="Create a certificate for them regardless of reflection status">
                             <Award size={12} />Certify Anyway
                           </button>

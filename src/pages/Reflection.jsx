@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { NotebookPen, Plus, ChevronDown, ChevronRight, Trash2, Mail, X, Save, Building2 } from "lucide-react";
+import { NotebookPen, Plus, ChevronDown, ChevronRight, Trash2, Mail, X, Save, Building2, BookOpen, CalendarClock, Building } from "lucide-react";
 import { REFLECTION_SECTIONS, REFLECTION_SHORT_FORM } from "../data/reflectionTemplate";
 import { fmtDate } from "../lib/helpers";
 import AdminReflectionsOverview from "../components/AdminReflectionsOverview";
+import StatCard from "../components/StatCard";
 
 const SEPARATE_WH_STORAGE_KEY = "whmi_reflection_separate_wh";
 export const getSeparateWhDefault = () => {
@@ -19,12 +20,13 @@ const SORT_OPTIONS = [
   { id: "alpha-desc", label: "Alphabetical (Z - A)" },
 ];
 
-function AddReflectionForm({ onCancel, onSubmit }) {
+function AddReflectionForm({ onCancel, onSubmit, staffOptions }) {
   const [activityName, setActivityName] = useState("");
   const [activityDate, setActivityDate] = useState("");
   const [mode, setMode] = useState("full"); // full | short | freeform
   const [answers, setAnswers] = useState({}); // { "sectionId::question": text }
   const [freeformText, setFreeformText] = useState("");
+  const [targetUserId, setTargetUserId] = useState(staffOptions?.[0]?.id || "");
   // Full Template starts fully collapsed (20 questions is a lot to see at once); Short Form
   // starts fully open since it's just the one small section.
   const [expanded, setExpanded] = useState({});
@@ -40,11 +42,21 @@ function AddReflectionForm({ onCancel, onSubmit }) {
   const submit = (e) => {
     e.preventDefault();
     if (!activityName.trim() || !activityDate) return;
-    onSubmit({ activityName: activityName.trim(), activityDate, mode, answers, freeformText: freeformText.trim() });
+    if (staffOptions && !targetUserId) return;
+    onSubmit({ activityName: activityName.trim(), activityDate, mode, answers, freeformText: freeformText.trim(), ...(staffOptions ? { targetUserId } : {}) });
   };
 
   return (
     <form onSubmit={submit} className="whmi-card p-4 space-y-3">
+      {staffOptions && (
+        <div>
+          <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Staff Member</label>
+          <select required value={targetUserId} onChange={e => setTargetUserId(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1">
+            <option value="" disabled>Select staff member…</option>
+            {staffOptions.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+          </select>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Activity Name</label>
@@ -147,6 +159,7 @@ export default function Reflection({
   canManage, registrations = [], previousEvents = [], users = [], onResendReflectionReminder, onSendReflectionsReport,
 }) {
   const [adding, setAdding] = useState(false);
+  const [addingForStaff, setAddingForStaff] = useState(false);
   const [sortBy, setSortBy] = useState("date-desc");
   const [separateWh, setSeparateWh] = useState(getSeparateWhDefault);
   const [expandedId, setExpandedId] = useState(null);
@@ -236,7 +249,7 @@ export default function Reflection({
     <div className="whmi-fade-in p-6 max-w-[900px] mx-auto space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="disp text-[22px] font-extrabold flex items-center gap-2"><NotebookPen size={20} style={{ color: "var(--accent-primary)" }} />Reflection</h1>
+          <h1 className="disp text-[22px] font-extrabold flex items-center gap-2"><NotebookPen size={20} style={{ color: "var(--accent-primary)" }} />Reflections</h1>
           <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Your CPD reflections - from Western Health events and any activity you add yourself.</p>
         </div>
         {!adding && view === "mine" && (
@@ -255,12 +268,39 @@ export default function Reflection({
       )}
 
       {view === "all" && canManage ? (
-        <AdminReflectionsOverview
-          registrations={registrations} previousEvents={previousEvents} reflections={whReflections} users={users}
-          onResend={onResendReflectionReminder} onSendReport={onSendReflectionsReport}
-        />
+        <>
+          <div className="flex justify-end">
+            {!addingForStaff && (
+              <button onClick={() => setAddingForStaff(true)} className="whmi-btn-ghost flex items-center gap-1.5"><Plus size={14} />Add Staff Reflection</button>
+            )}
+          </div>
+          {addingForStaff && (
+            <AddReflectionForm
+              staffOptions={users.filter(u => !u.isTest)}
+              onCancel={() => setAddingForStaff(false)}
+              onSubmit={(payload) => { onAddPersonalReflection?.(payload); setAddingForStaff(false); }}
+            />
+          )}
+          <AdminReflectionsOverview
+            registrations={registrations} previousEvents={previousEvents} reflections={whReflections} users={users}
+            onResend={onResendReflectionReminder} onSendReport={onSendReflectionsReport}
+          />
+        </>
       ) : (
       <>
+      {(() => {
+        const total = mine.personal.length + mine.wh.length;
+        const thisYear = new Date().getFullYear();
+        const thisYearCount = [...mine.personal, ...mine.wh].filter(r => r.date && new Date(`${r.date}T00:00:00`).getFullYear() === thisYear).length;
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <StatCard label="Total Reflections" value={total} icon={BookOpen} accent="var(--accent-primary)" />
+            <StatCard label={`This Year (${thisYear})`} value={thisYearCount} icon={CalendarClock} accent="var(--accent-success)" />
+            <StatCard label="Western Health CPD" value={mine.wh.length} sub={`${mine.personal.length} other activities`} icon={Building} accent="var(--accent-secondary)" />
+          </div>
+        );
+      })()}
+
       {adding && (
         <AddReflectionForm
           onCancel={() => setAdding(false)}

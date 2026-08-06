@@ -85,6 +85,15 @@ export function outstandingReflections(events, registrations, reflections) {
   return { count: outstanding.length, eventCount: new Set(outstanding.map(r => r.eventId)).size };
 }
 
+// Average feedback rating per month (by reflection submission date), for the Reports
+// month-to-month feedback trend chart. Mirrors monthlyHours/attendanceTrend's shape.
+export function feedbackTrend(reflections, months = 12) {
+  return lastNMonths(months).map(({ year, month, label }) => {
+    const ratings = reflections.filter(r => r.rating != null && r.submittedAt && inMonth(r.submittedAt.slice(0, 10), year, month)).map(r => r.rating);
+    return { month: label, rating: ratings.length === 0 ? null : Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 };
+  });
+}
+
 // Average rating across the most recent `limit` events that have any reflections
 // (event-level averages first, then averaged across events; not a flat reflection average).
 export function avgFeedback(reflections, { limit = 6 } = {}) {

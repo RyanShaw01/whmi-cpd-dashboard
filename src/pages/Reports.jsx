@@ -2,12 +2,30 @@ import { useEffect, useRef, useState } from "react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Download, Calendar, Users, AlertCircle, TrendingUp } from "lucide-react";
+import { Download, Calendar, Users, AlertCircle, TrendingUp, ChevronDown } from "lucide-react";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import StatCard from "../components/StatCard";
 import AllFeedbackPanel from "../components/AllFeedbackPanel";
-import { attendanceTrend, topicPopularity, monthlyHours, eventAttendedCount, avgFeedback } from "../lib/analytics";
+import { attendanceTrend, topicPopularity, monthlyHours, eventAttendedCount, avgFeedback, feedbackTrend } from "../lib/analytics";
 import { eventCpdHours, fmtDate } from "../lib/helpers";
+
+// A chart card the whole box (or just the arrow) toggles open/closed, highlighting on hover
+// like every other clickable card in the app (whmi-row-hover).
+function ChartCard({ title, sub, children, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="whmi-card p-4">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between gap-2 text-left whmi-row-hover -m-1 p-1 rounded-lg transition">
+        <div className="min-w-0">
+          <h2 className="disp text-[13.5px] font-bold">{title}</h2>
+          {sub && <p className="text-[10.5px] mt-0.5" style={{ color: "var(--text-faint)" }}>{sub}</p>}
+        </div>
+        <ChevronDown size={16} className="shrink-0 transition-transform" style={{ color: "var(--text-faint)", transform: open ? "rotate(180deg)" : "none" }} />
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </div>
+  );
+}
 
 function reportRows(previousEvents, registrations, reflections) {
   return previousEvents.map(ev => {
@@ -104,9 +122,10 @@ export default function Reports({ events, previousEvents, registrations, reflect
   const noShowRate = attendedCount + noShowCount === 0 ? null : Math.round((noShowCount / (attendedCount + noShowCount)) * 1000) / 10;
   const feedbackAvg = avgFeedback(reflections, { limit: previousEventsThisYear.length || 1 });
 
-  const trendData = attendanceTrend(previousEvents, registrations);
+  const trendData = attendanceTrend(previousEvents, registrations, 12);
   const topicData = topicPopularity(previousEvents, tags, { year });
-  const hoursData = monthlyHours(previousEvents);
+  const hoursData = monthlyHours(previousEvents, 12);
+  const feedbackTrendData = feedbackTrend(reflections, 12);
 
   const rows = reportRows(previousEventsThisYear, registrations, reflections);
   const statsForExport = [
@@ -129,10 +148,6 @@ export default function Reports({ events, previousEvents, registrations, reflect
         </div>
       </div>
 
-      <div ref={feedbackRef}>
-        <AllFeedbackPanel events={previousEventsThisYear} reflections={reflections} defaultOpen={highlightId === "feedback-section"} />
-      </div>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={`Total Events (${year})`} value={eventsThisYear.length} icon={Calendar} accent={primaryHex} />
         <StatCard label="Total Attendance" value={attendedCount} icon={Users} accent={successHex} />
@@ -140,38 +155,12 @@ export default function Reports({ events, previousEvents, registrations, reflect
         <StatCard label="Avg. Feedback" value={feedbackAvg != null ? `${feedbackAvg} / 10` : "—"} icon={TrendingUp} accent={primaryHex} />
       </div>
 
+      <div ref={feedbackRef}>
+        <AllFeedbackPanel events={previousEventsThisYear} reflections={reflections} defaultOpen={highlightId === "feedback-section"} />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div className="whmi-card p-4">
-          <h2 className="disp text-[13.5px] font-bold mb-1">Attendance Rate Trend</h2>
-          <p className="text-[10.5px] mb-2" style={{ color: "var(--text-faint)" }}>Percentage of registrants who attended</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} width={28} />
-              <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
-              <Line type="monotone" dataKey="rate" stroke={secondaryHex} strokeWidth={2.5} dot={{ r: 3, fill: secondaryHex }} connectNulls />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="whmi-card p-4">
-          <h2 className="disp text-[13.5px] font-bold mb-1">Events by Topic</h2>
-          <p className="text-[10.5px] mb-2" style={{ color: "var(--text-faint)" }}>Most frequently delivered topics this year</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={topicData} layout="vertical" margin={{ left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
-              <YAxis dataKey="topic" type="category" width={70} tick={{ fontSize: 10, fill: "var(--text-dim)" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="events" fill={successHex} radius={[0, 5, 5, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="whmi-card p-4">
-          <h2 className="disp text-[13.5px] font-bold mb-1">CPD Hours by Month</h2>
-          <p className="text-[10.5px] mb-2" style={{ color: "var(--text-faint)" }}>&nbsp;</p>
+        <ChartCard title="CPD Hours by Month" sub="Hours delivered, last 12 months">
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={hoursData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -181,7 +170,43 @@ export default function Reports({ events, previousEvents, registrations, reflect
               <Bar dataKey="hours" fill={primaryHex} radius={[5, 5, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </ChartCard>
+
+        <ChartCard title="Attendance Rate Trend" sub="Percentage of registrants who attended, last 12 months">
+          <ResponsiveContainer width="100%" height={160}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} width={28} />
+              <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+              <Line type="monotone" dataKey="rate" stroke={secondaryHex} strokeWidth={2.5} dot={{ r: 3, fill: secondaryHex }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Events by Topic" sub="Most frequently delivered topics this year">
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={topicData} layout="vertical" margin={{ left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="topic" type="category" width={70} tick={{ fontSize: 10, fill: "var(--text-dim)" }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+              <Bar dataKey="events" fill={successHex} radius={[0, 5, 5, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Avg. Feedback, Month to Month" sub="Average reflection rating out of 10, last 12 months">
+          <ResponsiveContainer width="100%" height={160}>
+            <LineChart data={feedbackTrendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 10]} tick={{ fontSize: 10, fill: "var(--text-faint)" }} axisLine={false} tickLine={false} width={28} />
+              <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+              <Line type="monotone" dataKey="rating" stroke={primaryHex} strokeWidth={2.5} dot={{ r: 3, fill: primaryHex }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
       </div>
     </div>
   );

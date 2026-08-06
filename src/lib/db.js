@@ -70,6 +70,10 @@ const eventFromRow = (r) => ({
   externalPrice: r.external_price == null ? null : Number(r.external_price),
   reflectionEmailOffsetMinutes: r.reflection_email_offset_minutes == null ? 20 : Number(r.reflection_email_offset_minutes),
   reflectionEmailOffsetDirection: r.reflection_email_offset_direction || "before",
+  certificatesEnabled: r.certificates_enabled !== false,
+  recurrenceGroupId: r.recurrence_group_id || null,
+  groupInUpcoming: r.group_in_upcoming !== false,
+  groupInPrevious: !!r.group_in_previous,
 });
 const eventToRow = (e) => ({
   title: e.title, topic: e.topic, date: e.date, start_time: e.start, end_time: e.end,
@@ -88,6 +92,10 @@ const eventToRow = (e) => ({
   external_price: e.externalPrice === "" || e.externalPrice == null ? null : Number(e.externalPrice),
   reflection_email_offset_minutes: e.reflectionEmailOffsetMinutes ?? 20,
   reflection_email_offset_direction: e.reflectionEmailOffsetDirection || "before",
+  certificates_enabled: e.certificatesEnabled !== false,
+  recurrence_group_id: e.recurrenceGroupId || null,
+  group_in_upcoming: e.groupInUpcoming !== false,
+  group_in_previous: !!e.groupInPrevious,
 });
 
 const certFromRow = (r) => ({
@@ -153,6 +161,10 @@ export async function fetchPreviousEvents() {
     id: r.id, title: r.title, topic: r.topic, date: r.date, attendance: r.attendance, capacity: r.capacity,
     feedback: r.feedback == null ? null : Number(r.feedback), presenter: r.presenter,
     start: r.start_time, end: r.end_time, mode: r.mode, recordingUrl: r.recording_url || "",
+    certificatesEnabled: r.certificates_enabled !== false,
+    recurrenceGroupId: r.recurrence_group_id || null,
+    groupInUpcoming: r.group_in_upcoming !== false,
+    groupInPrevious: !!r.group_in_previous,
   }));
 }
 
