@@ -42,16 +42,29 @@ export default function NotificationBell({ groups, redDotsEnabled, onNavigate, o
           )}
 
           <div className="space-y-1.5">
-            {groups.map(g => (
-              <div key={g.id} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: "var(--surface-2)" }}>
-                <button onClick={() => { onNavigate(g); setOpen(false); }} className="flex-1 text-left text-[12.5px] font-semibold">
-                  {g.label}
-                </button>
-                <button onClick={() => onAcknowledgeGroup(g)} className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" title="Acknowledge" style={{ color: "var(--text-faint)" }}>
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
+            {groups.map(g => {
+              // "what and who" detail for the hover tooltip — a couple of the underlying
+              // items' names/titles, so the group summary line has something to hover for.
+              const detail = (g.items || [])
+                .slice(0, 5)
+                .map(it => it.name || it.staff || it.title || it.email)
+                .filter(Boolean)
+                .join(", ");
+              return (
+                <div key={g.id} className="flex items-center gap-2 p-1 rounded-lg" style={{ background: "var(--surface-2)" }}>
+                  <button
+                    onClick={() => { onNavigate(g); setOpen(false); }}
+                    className="flex-1 text-left text-[12.5px] font-semibold whmi-row-hover transition rounded-lg p-1.5"
+                    title={detail || undefined}
+                  >
+                    {g.label}
+                  </button>
+                  <button onClick={() => onAcknowledgeGroup(g)} className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 whmi-row-hover transition" title="Acknowledge" style={{ color: "var(--text-faint)" }}>
+                    <X size={13} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

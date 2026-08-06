@@ -126,6 +126,7 @@ export default function App() {
   const [archiveInitialTab, setArchiveInitialTab] = useState(null);
   const [archiveInitialEditing, setArchiveInitialEditing] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [highlightRegIds, setHighlightRegIds] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
   const [toast, setToast] = useState(null);
   const showToast = (message) => setToast(message);
@@ -879,7 +880,16 @@ export default function App() {
   });
   const navigateToNotification = (g) => {
     setPage(g.page);
-    setHighlightId(g.items[0]?.id ?? null);
+    if (g.id === "registration") {
+      // Registration notifications point at a set of registration rows, not a single event
+      // card, so they get their own highlight target: the "All Current Registrations" panel,
+      // with just the new registrations outlined once it's scrolled into view.
+      setHighlightId("registrations-section");
+      setHighlightRegIds(new Set(g.items.map(i => i.id)));
+    } else {
+      setHighlightId(g.items[0]?.id ?? null);
+      setHighlightRegIds(null);
+    }
   };
   const changePage = (p) => { setPage(p); setHighlightId(null); };
 
@@ -1126,6 +1136,7 @@ export default function App() {
                 events={viewerEvents} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={canManage ? undefined : () => setSuggestIdeaOpen(true)}
                 registrations={registrations} onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField} onUpdateAttendanceStatus={handleUpdateAttendanceStatus}
                 dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
+                highlightRegIds={highlightRegIds}
               />
             )}
             {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} />}

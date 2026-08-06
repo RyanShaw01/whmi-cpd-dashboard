@@ -13,7 +13,7 @@ const SORT_OPTIONS = [
   { id: "alpha-desc", label: "Alphabetical (Z - A)" },
 ];
 
-export default function RegistrationsPanel({ event, registrations, canManage, dismissedPairs, onDelete, onUpdate, onUpdateAttendanceStatus, onMerge, onDismissPair }) {
+export default function RegistrationsPanel({ event, registrations, canManage, dismissedPairs, onDelete, onUpdate, onUpdateAttendanceStatus, onMerge, onDismissPair, highlightIds }) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("date-desc");
   const query = q.trim().toLowerCase();
@@ -66,7 +66,7 @@ export default function RegistrationsPanel({ event, registrations, canManage, di
       {filtered.length === 0 && <div className="text-[12px] p-2" style={{ color: "var(--text-faint)" }}>No matches.</div>}
 
       {filtered.map(r => (
-        <div key={r.id} className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
+        <div key={r.id} className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)", outline: highlightIds?.has(r.id) ? "2px solid #D9534F" : "none", outlineOffset: 1 }}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>

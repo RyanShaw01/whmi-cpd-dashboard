@@ -13,7 +13,7 @@ const SORT_OPTIONS = [
 
 export default function AllRegistrationsPanel({
   events, registrations, canManage, onDelete, onUpdate, onUpdateAttendanceStatus,
-  onMerge, onDismissPair, dismissedPairs,
+  onMerge, onDismissPair, dismissedPairs, highlightIds,
 }) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("date-desc");
@@ -97,6 +97,7 @@ export default function AllRegistrationsPanel({
                 event={event} registrations={regs} canManage={canManage}
                 onDelete={onDelete} onUpdate={onUpdate} onUpdateAttendanceStatus={onUpdateAttendanceStatus}
                 dismissedPairs={dismissedPairs} onMerge={onMerge} onDismissPair={onDismissPair}
+                highlightIds={highlightIds}
               />
             </div>
           ))}
@@ -106,8 +107,9 @@ export default function AllRegistrationsPanel({
           {sorted.length === 0 && <div className="text-[12px] p-2" style={{ color: "var(--text-faint)" }}>No matches.</div>}
           {sorted.map(r => {
             const ev = eventById.get(r.eventId);
+            const highlighted = highlightIds?.has(r.id);
             return (
-              <div key={r.id} className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
+              <div key={r.id} className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)", outline: highlighted ? "2px solid #D9534F" : "none", outlineOffset: 1 }}>
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="min-w-0">
                     <div className="text-[12.5px] font-semibold truncate">{r.name}</div>

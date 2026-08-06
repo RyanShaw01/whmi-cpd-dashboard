@@ -15,7 +15,7 @@ const SORT_OPTIONS = [
 export default function UpcomingEvents({
   events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea,
   registrations, onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
-  dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
+  dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair, highlightRegIds,
 }) {
   const [filter, setFilter] = useState("All");
   const [view, setView] = useState("grid");
@@ -245,6 +245,7 @@ export default function UpcomingEvents({
             events={events.filter(e => e.status === "Registration Open")} registrations={registrations} canManage={canManage}
             onDelete={onDeleteRegistration} onUpdate={onUpdateRegistration} onUpdateAttendanceStatus={onUpdateAttendanceStatus}
             dismissedPairs={dismissedRegistrationPairs} onMerge={onMergeRegistrations} onDismissPair={onDismissRegistrationPair}
+            highlightIds={highlightId === "registrations-section" ? highlightRegIds : null}
           />
         </div>
       )}
