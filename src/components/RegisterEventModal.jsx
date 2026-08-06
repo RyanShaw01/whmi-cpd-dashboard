@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, ClipboardList, Calendar, Clock, MapPin, UserCircle2 } from "lucide-react";
 import { fmtDate, fmtTimeRange12h, eventLocationSuffix, splitPeopleList } from "../lib/helpers";
 
@@ -15,6 +15,8 @@ export default function RegisterEventModal({ open, onClose, session, events, def
 
   const selectedEvent = openEvents.find(e => e.id === eventId);
   const isExternal = session?.userType === "external";
+  const eventListRef = useRef(null);
+  const eventButtonRefs = useRef({});
 
   useEffect(() => {
     if (!open) return;
@@ -25,6 +27,19 @@ export default function RegisterEventModal({ open, onClose, session, events, def
     setOrganisation(session?.organisation || "");
     setDietary(session?.dietaryRequirements || "");
     setAccessibility(session?.accessibility || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultEventId]);
+
+  // Scroll the chosen event to the top of the (potentially long) event list so
+  // clicking "Register" on a card doesn't leave the selection buried off-screen.
+  useEffect(() => {
+    if (!open) return;
+    const id = defaultEventId || openEvents[0]?.id;
+    if (!id) return;
+    requestAnimationFrame(() => {
+      const btn = eventButtonRefs.current[id];
+      if (btn && eventListRef.current) btn.scrollIntoView({ block: "start" });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultEventId]);
 
@@ -50,10 +65,10 @@ export default function RegisterEventModal({ open, onClose, session, events, def
         <form onSubmit={submit} className="p-5 space-y-3">
           <div>
             <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Event</label>
-            <div className="space-y-2 mt-1 max-h-64 overflow-y-auto whmi-scroll pr-0.5">
+            <div ref={eventListRef} className="space-y-2 mt-1 max-h-64 overflow-y-auto whmi-scroll pr-0.5">
               {openEvents.map(ev => (
                 <button
-                  key={ev.id} type="button" onClick={() => setEventId(ev.id)}
+                  key={ev.id} ref={el => { eventButtonRefs.current[ev.id] = el; }} type="button" onClick={() => setEventId(ev.id)}
                   className="w-full text-left p-3 rounded-xl transition"
                   style={{ border: `2px solid ${eventId === ev.id ? "var(--accent-primary)" : "var(--border)"}`, background: eventId === ev.id ? "var(--surface-2)" : "transparent" }}
                 >

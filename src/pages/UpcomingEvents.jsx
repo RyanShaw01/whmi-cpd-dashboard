@@ -207,54 +207,60 @@ export default function UpcomingEvents({
                   <div className="flex items-start gap-1.5"><UserCircle2 size={12} className="shrink-0 mt-0.5" /><span className="break-words">{ev.presenter}</span></div>
                 </div>
               </button>
-              <div className="mt-3">
-                {canManage ? (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openEvent(ev, "registrations"); }}
-                    className="w-full text-left rounded-lg -mx-1 px-1 py-0.5 whmi-row-hover transition"
-                    title="View registrations"
-                  >
-                    <div className="flex justify-between text-[11px] mb-1" style={{ color: "var(--text-faint)" }}>
-                      <span className="flex items-center gap-1"><Users size={10} className="shrink-0" />{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
-                      {ev.capacity != null && <span>{Math.round((ev.registered / ev.capacity) * 100)}%</span>}
-                    </div>
-                    {ev.capacity != null && (
+              {ev.capacity != null && (
+                <div className="mt-3">
+                  {canManage ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEvent(ev, "registrations"); }}
+                      className="w-full text-left rounded-lg -mx-1 px-1 py-0.5 whmi-row-hover transition"
+                      title="View registrations"
+                    >
                       <div className="h-1.5 rounded-full" style={{ background: "var(--surface-2)" }}>
                         <div className="h-1.5 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (ev.registered / ev.capacity) * 100)}%` }} />
                       </div>
-                    )}
-                  </button>
-                ) : (
-                  <div>
-                    <div className="flex justify-between text-[11px] mb-1" style={{ color: "var(--text-faint)" }}>
-                      <span className="flex items-center gap-1"><Users size={10} className="shrink-0" />{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}</span>
-                      {ev.capacity != null && <span>{Math.round((ev.registered / ev.capacity) * 100)}%</span>}
+                    </button>
+                  ) : (
+                    <div className="h-1.5 rounded-full" style={{ background: "var(--surface-2)" }}>
+                      <div className="h-1.5 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (ev.registered / ev.capacity) * 100)}%` }} />
                     </div>
-                    {ev.capacity != null && (
-                      <div className="h-1.5 rounded-full" style={{ background: "var(--surface-2)" }}>
-                        <div className="h-1.5 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (ev.registered / ev.capacity) * 100)}%` }} />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center justify-between gap-2 mt-2">
+                  )}
+                </div>
+              )}
+              <div className="flex items-end justify-between gap-2 mt-2">
                 {joinable ? (
                   <a href={ev.meetingUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: "var(--accent-secondary)" }}>
                     <Link2 size={12} />Join meeting here
                   </a>
                 ) : <span />}
-                {onOpenRegister && ev.status === "Registration Open" && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onOpenRegister(ev.id); }}
-                    className="text-[12px] font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 ml-auto"
-                    style={{ background: "#152A4E", color: "white" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "#1E3A63"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "#152A4E"; }}
-                  >
-                    Register <span className="transition-transform">→</span>
-                  </button>
-                )}
+                <div className="flex flex-col items-end gap-1.5 ml-auto">
+                  {canManage ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEvent(ev, "registrations"); }}
+                      className="flex items-center gap-1 text-[11px] rounded-lg -mx-1 px-1 whmi-row-hover transition"
+                      style={{ color: "var(--text-faint)" }}
+                      title="View registrations"
+                    >
+                      <Users size={10} className="shrink-0" />{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}
+                      {ev.capacity != null && <span className="ml-1">({Math.round((ev.registered / ev.capacity) * 100)}%)</span>}
+                    </button>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-faint)" }}>
+                      <Users size={10} className="shrink-0" />{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}
+                      {ev.capacity != null && <span className="ml-1">({Math.round((ev.registered / ev.capacity) * 100)}%)</span>}
+                    </span>
+                  )}
+                  {onOpenRegister && ev.status === "Registration Open" && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onOpenRegister(ev.id); }}
+                      className="text-[12px] font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1"
+                      style={{ background: "#152A4E", color: "white" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#1E3A63"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#152A4E"; }}
+                    >
+                      Register <span className="transition-transform">→</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

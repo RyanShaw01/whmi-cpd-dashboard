@@ -1112,7 +1112,9 @@ export default function App() {
     // Internal viewers get read-only access to Upcoming/Previous Events, scoped to events WH
     // has offered externally too — anything WH-internal-only stays admin/owner-visible only.
     const viewerEvents = canManage ? eventsWithLiveCounts : eventsWithLiveCounts.filter(e => e.openToExternal && e.status === "Registration Open");
-    const viewerPreviousEvents = canManage ? previousEventsWithLiveStats : previousEventsWithLiveStats.filter(e => e.openToExternal);
+    // Internal staff (viewer role, @wh.org.au accounts) see the full previous-events history;
+    // external viewers stay scoped to events WH has opted to share externally.
+    const viewerPreviousEvents = (canManage || viewSession.userType === "internal") ? previousEventsWithLiveStats : previousEventsWithLiveStats.filter(e => e.openToExternal);
     const badgePages = redDotsEnabled ? {
       upcoming: notificationGroups.some(g => g.id === "event-draft" || g.id === "event-approval"),
       certificates: notificationGroups.some(g => g.id === "cert-approval"),
