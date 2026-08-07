@@ -4,11 +4,14 @@
 // public QR/link flow has no session to email-from-account-context the way other functions do.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
+import { wrapEmailHtml, paragraphsHtml, detailRowsHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const SITE_URL = Deno.env.get("SITE_URL") || "https://whmi-cpd-dashboard.vercel.app";
 
 const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -42,25 +45,48 @@ Deno.serve(async (req) => {
     }
 
     const location = [event.campus, event.location].filter(Boolean).join(" - ");
+    const timeRange = `${fmtTime(event.start_time)} - ${fmtTime(event.end_time)}`;
+    const eventUrl = `${SITE_URL}/event/${eventId}`;
+
     const bodyLines = [
       `Hi ${name},`,
       "",
       `You're registered for "${event.title}".`,
       "",
       `Date: ${fmtDate(event.date)}`,
-      `Time: ${fmtTime(event.start_time)} - ${fmtTime(event.end_time)}`,
+      `Time: ${timeRange}`,
       location ? `Location: ${location}` : "",
       event.presenter ? `Presenter: ${event.presenter}` : "",
+      "",
+      `View the event: ${eventUrl}`,
       "",
       "We look forward to seeing you there. You'll receive a follow-up email with a link to submit your reflection and receive your CPD certificate after the event.",
       "",
       "— WHMI Education Team",
     ];
 
+    const html = wrapEmailHtml({
+      preheader: `You're registered for ${event.title}`,
+      title: `Registration confirmed: ${event.title}`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">You're registered! 🎉</h1>
+        ${paragraphsHtml(`Hi ${name},\n\nYou're registered for "${event.title}".`)}
+        ${detailRowsHtml([
+          { label: "Date", value: fmtDate(event.date) },
+          { label: "Time", value: timeRange },
+          { label: "Location", value: location },
+          { label: "Presenter", value: event.presenter },
+        ])}
+        ${btnHtml("View event details", eventUrl)}
+        ${paragraphsHtml("We look forward to seeing you there. You'll receive a follow-up email with a link to submit your reflection and receive your CPD certificate after the event.")}
+      `,
+    });
+
     const emailResult = await sendEmail({
       to: email,
       subject: `Registration confirmed: ${event.title}`,
       text: bodyLines.filter(l => l !== undefined).join("\n"),
+      html,
     });
     if (!emailResult.ok) {
       return new Response(JSON.stringify({ ok: false, error: emailResult.error || "email failed to send" }), { status: 502, headers: CORS_HEADERS });

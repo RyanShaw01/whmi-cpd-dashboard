@@ -1,8 +1,9 @@
 // Admin/owner-only: sends a one-off "please submit your reflection" reminder email to a
-// specific registrant for a past event, so admins aren't stuck waiting on the (not yet built)
-// automated post-event email job to follow up with stragglers individually.
+// specific registrant for a past event, so admins aren't stuck waiting on the automated
+// post-event email job (send-event-reminders) to follow up with stragglers individually.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
+import { wrapEmailHtml, paragraphsHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -36,10 +37,23 @@ Deno.serve(async (req) => {
     }
 
     const link = `${SITE_URL}/event/${eventId}/reflect`;
+
+    const html = wrapEmailHtml({
+      preheader: `Submit your reflection for ${eventTitle} to get your CPD certificate`,
+      title: `Reminder: submit your reflection for ${eventTitle}`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Just a friendly reminder</h1>
+        ${paragraphsHtml(`Hello ${name},\n\nYou attended "${eventTitle}", but we haven't received your reflection yet. Submit it to get your CPD certificate.`)}
+        ${btnHtml("Submit your reflection", link)}
+        ${paragraphsHtml("If you've already submitted this, you can disregard this reminder.")}
+      `,
+    });
+
     const emailResult = await sendEmail({
       to: email,
       subject: `Reminder: submit your reflection for ${eventTitle}`,
       text: `Hello ${name},\n\nYou attended ${eventTitle}, but we haven't received your reflection yet. Submit it here to get your CPD certificate:\n${link}\n\nIf you've already submitted this, you can disregard this reminder.\n\nRegards,\nWHMI Education Team`,
+      html,
     });
 
     return new Response(JSON.stringify({ ok: emailResult.ok, error: emailResult.error }), { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });

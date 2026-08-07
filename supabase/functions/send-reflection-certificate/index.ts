@@ -4,6 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildCertificatePdf, hoursLabel } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/resend.ts";
+import { certificateEmailHtml } from "../_shared/emailTemplate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -60,10 +61,12 @@ Deno.serve(async (req) => {
     if (uploadError) console.error("certificate upload failed", uploadError);
 
     const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+    const shortDateLabel = `on ${eventDate.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}`;
     const emailResult = await sendEmail({
       to: reflection.email,
       subject: `Your CPD Certificate — ${event.title}`,
-      text: `Hello ${reflection.name},\n\nPlease find attached your CPD certificate for ${event.title} on ${eventDate.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}.\n\nYour submitted reflection:\n${reflection.content}\n\nThis is an automated email and certificate. If there are any issues please contact the CPD facilitator or the WH Medical Imaging Education Team.\n\nRegards,\nWHMI Education Team`,
+      text: `Hello ${reflection.name},\n\nPlease find attached your CPD certificate for ${event.title} ${shortDateLabel}.\n\nYour submitted reflection:\n${reflection.content}\n\nThis is an automated email and certificate. If there are any issues please contact the CPD facilitator or the WH Medical Imaging Education Team.\n\nRegards,\nWHMI Education Team`,
+      html: certificateEmailHtml({ name: reflection.name, sessionName: event.title, dateLabel: shortDateLabel, reflectionContent: reflection.content }),
       attachments: [{ filename: `${event.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });
 

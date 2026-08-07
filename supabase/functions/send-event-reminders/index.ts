@@ -1,11 +1,9 @@
 // Invoked on a schedule by pg_cron/pg_net (see supabase/migration_phase8.sql), never by a
 // user — protected by a shared secret instead of a user session. Finds events that ended
 // 25-40 minutes ago and emails a reminder to every registrant who hasn't been reminded yet.
-//
-// PLACEHOLDER COPY: swap REMINDER_TEXT below for the user's real reminder-email draft
-// before this goes live.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
+import { wrapEmailHtml, paragraphsHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
 const SITE_URL = Deno.env.get("SITE_URL") || "http://localhost:5173";
@@ -13,6 +11,19 @@ const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPAB
 
 function reminderText(name: string, eventTitle: string, reflectUrl: string) {
   return `Hi ${name},\n\nThanks for attending ${eventTitle}. We hope you found it valuable.\n\nWe'd love to hear your thoughts — please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.\n\nFill in your reflection here: ${reflectUrl}\n\nRegards,\nWHMI Education Team`;
+}
+
+function reminderHtml(name: string, eventTitle: string, reflectUrl: string) {
+  return wrapEmailHtml({
+    preheader: `Submit your reflection for ${eventTitle} to get your CPD certificate`,
+    title: `Thanks for attending ${eventTitle}`,
+    bodyHtml: `
+      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thanks for coming along!</h1>
+      ${paragraphsHtml(`Hi ${name},\n\nThanks for attending "${eventTitle}". We hope you found it valuable.\n\nWe'd love to hear your thoughts — please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.`)}
+      ${btnHtml("Submit your reflection", reflectUrl)}
+      ${paragraphsHtml("It only takes a couple of minutes, and your certificate lands in your inbox right after.")}
+    `,
+  });
 }
 
 Deno.serve(async (req) => {
@@ -51,6 +62,7 @@ Deno.serve(async (req) => {
           to: reg.email,
           subject: `Thanks for attending ${event.title} — share your feedback`,
           text: reminderText(reg.name, event.title, reflectUrl),
+          html: reminderHtml(reg.name, event.title, reflectUrl),
         });
         if (result.ok) {
           await supabase.from("registrations").update({ reminder_sent_at: new Date().toISOString() }).eq("id", reg.id);

@@ -6,6 +6,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildCertificatePdf, hoursLabel } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/resend.ts";
+import { certificateEmailHtml } from "../_shared/emailTemplate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -63,10 +64,12 @@ Deno.serve(async (req) => {
     if (uploadError) console.error("certificate upload failed", uploadError);
 
     const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+    const shortDateLabel = dateLabel.charAt(0).toLowerCase() + dateLabel.slice(1);
     const emailResult = await sendEmail({
       to: email,
       subject: `Your CPD Certificate — ${sessionName}`,
-      text: `Hello ${name},\n\nPlease find attached your CPD certificate for ${sessionName} ${dateLabel.charAt(0).toLowerCase() + dateLabel.slice(1)}.\n\nThis is an automated email and certificate. If there are any issues please contact the CPD facilitator or the WH Medical Imaging Education Team.\n\nRegards,\nWHMI Education Team`,
+      text: `Hello ${name},\n\nPlease find attached your CPD certificate for ${sessionName} ${shortDateLabel}.\n\nThis is an automated email and certificate. If there are any issues please contact the CPD facilitator or the WH Medical Imaging Education Team.\n\nRegards,\nWHMI Education Team`,
+      html: certificateEmailHtml({ name, sessionName, dateLabel: shortDateLabel }),
       attachments: uploadError ? undefined : [{ filename: `${sessionName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });
 

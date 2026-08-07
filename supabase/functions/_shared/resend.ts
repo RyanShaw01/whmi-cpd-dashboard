@@ -5,11 +5,12 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "WHMI CPD <onboarding@resend.dev>";
 
 export async function sendEmail({
-  to, subject, text, attachments,
+  to, subject, text, html, attachments,
 }: {
   to: string;
   subject: string;
   text: string;
+  html?: string; // optional branded HTML version; `text` is always sent too as the plain-text fallback
   attachments?: { filename: string; content: string }[]; // content = base64
 }) {
   if (!RESEND_API_KEY) {
@@ -22,7 +23,7 @@ export async function sendEmail({
       Authorization: `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, text, attachments }),
+    body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, text, ...(html ? { html } : {}), attachments }),
   });
   if (!res.ok) {
     const body = await res.text();
