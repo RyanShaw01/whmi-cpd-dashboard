@@ -44,11 +44,11 @@ Deno.serve(async (req) => {
         bodyLines.push(`Q: ${item.question}`, `A: ${item.answer}`, "");
       }
     }
-    bodyLines.push("", "— WHMI CPD Dashboard");
+    bodyLines.push("", "- WHMI CPD Dashboard");
 
     const emailResult = await sendEmail({
       to: callerRow.email,
-      subject: `Your CPD Reflection — ${activityName}`,
+      subject: `Your CPD Reflection: ${activityName}`,
       text: bodyLines.filter(l => l !== undefined).join("\n"),
     });
     if (!emailResult.ok) {

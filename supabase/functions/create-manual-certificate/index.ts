@@ -67,8 +67,8 @@ Deno.serve(async (req) => {
     const shortDateLabel = dateLabel.charAt(0).toLowerCase() + dateLabel.slice(1);
     const emailResult = await sendEmail({
       to: email,
-      subject: `Your CPD Certificate — ${sessionName}`,
-      text: `Hello ${name},\n\nPlease find attached your CPD certificate for ${sessionName} ${shortDateLabel}.\n\nThis is an automated email and certificate. If there are any issues please contact the CPD facilitator or the WH Medical Imaging Education Team.\n\nRegards,\nWHMI Education Team`,
+      subject: `Your CPD Certificate: ${sessionName}`,
+      text: `Hello ${name},\n\nPlease find attached your CPD certificate for ${sessionName} ${shortDateLabel}.\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
       html: certificateEmailHtml({ name, sessionName, dateLabel: shortDateLabel }),
       attachments: uploadError ? undefined : [{ filename: `${sessionName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });

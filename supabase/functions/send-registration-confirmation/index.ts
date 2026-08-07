@@ -4,7 +4,7 @@
 // public QR/link flow has no session to email-from-account-context the way other functions do.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
-import { wrapEmailHtml, paragraphsHtml, detailRowsHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
+import { wrapEmailHtml, paragraphsHtml, detailRowsHtml, sideBySideButtonsHtml, disclaimerHtml, boldHtml, escapeHtml, BLUE, GREEN } from "../_shared/emailTemplate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
     const location = [event.campus, event.location].filter(Boolean).join(" - ");
     const timeRange = `${fmtTime(event.start_time)} - ${fmtTime(event.end_time)}`;
     const eventUrl = `${SITE_URL}/event/${eventId}`;
+    const isOnline = (event.mode === "Online" || event.mode === "Hybrid") && !!event.meeting_url;
 
     const bodyLines = [
       `Hi ${name},`,
@@ -59,25 +60,31 @@ Deno.serve(async (req) => {
       event.presenter ? `Presenter: ${event.presenter}` : "",
       "",
       `View the event: ${eventUrl}`,
+      isOnline ? `Join online: ${event.meeting_url} (only active from 20 minutes before the event)` : "",
       "",
       "We look forward to seeing you there. You'll receive a follow-up email with a link to submit your reflection and receive your CPD certificate after the event.",
       "",
-      "— WHMI Education Team",
+      "- WHMI Education Team",
     ];
 
     const html = wrapEmailHtml({
       preheader: `You're registered for ${event.title}`,
       title: `Registration confirmed: ${event.title}`,
       bodyHtml: `
-        <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">You're registered! 🎉</h1>
-        ${paragraphsHtml(`Hi ${name},\n\nYou're registered for "${event.title}".`)}
+        <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">You're registered</h1>
+        <p style="margin:0 0 14px 0;">Hi ${escapeHtml(name)},</p>
+        <p style="margin:0 0 14px 0;">You're registered for ${boldHtml(event.title)}.</p>
         ${detailRowsHtml([
           { label: "Date", value: fmtDate(event.date) },
           { label: "Time", value: timeRange },
           { label: "Location", value: location },
           { label: "Presenter", value: event.presenter },
         ])}
-        ${btnHtml("View event details", eventUrl)}
+        ${sideBySideButtonsHtml([
+          { label: "View event details", href: eventUrl, color: BLUE },
+          ...(isOnline ? [{ label: "Join online", href: event.meeting_url, color: GREEN }] : []),
+        ])}
+        ${isOnline ? disclaimerHtml("The online event button will only work from 20 minutes before the event starts.") : ""}
         ${paragraphsHtml("We look forward to seeing you there. You'll receive a follow-up email with a link to submit your reflection and receive your CPD certificate after the event.")}
       `,
     });

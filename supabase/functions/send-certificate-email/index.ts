@@ -49,8 +49,8 @@ Deno.serve(async (req) => {
       : "";
     const emailResult = await sendEmail({
       to: cert.recipient_email,
-      subject: `Your CPD Certificate — ${cert.event_title}`,
-      text: `Hello ${cert.staff_name},\n\nPlease find attached your CPD certificate for ${cert.event_title}${shortDateLabel ? ` ${shortDateLabel}` : ""}.\n\nThis is an automated email and certificate. If there are any issues please contact the CPD facilitator or the WH Medical Imaging Education Team.\n\nRegards,\nWHMI Education Team`,
+      subject: `Your CPD Certificate: ${cert.event_title}`,
+      text: `Hello ${cert.staff_name},\n\nPlease find attached your CPD certificate for ${cert.event_title}${shortDateLabel ? ` ${shortDateLabel}` : ""}.\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
       html: certificateEmailHtml({ name: cert.staff_name, sessionName: cert.event_title, dateLabel: shortDateLabel }),
       attachments: [{ filename: `${cert.event_title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });

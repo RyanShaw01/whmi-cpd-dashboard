@@ -1,16 +1,16 @@
 // Invoked on a schedule by pg_cron/pg_net (see supabase/migration_phase8.sql), never by a
-// user — protected by a shared secret instead of a user session. Finds events that ended
+// user - protected by a shared secret instead of a user session. Finds events that ended
 // 25-40 minutes ago and emails a reminder to every registrant who hasn't been reminded yet.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
-import { wrapEmailHtml, paragraphsHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
+import { wrapEmailHtml, boldHtml, escapeHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
 const SITE_URL = Deno.env.get("SITE_URL") || "http://localhost:5173";
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
 function reminderText(name: string, eventTitle: string, reflectUrl: string) {
-  return `Hi ${name},\n\nThanks for attending ${eventTitle}. We hope you found it valuable.\n\nWe'd love to hear your thoughts — please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.\n\nFill in your reflection here: ${reflectUrl}\n\nRegards,\nWHMI Education Team`;
+  return `Hi ${name},\n\nThanks for attending ${eventTitle}. We hope you found it valuable.\n\nWe'd love to hear your thoughts. Please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.\n\nFill in your reflection here: ${reflectUrl}\n\n- WHMI Education Team`;
 }
 
 function reminderHtml(name: string, eventTitle: string, reflectUrl: string) {
@@ -18,10 +18,12 @@ function reminderHtml(name: string, eventTitle: string, reflectUrl: string) {
     preheader: `Submit your reflection for ${eventTitle} to get your CPD certificate`,
     title: `Thanks for attending ${eventTitle}`,
     bodyHtml: `
-      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thanks for coming along!</h1>
-      ${paragraphsHtml(`Hi ${name},\n\nThanks for attending "${eventTitle}". We hope you found it valuable.\n\nWe'd love to hear your thoughts — please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.`)}
+      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thanks for coming along</h1>
+      <p style="margin:0 0 14px 0;">Hi ${escapeHtml(name)},</p>
+      <p style="margin:0 0 14px 0;">Thanks for attending ${boldHtml(eventTitle)}. We hope you found it valuable.</p>
+      <p style="margin:0 0 14px 0;">We'd love to hear your thoughts. Please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.</p>
       ${btnHtml("Submit your reflection", reflectUrl)}
-      ${paragraphsHtml("It only takes a couple of minutes, and your certificate lands in your inbox right after.")}
+      <p style="margin:0 0 14px 0;">It only takes a couple of minutes, and your certificate lands in your inbox right after.</p>
     `,
   });
 }
@@ -60,7 +62,7 @@ Deno.serve(async (req) => {
         const reflectUrl = `${SITE_URL}/event/${event.id}/reflect`;
         const result = await sendEmail({
           to: reg.email,
-          subject: `Thanks for attending ${event.title} — share your feedback`,
+          subject: `Thanks for attending ${event.title}: share your feedback`,
           text: reminderText(reg.name, event.title, reflectUrl),
           html: reminderHtml(reg.name, event.title, reflectUrl),
         });

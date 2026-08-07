@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     }
 
     const bodyLines: string[] = [
-      `CPD Reflections Report${toName ? ` — ${toName}` : ""}`,
+      `CPD Reflections Report${toName ? `: ${toName}` : ""}`,
       `${entries.length} reflection${entries.length === 1 ? "" : "s"}`,
       "",
     ];
@@ -54,11 +54,11 @@ Deno.serve(async (req) => {
       }
       bodyLines.push("");
     }
-    bodyLines.push("— WHMI CPD Dashboard");
+    bodyLines.push("- WHMI CPD Dashboard");
 
     const emailResult = await sendEmail({
       to: toEmail,
-      subject: `CPD Reflections Report${toName ? ` — ${toName}` : ""}`,
+      subject: `CPD Reflections Report${toName ? `: ${toName}` : ""}`,
       text: bodyLines.filter(l => l !== undefined).join("\n"),
     });
     if (!emailResult.ok) {

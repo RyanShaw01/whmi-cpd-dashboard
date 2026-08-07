@@ -3,7 +3,7 @@
 // post-event email job (send-event-reminders) to follow up with stragglers individually.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
-import { wrapEmailHtml, paragraphsHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
+import { wrapEmailHtml, boldHtml, escapeHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -43,16 +43,17 @@ Deno.serve(async (req) => {
       title: `Reminder: submit your reflection for ${eventTitle}`,
       bodyHtml: `
         <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Just a friendly reminder</h1>
-        ${paragraphsHtml(`Hello ${name},\n\nYou attended "${eventTitle}", but we haven't received your reflection yet. Submit it to get your CPD certificate.`)}
+        <p style="margin:0 0 14px 0;">Hello ${escapeHtml(name)},</p>
+        <p style="margin:0 0 14px 0;">You attended ${boldHtml(eventTitle)}, but we haven't received your reflection yet. Submit it to get your CPD certificate.</p>
         ${btnHtml("Submit your reflection", link)}
-        ${paragraphsHtml("If you've already submitted this, you can disregard this reminder.")}
+        <p style="margin:0 0 14px 0;">If you've already submitted this, you can disregard this reminder.</p>
       `,
     });
 
     const emailResult = await sendEmail({
       to: email,
       subject: `Reminder: submit your reflection for ${eventTitle}`,
-      text: `Hello ${name},\n\nYou attended ${eventTitle}, but we haven't received your reflection yet. Submit it here to get your CPD certificate:\n${link}\n\nIf you've already submitted this, you can disregard this reminder.\n\nRegards,\nWHMI Education Team`,
+      text: `Hello ${name},\n\nYou attended ${eventTitle}, but we haven't received your reflection yet. Submit it here to get your CPD certificate:\n${link}\n\nIf you've already submitted this, you can disregard this reminder.\n\n- WHMI Education Team`,
       html,
     });
 
