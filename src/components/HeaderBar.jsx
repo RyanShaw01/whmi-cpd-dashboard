@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Sun, Moon, MoonStar, Eye, X, ChevronDown } from "lucide-react";
+import { Sun, Moon, MoonStar, Eye, X, ChevronDown, ChevronRight } from "lucide-react";
 import CharacterAvatar from "./CharacterAvatar";
 import SearchDropdown from "./SearchDropdown";
 import NotificationBell from "./NotificationBell";
@@ -12,6 +12,7 @@ const THEME_OPTIONS = [
 
 function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme, cardTheme, setCardTheme }) {
   const [open, setOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const rootRef = useRef(null);
 
   useEffect(() => {
@@ -45,18 +46,56 @@ function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme, cardTheme, setCar
               </button>
             ))}
           </div>
-          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-faint)" }}>Sidebar &amp; Header</div>
-          <select value={theme} onChange={e => setTheme(e.target.value)} className="whmi-input w-full px-2 py-1.5 text-[12px] mb-2.5">
-            {THEME_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-          </select>
-          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-faint)" }}>Main Page</div>
-          <select value={resolvedMain} onChange={e => setMainTheme(e.target.value)} className="whmi-input w-full px-2 py-1.5 text-[12px] mb-2.5">
-            {THEME_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-          </select>
-          <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-faint)" }}>Cards &amp; Popups</div>
-          <select value={resolvedCard} onChange={e => setCardTheme(e.target.value)} className="whmi-input w-full px-2 py-1.5 text-[12px]">
-            {THEME_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-          </select>
+          <button onClick={() => setAdvancedOpen(x => !x)} className="w-full flex items-center gap-1.5 py-1 -mx-1 px-1 rounded-lg whmi-row-hover transition">
+            {advancedOpen ? <ChevronDown size={12} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={12} style={{ color: "var(--text-faint)" }} />}
+            <span className="text-[10.5px] font-bold uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>Advanced</span>
+          </button>
+          {advancedOpen && (
+            <div className="mt-2 space-y-2.5">
+              <div>
+                <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-faint)" }}>Sidebar &amp; Header</div>
+                <div className="flex gap-1.5">
+                  {THEME_OPTIONS.map(o => (
+                    <button
+                      key={o.id} onClick={() => setTheme(o.id)}
+                      className="flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10.5px] font-semibold"
+                      style={theme === o.id ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
+                    >
+                      <o.icon size={13} />{o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-faint)" }}>Main Page</div>
+                <div className="flex gap-1.5">
+                  {THEME_OPTIONS.map(o => (
+                    <button
+                      key={o.id} onClick={() => setMainTheme(o.id)}
+                      className="flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10.5px] font-semibold"
+                      style={resolvedMain === o.id ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
+                    >
+                      <o.icon size={13} />{o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-faint)" }}>Cards &amp; Popups</div>
+                <div className="flex gap-1.5">
+                  {THEME_OPTIONS.map(o => (
+                    <button
+                      key={o.id} onClick={() => setCardTheme(o.id)}
+                      className="flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10.5px] font-semibold"
+                      style={resolvedCard === o.id ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface-2)", color: "var(--text-dim)" }}
+                    >
+                      <o.icon size={13} />{o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
