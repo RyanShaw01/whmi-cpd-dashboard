@@ -388,7 +388,10 @@ export async function upsertAppSetting(key, value) {
 /* ---------------------------------------------------------------------- */
 /* tags (admin-managed event topics)                                      */
 /* ---------------------------------------------------------------------- */
-const tagFromRow = (r) => ({ id: r.id, name: r.name, sortOrder: r.sort_order });
+// isModality is undefined until the `is_modality` migration has been run (the column simply
+// won't be present on the row) — callers should fall back to the legacy hardcoded name list in
+// that case rather than treating undefined as "not a modality".
+const tagFromRow = (r) => ({ id: r.id, name: r.name, sortOrder: r.sort_order, isModality: r.is_modality });
 
 export async function fetchTags() {
   if (!supabaseConfigured) return [];
@@ -398,7 +401,7 @@ export async function fetchTags() {
 }
 export async function insertTag(tag) {
   if (!supabaseConfigured) return;
-  const { error } = await supabase.from("tags").insert({ id: tag.id, name: tag.name, sort_order: tag.sortOrder ?? 0 });
+  const { error } = await supabase.from("tags").insert({ id: tag.id, name: tag.name, sort_order: tag.sortOrder ?? 0, is_modality: tag.isModality ?? false });
   if (error) console.error("insertTag", error);
 }
 export async function updateTag(id, patch) {
@@ -406,6 +409,7 @@ export async function updateTag(id, patch) {
   const row = {};
   if ("name" in patch) row.name = patch.name;
   if ("sortOrder" in patch) row.sort_order = patch.sortOrder;
+  if ("isModality" in patch) row.is_modality = patch.isModality;
   const { error } = await supabase.from("tags").update(row).eq("id", id);
   if (error) console.error("updateTag", error);
 }

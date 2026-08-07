@@ -250,7 +250,7 @@ function hexToRgb(hex) {
   return rgb(parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255);
 }
 
-export default function Reports({ events, previousEvents, registrations, reflections, primaryHex, secondaryHex, successHex, tags = [], highlightId }) {
+export default function Reports({ events, previousEvents, registrations, reflections, primaryHex, secondaryHex, successHex, tags = [], highlightId, onNavigatePage }) {
   const feedbackRef = useRef(null);
   const [expandedChart, setExpandedChart] = useState(null);
   useEffect(() => {
@@ -267,6 +267,7 @@ export default function Reports({ events, previousEvents, registrations, reflect
   const attendedCount = registrationsThisYear.filter(r => r.attendanceStatus === "Attended").length;
   const noShowCount = registrationsThisYear.filter(r => r.attendanceStatus === "No Show").length;
   const noShowRate = attendedCount + noShowCount === 0 ? null : Math.round((noShowCount / (attendedCount + noShowCount)) * 1000) / 10;
+  const attendanceRate = attendedCount + noShowCount === 0 ? null : Math.round((attendedCount / (attendedCount + noShowCount)) * 1000) / 10;
   const feedbackAvg = avgFeedback(reflections, { limit: previousEventsThisYear.length || 1 });
 
   const trendData = attendanceTrend(previousEvents, registrations, 12);
@@ -410,10 +411,10 @@ export default function Reports({ events, previousEvents, registrations, reflect
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label={`Total Events (${year})`} value={eventsThisYear.length} icon={Calendar} accent={primaryHex} />
-        <StatCard label="Total Attendance" value={attendedCount} icon={Users} accent={successHex} />
-        <StatCard label="No-show Rate" value={noShowRate != null ? `${noShowRate}%` : "—"} icon={AlertCircle} accent={secondaryHex} />
-        <StatCard label="Avg. Feedback" value={feedbackAvg != null ? `${feedbackAvg} / 10` : "—"} icon={TrendingUp} accent={primaryHex} />
+        <StatCard label={`Total Events (${year})`} value={eventsThisYear.length} icon={Calendar} accent={primaryHex} onClick={onNavigatePage ? () => onNavigatePage("previous") : undefined} />
+        <StatCard label="Total Attendees" value={attendedCount} icon={Users} accent={successHex} hoverable />
+        <StatCard label="Avg. attendance rate" value={attendanceRate != null ? `${attendanceRate}%` : "—"} icon={AlertCircle} accent={secondaryHex} onClick={() => setExpandedChart(chartCards.find(c => c.id === "rate"))} />
+        <StatCard label="Avg. Feedback" value={feedbackAvg != null ? `${feedbackAvg} / 10` : "—"} icon={TrendingUp} accent={primaryHex} onClick={() => feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
       </div>
 
       <div ref={feedbackRef}>

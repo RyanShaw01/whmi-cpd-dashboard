@@ -606,6 +606,11 @@ export default function App() {
     deleteTag(tag.id);
     pushAudit({ actorId: session?.id, action: "tag.deleted", entityType: "tag", entityId: tag.id, details: { name: tag.name } });
   });
+  const handleToggleTagModality = (tag) => {
+    const isModality = !tag.isModality;
+    setTags(prev => prev.map(t => t.id === tag.id ? { ...t, isModality } : t));
+    updateTag(tag.id, { isModality });
+  };
   const handleReorderTags = (newOrder) => {
     const withOrder = newOrder.map((t, i) => ({ ...t, sortOrder: i }));
     setTags(withOrder);
@@ -1180,7 +1185,7 @@ export default function App() {
             )}
             {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} onRequestDeleteMultiple={requestDeletePreviousEvents} />}
             {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility} onSaveExternalParticipant={handleSaveExternalParticipant} onRequestDeleteExternalParticipant={requestDeleteExternalParticipant} />}
-            {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} highlightId={page === "reports" ? highlightId : null} />}
+            {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} highlightId={page === "reports" ? highlightId : null} onNavigatePage={changePage} />}
             {page === "certificates" && (
               <Certificates
                 certificates={certificates} canManage={canManage} onRequestDelete={requestDeleteCertificate} onApprove={handleApproveCertificate}
@@ -1223,7 +1228,7 @@ export default function App() {
                 onReplayTour={() => { changePage(homePage); setShowTour(true); }}
                 onRevokeSession={handleRevokeSession}
                 cpdTypes={cpdTypes} onSaveCpdType={requestSaveCpdType} onDeleteCpdType={requestDeleteCpdType} onReorderCpdTypes={handleReorderCpdTypes}
-                tags={tags} onSaveTag={requestSaveTag} onDeleteTag={requestDeleteTag} onReorderTags={handleReorderTags}
+                tags={tags} onSaveTag={requestSaveTag} onDeleteTag={requestDeleteTag} onReorderTags={handleReorderTags} onToggleTagModality={handleToggleTagModality}
                 onBackfillStaffLinks={handleBackfillStaffLinks} auditLog={auditLog}
                 avatarIcons={avatarIcons} onSaveAvatarIcon={requestSaveAvatarIcon} onDeleteAvatarIcon={requestDeleteAvatarIcon}
                 onReorderAvatarIcons={handleReorderAvatarIcons} onUploadAvatarIconImage={handleUploadAvatarIconImage}

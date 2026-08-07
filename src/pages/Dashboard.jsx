@@ -229,7 +229,9 @@ export default function Dashboard({
         <p className="text-[11.5px] mb-2" style={{ color: "var(--text-faint)" }}>In-person vs online, completed events</p>
         <ResponsiveContainer width="100%" height={200}>
           <PieChart>
-            <Pie data={modeData} dataKey="value" innerRadius={50} outerRadius={75} paddingAngle={3}>
+            {/* Percentage-based (not fixed pixel) radii so the pie scales down with the card
+                instead of overflowing/getting clipped on narrower desktop widths. */}
+            <Pie data={modeData} dataKey="value" innerRadius="45%" outerRadius="70%" paddingAngle={3}>
               {modeData.map((e, i) => <Cell key={i} fill={[primaryHex, secondaryHex][i]} />)}
             </Pie>
             <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />

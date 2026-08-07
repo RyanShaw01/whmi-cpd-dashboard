@@ -5,7 +5,7 @@ import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
 import { getSeparateWhDefault, setSeparateWhDefault } from "./Reflection";
 import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS, DEFAULT_LAYOUT, STAFF_FIELD_DEFS } from "../data/mockData";
-import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault, getEventCardViewDefault, setEventCardViewDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
+import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault, getEventCardViewDefault, setEventCardViewDefault, getDashboardEventViewDefault, setDashboardEventViewDefault, tagIsModality } from "../lib/helpers";
 
 // Click-and-drag reordering for any of the arrow-reorderable lists below, as an addition
 // alongside the up/down buttons (not a replacement — arrows stay for keyboard/touch use).
@@ -67,7 +67,7 @@ export default function Settings({
   theme, setTheme, mainTheme, setMainTheme, cardTheme, setCardTheme, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
   redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType, onReorderCpdTypes,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
-  tags = [], onSaveTag, onDeleteTag, onReorderTags, onBackfillStaffLinks, auditLog = [],
+  tags = [], onSaveTag, onDeleteTag, onReorderTags, onToggleTagModality, onBackfillStaffLinks, auditLog = [],
   avatarIcons = [], onSaveAvatarIcon, onDeleteAvatarIcon, onReorderAvatarIcons, onUploadAvatarIconImage,
   avatarColors = [], onSaveAvatarColor, onDeleteAvatarColor, onReorderAvatarColors,
   staffFieldVisibility = {}, onToggleStaffField,
@@ -474,23 +474,23 @@ export default function Settings({
 
         <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="min-w-0">
-            <div className="font-semibold text-[13px]">Upcoming Events Display</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Big banner cards, or a smaller compact list.</div>
+            <div className="font-semibold text-[13px]">Dashboard Up Next Display</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Big banner cards, or a smaller compact list, for the Dashboard's Up Next section.</div>
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
-            <button onClick={() => setEventCardView("grid")} className={eventCardView === "grid" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><LayoutGrid size={14} />Big Cards</button>
-            <button onClick={() => setEventCardView("list")} className={eventCardView === "list" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><List size={14} />Compact List</button>
+            <button onClick={() => setDashboardEventView("grid")} className={dashboardEventView === "grid" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><LayoutGrid size={14} />Big Cards</button>
+            <button onClick={() => setDashboardEventView("list")} className={dashboardEventView === "list" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><List size={14} />Compact List</button>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="min-w-0">
-            <div className="font-semibold text-[13px]">Dashboard Up Next Display</div>
-            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Same choice, just for the Dashboard's Up Next section — set independently.</div>
+            <div className="font-semibold text-[13px]">Upcoming Events Display</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Same choice, just for the Upcoming Events tab — set independently.</div>
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
-            <button onClick={() => setDashboardEventView("grid")} className={dashboardEventView === "grid" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><LayoutGrid size={14} />Big Cards</button>
-            <button onClick={() => setDashboardEventView("list")} className={dashboardEventView === "list" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><List size={14} />Compact List</button>
+            <button onClick={() => setEventCardView("grid")} className={eventCardView === "grid" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><LayoutGrid size={14} />Big Cards</button>
+            <button onClick={() => setEventCardView("list")} className={eventCardView === "list" ? "whmi-btn-primary flex items-center gap-1.5" : "whmi-btn-ghost flex items-center gap-1.5"}><List size={14} />Compact List</button>
           </div>
         </div>
 
@@ -813,7 +813,7 @@ export default function Settings({
           </button>
           {tagsExpanded && (
             <>
-              <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>The Topics chips shown on the event form. New tags typed there are added here automatically; reorder, rename, or delete them below.</div>
+              <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>The Topics chips shown on the event form. New tags typed there are added here automatically; reorder, rename, or delete them below. Toggle "Modality" to choose whether a tag shows above the line (imaging modalities) or below it (everything else).</div>
               <div className="flex gap-1.5 mb-2">
                 {editingTagId === null && (
                   <button onClick={startAddTag} className="whmi-btn-ghost flex items-center gap-1.5 text-[11.5px]"><Plus size={13} />Add Tag</button>
@@ -838,6 +838,14 @@ export default function Settings({
                         <div className="text-[12.5px] font-semibold truncate">{t.name}</div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => onToggleTagModality?.(t)}
+                          className="text-[10.5px] font-semibold px-2 py-1 rounded-lg transition"
+                          style={tagIsModality(t) ? { background: "var(--accent-primary)", color: "white" } : { background: "var(--surface)", color: "var(--text-faint)", border: "1px solid var(--border)" }}
+                          title={tagIsModality(t) ? "Shown above the line (modality). Click to move below the line." : "Shown below the line. Click to move above the line (modality)."}
+                        >
+                          Modality
+                        </button>
                         <button onClick={() => moveTag(i, -1)} disabled={i === 0} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === 0 ? 0.4 : 1 }}><ArrowUp size={13} /></button>
                         <button onClick={() => moveTag(i, 1)} disabled={i === tags.length - 1} className="whmi-btn-ghost !p-1.5" style={{ opacity: i === tags.length - 1 ? 0.4 : 1 }}><ArrowDown size={13} /></button>
                         <button onClick={() => startEditTag(t)} className="whmi-btn-ghost !p-1.5"><Pencil size={13} /></button>

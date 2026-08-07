@@ -250,6 +250,19 @@ export function eventBannerUrl(files, eventId) {
 /* Exact CPD hours from event start/end, e.g. "09:00"-"12:30" -> 3.5. */
 /* Everything after the hospital name in the "Hospital - Location (Level X, Room Y)" display
  * format — the hospital itself is rendered separately (bolded) by the caller. */
+// Imaging-modality tags are shown as their own group ahead of everything else in the Topics
+// picker, since they're the ones staff scan for first when tagging an event. Legacy fallback
+// list, used only for tags whose `isModality` flag hasn't been set yet (pre-migration, or a
+// brand new tag that hasn't been explicitly categorised).
+const LEGACY_MODALITY_TAG_NAMES = ["X-Ray", "CT", "DSA", "MRI", "Ultrasound", "Nuclear medicine", "Nuclear medicine bone"];
+const legacyIsModalityTag = (name) => LEGACY_MODALITY_TAG_NAMES.some(m => m.toLowerCase() === (name || "").toLowerCase());
+
+// A tag's explicit `isModality` flag (set via Settings) always wins; only fall back to the
+// legacy name list when the flag is undefined — i.e. the tag predates the is_modality column.
+export function tagIsModality(tag) {
+  return tag.isModality ?? legacyIsModalityTag(tag.name);
+}
+
 export function eventLocationSuffix(event) {
   const bracketParts = [];
   if (event.level) bracketParts.push(`Level ${event.level}`);

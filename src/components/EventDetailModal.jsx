@@ -458,9 +458,12 @@ export default function EventDetailModal({
         )}
       </div>
       {posterExpanded && bannerUrl && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,.85)" }} onClick={() => setPosterExpanded(false)}>
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,.85)" }}
+          onClick={(e) => { e.stopPropagation(); setPosterExpanded(false); }}
+        >
           <img src={bannerUrl} alt="" className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
-          <button onClick={() => setPosterExpanded(false)} className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
+          <button onClick={(e) => { e.stopPropagation(); setPosterExpanded(false); }} className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
             <X size={18} color="white" />
           </button>
         </div>

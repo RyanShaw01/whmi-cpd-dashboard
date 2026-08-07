@@ -1,9 +1,9 @@
-export default function StatCard({ label, value, sub, icon: Icon, accent, onClick }) {
+export default function StatCard({ label, value, sub, icon: Icon, accent, onClick, hoverable }) {
   const Tag = onClick ? "button" : "div";
   return (
     <Tag
       onClick={onClick}
-      className={`whmi-card p-4 relative overflow-hidden text-left w-full${onClick ? " whmi-row-hover transition" : ""}`}
+      className={`whmi-card p-4 relative overflow-hidden text-left w-full${(onClick || hoverable) ? " whmi-row-hover transition" : ""}`}
     >
       <div className="flex items-start justify-between">
         <div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Trash2, ClipboardList, Lightbulb, LayoutGrid, List, Users } from "lucide-react";
+import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Pencil, ClipboardList, Lightbulb, LayoutGrid, List, Users } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
@@ -133,14 +133,13 @@ export default function UpcomingEvents({
                     )}
                   </div>
                 </button>
-                {canManage && onRequestDelete && (
+                {canManage && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); onRequestDelete(ev); }}
+                    onClick={(e) => { e.stopPropagation(); openEvent(ev, undefined, true); }}
                     className="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition whmi-btn-ghost !p-1.5"
-                    style={{ color: "#D9534F" }}
-                    title="Delete event"
+                    title="Edit event"
                   >
-                    <Trash2 size={13} />
+                    <Pencil size={13} />
                   </button>
                 )}
               </div>
@@ -158,7 +157,7 @@ export default function UpcomingEvents({
             <div
               key={ev.id}
               ref={ev.id === highlightId ? highlightRef : null}
-              className="whmi-card whmi-event-card p-4 text-left transition relative"
+              className="whmi-card whmi-event-card whmi-row-hover group p-4 text-left transition relative"
               style={{ outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: 2 }}
             >
               {needsAttention && (
@@ -169,14 +168,14 @@ export default function UpcomingEvents({
                   title="Needs attention"
                 />
               )}
-              {canManage && onRequestDelete && (
+              {canManage && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onRequestDelete(ev); }}
-                  className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center"
+                  onClick={(e) => { e.stopPropagation(); openEvent(ev, undefined, true); }}
+                  className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
                   style={{ background: "rgba(0,0,0,.35)" }}
-                  title="Delete event"
+                  title="Edit event"
                 >
-                  <Trash2 size={13} color="white" />
+                  <Pencil size={13} color="white" />
                 </button>
               )}
               <button onClick={() => openEvent(ev)} className="w-full text-left whmi-row-hover transition rounded-lg -m-1 p-1">
