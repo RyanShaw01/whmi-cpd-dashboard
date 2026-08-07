@@ -108,9 +108,9 @@ export function wrapEmailHtml({ preheader = "", title, bodyHtml, footerNote }: {
         <td align="center">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid ${BORDER};">
             <tr>
-              <td style="background:#ffffff;padding:26px 28px 18px 28px;text-align:center;border-bottom:3px solid ${NAVY};">
-                <img src="${LOGO_URL}" alt="Western Health" width="130" style="display:block;margin:0 auto 8px auto;height:auto;border:0;" />
-                <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;color:${NAVY};text-transform:uppercase;">Medical Imaging CPD</div>
+              <td style="background:#ffffff;padding:20px 28px 14px 28px;text-align:center;border-bottom:3px solid ${NAVY};">
+                <img src="${LOGO_URL}" alt="Western Health" width="82" style="display:block;margin:0 auto 6px auto;height:auto;border:0;" />
+                <div style="font-size:10px;font-weight:700;letter-spacing:1.4px;color:${NAVY};text-transform:uppercase;">Medical Imaging CPD</div>
               </td>
             </tr>
             <tr>
