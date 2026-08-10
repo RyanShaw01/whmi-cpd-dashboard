@@ -11,12 +11,13 @@ export default function StatCard({ label, value, sub, icon: Icon, accent, onClic
         <Icon size={17} style={{ color: accent }} />
       </div>
       <div className="pr-10 min-w-0">
-        <div className="text-[12px] font-semibold truncate" style={{ color: "var(--text-dim)" }}>{label}</div>
-        <div className="disp text-[20px] sm:text-[26px] font-extrabold mt-1 truncate" style={{ color: "var(--text)" }}>{value}</div>
+        <div className="text-[12px] font-semibold break-words" style={{ color: "var(--text-dim)" }}>{label}</div>
+        <div className="disp text-[20px] sm:text-[26px] font-extrabold mt-1 break-words" style={{ color: "var(--text)" }}>{value}</div>
       </div>
       {/* Faint sub-text always anchored to the bottom-left of the card, whatever the label/value
-          height above it, so it lines up across every stat card in a row. */}
-      <div className="mt-auto pt-1.5 text-[11px] flex items-center gap-1 text-left truncate" style={{ color: "var(--text-faint)" }}>{sub || " "}</div>
+          height above it, so it lines up across every stat card in a row. Wraps instead of
+          truncating — narrow columns should get taller, not lose text. */}
+      <div className="mt-auto pt-1.5 text-[11px] flex items-start gap-1 text-left break-words" style={{ color: "var(--text-faint)" }}>{sub || " "}</div>
     </Tag>
   );
 }

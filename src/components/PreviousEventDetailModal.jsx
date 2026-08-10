@@ -6,7 +6,7 @@ import EventFilesPanel from "./EventFilesPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
 import RegistrationsPanel from "./RegistrationsPanel";
 import EventForm from "./EventForm";
-import { fmtDate, eventLocationSuffix, relativeTime } from "../lib/helpers";
+import { fmtDate, eventLocationSuffix, relativeTime, eventBannerUrl } from "../lib/helpers";
 
 const TABS = ["overview", "attendance", "files", "recording", "feedback", "reflections", "certificates", "email"];
 
@@ -56,6 +56,7 @@ export default function PreviousEventDetailModal({
   const seriesSiblings = event.recurrenceGroupId && event.groupInPrevious
     ? seriesEvents.filter(e => e.recurrenceGroupId === event.recurrenceGroupId).sort((a, b) => `${a.date}T${a.start || ""}`.localeCompare(`${b.date}T${b.start || ""}`))
     : [];
+  const bannerUrl = eventBannerUrl(files, event.id);
 
   if (editing) {
     const attemptCloseEdit = () => {
@@ -95,12 +96,14 @@ export default function PreviousEventDetailModal({
     );
   }
 
-  // Non-managers only get the full attendee/certificate/reflection lists if they're the ones
-  // managing the event; everyone else gets a read-only overview + feedback summary, plus
-  // recordings/files if they attended (or the event had a price, implying they paid to be there).
+  // Non-managers only get the full attendee/certificate/reflection/feedback lists if they're
+  // the ones managing the event; everyone else gets a read-only overview, plus recordings/files
+  // - unconditionally for internal (WH staff) viewers, and for external viewers only if they
+  // attended (or the event had a price, implying they paid to be there).
   const myRegistration = session ? (registrations || []).find(r => r.eventId === event.id && r.userId === session.id) : null;
-  const viewerHasFileAccess = canManage || !!(myRegistration && (myRegistration.attendanceStatus === "Attended" || event.externalPrice != null));
-  const visibleTabs = canManage ? TABS : TABS.filter(t => !["attendance", "certificates", "reflections", "email"].includes(t));
+  const viewerHasFileAccess = canManage || session?.userType === "internal"
+    || !!(myRegistration && (myRegistration.attendanceStatus === "Attended" || event.externalPrice != null));
+  const visibleTabs = canManage ? TABS : TABS.filter(t => !["attendance", "certificates", "reflections", "feedback", "email"].includes(t));
 
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
   // `event.attendance` is already live-computed with a seed-data fallback (Phase 10); reuse
@@ -126,7 +129,7 @@ export default function PreviousEventDetailModal({
   const thankYouLastSentAt = thankYouEligible.reduce((latest, r) => (r.reminderSentAt && (!latest || r.reminderSentAt > latest)) ? r.reminderSentAt : latest, null);
 
   const SendThankYouControl = () => (
-    onSendThankYouEmail ? (
+    canManage && onSendThankYouEmail ? (
       <div className="flex items-center gap-2">
         <button
           onClick={() => onSendThankYouEmail(event)}
@@ -213,6 +216,18 @@ export default function PreviousEventDetailModal({
           </div>
         </div>
 
+        {bannerUrl && (
+          <div className="w-full h-40 overflow-hidden" style={{ borderBottom: "1px solid var(--border)" }}>
+            <img
+              src={bannerUrl} alt="" className="w-full h-full object-cover"
+              style={{
+                objectPosition: `${event.bannerFocalX ?? 50}% ${event.bannerFocalY ?? 50}%`,
+                transform: `scale(${event.bannerZoom ?? 1})`, transformOrigin: `${event.bannerFocalX ?? 50}% ${event.bannerFocalY ?? 50}%`,
+              }}
+            />
+          </div>
+        )}
+
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status="Completed" />
@@ -224,15 +239,17 @@ export default function PreviousEventDetailModal({
             <div className="flex items-center gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{event.presenter}</span></div>
           </div>
 
-          <div className="whmi-card p-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatButton value={event.capacity == null ? attended : `${attended}/${event.capacity}`} label="Attendees" onClick={() => setTab("attendance")} />
-            <StatButton value={noShow} label="No-show" onClick={() => setTab("attendance")} />
-            <StatButton
-              value={event.feedback != null ? <><Star size={14} fill="#F59E0B" color="#F59E0B" />{event.feedback}</> : "—"}
-              label="Avg Feedback" onClick={() => setTab("feedback")}
-            />
-            <StatButton value={`${sentCerts.length}/${eventCertificates.length}`} label="Certificates Sent" onClick={() => setTab("certificates")} />
-          </div>
+          {canManage && (
+            <div className="whmi-card p-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatButton value={event.capacity == null ? attended : `${attended}/${event.capacity}`} label="Attendees" onClick={() => setTab("attendance")} />
+              <StatButton value={noShow} label="No-show" onClick={() => setTab("attendance")} />
+              <StatButton
+                value={event.feedback != null ? <><Star size={14} fill="#F59E0B" color="#F59E0B" />{event.feedback}</> : "—"}
+                label="Avg Feedback" onClick={() => setTab("feedback")}
+              />
+              <StatButton value={`${sentCerts.length}/${eventCertificates.length}`} label="Certificates Sent" onClick={() => setTab("certificates")} />
+            </div>
+          )}
 
           <div className="flex gap-1 border-b overflow-x-auto whmi-scroll" style={{ borderColor: "var(--border)" }}>
             {visibleTabs.map(t => (

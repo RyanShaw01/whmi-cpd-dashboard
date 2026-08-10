@@ -38,8 +38,8 @@ Deno.serve(async (req) => {
 
     const hours = Number(cpdHours) || 1;
     const dateLabel = date
-      ? `On ${new Date(`${date}T00:00:00`).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`
-      : "On [Event Date]";
+      ? `on ${new Date(`${date}T00:00:00`).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`
+      : "on [Event Date]";
 
     const { data: templateFile, error: templateError } = await supabaseAdmin.storage.from("certificates").download("templates/certificate-of-attendance.pdf");
     if (templateError || !templateFile) {

@@ -411,7 +411,7 @@ export default function Reports({ events, previousEvents, registrations, reflect
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={`Total Events (${year})`} value={eventsThisYear.length} icon={Calendar} accent={primaryHex} onClick={onNavigatePage ? () => onNavigatePage("previous") : undefined} />
         <StatCard label="Total Attendees" value={attendedCount} icon={Users} accent={successHex} hoverable />
         <StatCard label="Avg. attendance rate" value={attendanceRate != null ? `${attendanceRate}%` : "—"} icon={AlertCircle} accent={secondaryHex} onClick={() => setExpandedChart(chartCards.find(c => c.id === "rate"))} />

@@ -94,7 +94,7 @@ export default function Dashboard({
 
   const sections = {
     stats: (
-      <div key="stats" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div key="stats" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard label="CPD Hours Delivered (YTD)" value={hoursYtd} sub={`${previousEvents.length} events this year`} icon={Clock} accent={primaryHex} onClick={onOpenReports} />
         <StatCard label="Current Registrations" value={currentRegistrations} sub={`across ${openEvents.length} open events`} icon={ClipboardList} accent={successHex} onClick={onOpenCurrentRegistrations} />
         <StatCard label="Events Currently Open" value={openEvents.length} sub="accepting registrations" icon={CalendarCheck2} accent={successHex} onClick={onOpenEventsCurrentlyOpen} />
