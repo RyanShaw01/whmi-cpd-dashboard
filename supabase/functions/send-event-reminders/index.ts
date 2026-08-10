@@ -3,7 +3,8 @@
 // 25-40 minutes ago and emails a reminder to every registrant who hasn't been reminded yet.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
-import { thankYouEmailText, thankYouEmailHtml } from "../_shared/emailTemplate.ts";
+import { thankYouEmailText, thankYouEmailHtml, thankYouEmailSubject } from "../_shared/emailTemplate.ts";
+import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
 const SITE_URL = Deno.env.get("SITE_URL") || "http://localhost:5173";
@@ -39,13 +40,14 @@ Deno.serve(async (req) => {
         .is("reminder_sent_at", null);
       if (regError) { console.error("fetch registrations failed", event.id, regError); continue; }
 
+      const override = await getEmailOverride(supabase, "post_event_thank_you", event.title);
       for (const reg of registrations || []) {
         const reflectUrl = `${SITE_URL}/event/${event.id}/reflect`;
         const result = await sendEmail({
           to: reg.email,
-          subject: `Thanks for attending ${event.title}: share your feedback`,
-          text: thankYouEmailText(reg.name, event.title, reflectUrl),
-          html: thankYouEmailHtml(reg.name, event.title, reflectUrl),
+          subject: thankYouEmailSubject(event.title, override),
+          text: thankYouEmailText(reg.name, event.title, reflectUrl, override),
+          html: thankYouEmailHtml(reg.name, event.title, reflectUrl, override),
         });
         if (result.ok) {
           await supabase.from("registrations").update({ reminder_sent_at: new Date().toISOString() }).eq("id", reg.id);

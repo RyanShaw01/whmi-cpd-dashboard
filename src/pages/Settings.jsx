@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload, Users, SlidersHorizontal, GripVertical, LayoutGrid, List } from "lucide-react";
+import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload, Users, SlidersHorizontal, GripVertical, LayoutGrid, List, Mail } from "lucide-react";
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
@@ -33,6 +33,98 @@ function useDragReorder(list, onReorder) {
     style: { cursor: "grab", outline: overIndex === index ? "2px solid var(--accent-primary)" : "none", outlineOffset: -2 },
   });
   return dragProps;
+}
+
+// The most commonly-sent emails, editable from Settings without a code change. `{title}` is the
+// only supported placeholder — the edge function substitutes it with the actual event name at
+// send time. Keep in sync with the `key`s the edge functions look for
+// (email_template_overrides app_setting, see supabase/functions/_shared/emailOverrides.ts).
+const EMAIL_TEMPLATE_DEFS = [
+  {
+    key: "registration_confirmation",
+    label: "Registration Confirmation",
+    description: "Sent immediately when someone registers for an event.",
+    defaultSubject: "Registration confirmed: {title}",
+    defaultHeading: "You're Registered",
+    defaultIntro: "You're registered for {title}.",
+  },
+  {
+    key: "post_event_thank_you",
+    label: "Post-Event Thank You",
+    description: "Sent automatically 25-40 minutes after an event ends (or manually from the event's Email tab), asking attendees to submit their reflection.",
+    defaultSubject: "Thanks for attending {title}: share your feedback",
+    defaultHeading: "Thanks for coming along",
+    defaultIntro: "Thanks for attending {title}. We hope you found it valuable.",
+  },
+  {
+    key: "reflection_reminder",
+    label: "Reflection Reminder",
+    description: "One-off nudge an admin can send to a specific person who hasn't submitted their reflection yet.",
+    defaultSubject: "Reminder: submit your reflection for {title}",
+    defaultHeading: "Just a friendly reminder",
+    defaultIntro: "You attended {title}, but we haven't received your reflection yet.",
+  },
+];
+
+function EmailTemplateEditor({ def, override, onSave }) {
+  const [subject, setSubject] = useState(override?.subject || "");
+  const [heading, setHeading] = useState(override?.heading || "");
+  const [intro, setIntro] = useState(override?.intro || "");
+  const [preview, setPreview] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  const sample = (s) => (s || "").replace(/\{title\}/g, "Ultrasound-Guided Procedures Workshop");
+  const effectiveSubject = sample(subject || def.defaultSubject);
+  const effectiveHeading = sample(heading || def.defaultHeading);
+  const effectiveIntro = sample(intro || def.defaultIntro);
+
+  const save = () => {
+    onSave(def.key, { subject: subject.trim() || null, heading: heading.trim() || null, intro: intro.trim() || null });
+    setDirty(false);
+  };
+
+  return (
+    <div className="p-3 rounded-xl space-y-2.5" style={{ border: "1px solid var(--border)" }}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-semibold text-[13px]">{def.label}</div>
+          <div className="text-[11px]" style={{ color: "var(--text-faint)" }}>{def.description}</div>
+        </div>
+        <button onClick={() => setPreview(p => !p)} className="whmi-btn-ghost !py-1 !px-2 text-[11px] flex items-center gap-1 shrink-0"><Eye size={12} />{preview ? "Edit" : "Preview"}</button>
+      </div>
+      {preview ? (
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+          <div className="p-3" style={{ background: "#152A4E" }}>
+            <div className="text-[11px] font-bold tracking-wide" style={{ color: "#ffffff" }}>WHMI <span style={{ color: "#35A8DD" }}>CPD</span></div>
+          </div>
+          <div className="p-4" style={{ background: "#ffffff" }}>
+            <div className="text-[10.5px] font-semibold mb-2.5" style={{ color: "#6b7785" }}>Subject: {effectiveSubject}</div>
+            <div className="font-extrabold text-[15px] mb-2" style={{ color: "#35A8DD" }}>{effectiveHeading}</div>
+            <p className="text-[12.5px]" style={{ color: "#1a2233" }}>{effectiveIntro}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div>
+            <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Subject line</label>
+            <input value={subject} onChange={e => { setSubject(e.target.value); setDirty(true); }} placeholder={def.defaultSubject} className="whmi-input w-full px-2.5 py-1.5 mt-0.5 text-[12.5px]" />
+          </div>
+          <div>
+            <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Heading</label>
+            <input value={heading} onChange={e => { setHeading(e.target.value); setDirty(true); }} placeholder={def.defaultHeading} className="whmi-input w-full px-2.5 py-1.5 mt-0.5 text-[12.5px]" />
+          </div>
+          <div>
+            <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Intro text</label>
+            <textarea value={intro} onChange={e => { setIntro(e.target.value); setDirty(true); }} placeholder={def.defaultIntro} rows={2} className="whmi-input w-full px-2.5 py-1.5 mt-0.5 text-[12.5px] resize-none" />
+            <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>Use <code>{"{title}"}</code> anywhere you want the event's name to appear.</p>
+          </div>
+          <div className="flex justify-end">
+            <button onClick={save} disabled={!dirty} className="whmi-btn-primary !py-1.5 !px-3 text-[12px] flex items-center gap-1.5" style={{ opacity: dirty ? 1 : 0.5 }}><Save size={12} />Save</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 const CPD_CATEGORIES = [
@@ -71,11 +163,13 @@ export default function Settings({
   avatarIcons = [], onSaveAvatarIcon, onDeleteAvatarIcon, onReorderAvatarIcons, onUploadAvatarIconImage,
   avatarColors = [], onSaveAvatarColor, onDeleteAvatarColor, onReorderAvatarColors,
   staffFieldVisibility = {}, onToggleStaffField,
+  emailTemplateOverrides = {}, onSaveEmailTemplateOverride,
 }) {
   const [toggles, setToggles] = useState({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: false });
   const [devMode, setDevMode] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [staffFieldsExpanded, setStaffFieldsExpanded] = useState(false);
+  const [emailTemplatesExpanded, setEmailTemplatesExpanded] = useState(false);
   const [separateWhReflections, setSeparateWhReflectionsState] = useState(getSeparateWhDefault);
   const toggleSeparateWhReflections = () => {
     const next = !separateWhReflections;
@@ -576,6 +670,29 @@ export default function Settings({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {role !== "viewer" && (
+        <div className="whmi-card p-4">
+          <button onClick={() => setEmailTemplatesExpanded(x => !x)} className="w-full flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {emailTemplatesExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <Mail size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Email Templates</div>
+            </div>
+          </button>
+          {emailTemplatesExpanded && (
+            <>
+              <p className="text-[11.5px] mt-2 mb-3" style={{ color: "var(--text-faint)" }}>
+                Edit the subject line, heading, and intro text for the most commonly-sent emails. Leave a field blank to keep the default wording. Use Preview to see roughly how it'll look in an inbox.
+              </p>
+              <div className="space-y-2.5">
+                {EMAIL_TEMPLATE_DEFS.map(def => (
+                  <EmailTemplateEditor key={def.key} def={def} override={emailTemplateOverrides[def.key]} onSave={onSaveEmailTemplateOverride} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 

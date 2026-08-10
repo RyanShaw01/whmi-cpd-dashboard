@@ -76,6 +76,10 @@ export default function App() {
   const [avatarColors, setAvatarColors] = useState([]);
   const [brainstormIdeas, setBrainstormIdeas] = useState([]);
   const [staffFieldVisibility, setStaffFieldVisibility] = useState(DEFAULT_STAFF_FIELD_VISIBILITY);
+  // Admin-editable subject/heading/intro overrides for the most commonly-sent emails, keyed by
+  // template id (see EMAIL_TEMPLATE_DEFS in Settings.jsx) — read by the edge functions before
+  // falling back to their hardcoded copy.
+  const [emailTemplateOverrides, setEmailTemplateOverrides] = useState({});
   const [personalReflections, setPersonalReflections] = useState([]);
   const [suggestIdeaOpen, setSuggestIdeaOpen] = useState(false);
   const [auditLog, setAuditLog] = useState([]);
@@ -190,12 +194,12 @@ export default function App() {
     const [
       userList, staffList, eventList, prevEventList, certList, regList, externalList, reflectionList, fileList,
       dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList, avatarIconList, avatarColorList, brainstormIdeaList,
-      staffFieldVisibilitySetting, personalReflectionList,
+      staffFieldVisibilitySetting, personalReflectionList, emailTemplateOverridesSetting,
     ] = await Promise.all([
       fetchUsers(), fetchStaff(), fetchEvents(), fetchPreviousEvents(), fetchCertificates(), fetchRegistrations(), fetchExternalParticipants(),
       fetchReflections(), fetchAllFiles(), fetchDismissedPairs("registration"), fetchDismissedPairs("reflection"), fetchCpdTypes(), fetchTags(),
       fetchAuditLog(50), fetchAvatarIcons(), fetchAvatarColors(), fetchBrainstormIdeas(),
-      fetchAppSetting("staff_field_visibility"), fetchPersonalReflections(),
+      fetchAppSetting("staff_field_visibility"), fetchPersonalReflections(), fetchAppSetting("email_template_overrides"),
     ]);
     setAvatarIcons(avatarIconList);
     setAvatarColors(avatarColorList);
@@ -218,6 +222,7 @@ export default function App() {
     setBrainstormIdeas(brainstormIdeaList);
     setStaffFieldVisibility({ ...DEFAULT_STAFF_FIELD_VISIBILITY, ...(staffFieldVisibilitySetting || {}) });
     setPersonalReflections(personalReflectionList);
+    setEmailTemplateOverrides(emailTemplateOverridesSetting || {});
   };
 
   const clearAppData = () => {
@@ -225,6 +230,7 @@ export default function App() {
     setRegistrations([]); setExternalParticipants([]); setReflections([]); setFiles([]); setCpdTypes([]); setTags([]); setAuditLog([]);
     setAvatarIcons([]); setAvatarColors([]); setBrainstormIdeas([]); setStaffFieldVisibility(DEFAULT_STAFF_FIELD_VISIBILITY);
     setPersonalReflections([]);
+    setEmailTemplateOverrides({});
     setDismissedRegistrationPairs(new Set()); setDismissedReflectionPairs(new Set());
   };
 
@@ -743,6 +749,12 @@ export default function App() {
     const next = { ...staffFieldVisibility, [fieldId]: visible };
     setStaffFieldVisibility(next);
     upsertAppSetting("staff_field_visibility", next);
+  };
+
+  const handleSaveEmailTemplateOverride = (key, patch) => {
+    const next = { ...emailTemplateOverrides, [key]: { ...(emailTemplateOverrides[key] || {}), ...patch } };
+    setEmailTemplateOverrides(next);
+    upsertAppSetting("email_template_overrides", next);
   };
 
   const handleAddPersonalReflection = (payload) => {
@@ -1317,6 +1329,7 @@ export default function App() {
                 previewSession={previewSession} onPreviewAs={setPreviewSession} onCreateTestAccount={handleCreateTestAccount}
                 onSaveUserContact={requestSaveUserContact}
                 staffFieldVisibility={staffFieldVisibility} onToggleStaffField={handleToggleStaffField}
+                emailTemplateOverrides={emailTemplateOverrides} onSaveEmailTemplateOverride={handleSaveEmailTemplateOverride}
               />
             )}
             <Footer />

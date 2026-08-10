@@ -6,7 +6,8 @@
 // the one that "counts" for greying the button out.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
-import { thankYouEmailText, thankYouEmailHtml } from "../_shared/emailTemplate.ts";
+import { thankYouEmailText, thankYouEmailHtml, thankYouEmailSubject } from "../_shared/emailTemplate.ts";
+import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -49,13 +50,14 @@ Deno.serve(async (req) => {
 
     let sentCount = 0;
     const sentAt = new Date().toISOString();
+    const override = await getEmailOverride(supabaseAdmin, "post_event_thank_you", event.title);
     for (const reg of registrations || []) {
       const reflectUrl = `${SITE_URL}/event/${eventId}/reflect`;
       const result = await sendEmail({
         to: reg.email,
-        subject: `Thanks for attending ${event.title}: share your feedback`,
-        text: thankYouEmailText(reg.name, event.title, reflectUrl),
-        html: thankYouEmailHtml(reg.name, event.title, reflectUrl),
+        subject: thankYouEmailSubject(event.title, override),
+        text: thankYouEmailText(reg.name, event.title, reflectUrl, override),
+        html: thankYouEmailHtml(reg.name, event.title, reflectUrl, override),
       });
       if (result.ok) {
         await supabaseAdmin.from("registrations").update({ reminder_sent_at: sentAt }).eq("id", reg.id);
