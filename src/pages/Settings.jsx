@@ -64,6 +64,30 @@ const EMAIL_TEMPLATE_DEFS = [
     defaultHeading: "Just a friendly reminder",
     defaultIntro: "You attended {title}, but we haven't received your reflection yet.",
   },
+  {
+    key: "certificate",
+    label: "CPD Certificate",
+    description: "Sent whenever a certificate is issued — right after a reflection is submitted, when an admin approves/resends one, or a manually-created certificate. {title} is the event/session name.",
+    defaultSubject: "Your CPD Certificate: {title}",
+    defaultHeading: "Your certificate is attached",
+    defaultIntro: "Please find attached your CPD certificate for {title}.",
+  },
+  {
+    key: "reflection_copy",
+    label: "Email Me My Reflection",
+    description: "Self-service — any signed-in user can email themselves a copy of one of their own reflections. {title} is the activity name.",
+    defaultSubject: "Your CPD Reflection: {title}",
+    defaultHeading: "Your reflection",
+    defaultIntro: "",
+  },
+  {
+    key: "reflections_report",
+    label: "Reflections Report",
+    description: "Admin compiles someone's reflection history into one report and emails it to any address. {title} is the recipient's name.",
+    defaultSubject: "CPD Reflections Report: {title}",
+    defaultHeading: "CPD Reflections Report",
+    defaultIntro: "",
+  },
 ];
 
 function EmailTemplateEditor({ def, override, onSave }) {

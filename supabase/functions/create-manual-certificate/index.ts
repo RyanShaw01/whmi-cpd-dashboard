@@ -6,7 +6,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildCertificatePdf, hoursLabel } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/resend.ts";
-import { certificateEmailHtml } from "../_shared/emailTemplate.ts";
+import { certificateEmailHtml, certificateEmailSubject } from "../_shared/emailTemplate.ts";
+import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -65,11 +66,13 @@ Deno.serve(async (req) => {
 
     const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
     const shortDateLabel = dateLabel.charAt(0).toLowerCase() + dateLabel.slice(1);
+    const override = await getEmailOverride(supabaseAdmin, "certificate", sessionName);
+    const introText = override.intro || `Please find attached your CPD certificate for ${sessionName} ${shortDateLabel}.`;
     const emailResult = await sendEmail({
       to: email,
-      subject: `Your CPD Certificate: ${sessionName}`,
-      text: `Hello ${name},\n\nPlease find attached your CPD certificate for ${sessionName} ${shortDateLabel}.\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
-      html: certificateEmailHtml({ name, sessionName, dateLabel: shortDateLabel }),
+      subject: certificateEmailSubject(sessionName, override),
+      text: `Hello ${name},\n\n${introText}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
+      html: certificateEmailHtml({ name, sessionName, dateLabel: shortDateLabel, override }),
       attachments: uploadError ? undefined : [{ filename: `${sessionName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });
 

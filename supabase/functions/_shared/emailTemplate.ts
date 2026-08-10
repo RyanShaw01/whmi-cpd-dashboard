@@ -101,19 +101,28 @@ export function reflectionEntryCardHtml(entry: { activityName?: string; activity
 // Shared by the three certificate-sending functions (send-reflection-certificate,
 // send-certificate-email, create-manual-certificate) so the "here's your certificate" copy
 // stays identical no matter which flow generated it.
-export function certificateEmailHtml({ name, sessionName, dateLabel, reflectionContent }: {
+export function certificateEmailSubject(sessionName: string, override?: EmailOverride): string {
+  return override?.subject || `Your CPD Certificate: ${sessionName}`;
+}
+
+export function certificateEmailHtml({ name, sessionName, dateLabel, reflectionContent, override }: {
   name: string;
   sessionName: string;
   dateLabel: string; // e.g. "on Thursday 12 December 2026"
   reflectionContent?: string | null;
+  override?: EmailOverride;
 }): string {
+  const heading = override?.heading || "Your certificate is attached";
+  const introHtml = override?.intro
+    ? `<p style="margin:0 0 14px 0;">${escapeHtml(override.intro)}</p>`
+    : `<p style="margin:0 0 14px 0;">Please find attached your CPD certificate for ${boldHtml(sessionName)} ${escapeHtml(dateLabel)}.</p>`;
   return wrapEmailHtml({
     preheader: `Your CPD certificate for ${sessionName} is attached`,
     title: `Your CPD Certificate: ${sessionName}`,
     bodyHtml: `
-      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${GREEN};">Your certificate is attached</h1>
+      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${GREEN};">${escapeHtml(heading)}</h1>
       <p style="margin:0 0 14px 0;">Hello ${escapeHtml(name)},</p>
-      <p style="margin:0 0 14px 0;">Please find attached your CPD certificate for ${boldHtml(sessionName)} ${escapeHtml(dateLabel)}.</p>
+      ${introHtml}
       ${reflectionContent ? `<div style="margin:16px 0 4px 0;font-size:11.5px;font-weight:600;color:${FAINT};">YOUR SUBMITTED REFLECTION</div>${calloutHtml(paragraphsHtml(reflectionContent), GREEN)}` : ""}
     `,
   });

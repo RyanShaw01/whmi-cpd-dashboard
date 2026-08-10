@@ -4,7 +4,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildCertificatePdf, hoursLabel } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/resend.ts";
-import { certificateEmailHtml } from "../_shared/emailTemplate.ts";
+import { certificateEmailHtml, certificateEmailSubject } from "../_shared/emailTemplate.ts";
+import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -62,11 +63,13 @@ Deno.serve(async (req) => {
 
     const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
     const shortDateLabel = `on ${eventDate.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}`;
+    const override = await getEmailOverride(supabase, "certificate", event.title);
+    const introText = override.intro || `Please find attached your CPD certificate for ${event.title} ${shortDateLabel}.`;
     const emailResult = await sendEmail({
       to: reflection.email,
-      subject: `Your CPD Certificate: ${event.title}`,
-      text: `Hello ${reflection.name},\n\nPlease find attached your CPD certificate for ${event.title} ${shortDateLabel}.\n\nYour submitted reflection:\n${reflection.content}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
-      html: certificateEmailHtml({ name: reflection.name, sessionName: event.title, dateLabel: shortDateLabel, reflectionContent: reflection.content }),
+      subject: certificateEmailSubject(event.title, override),
+      text: `Hello ${reflection.name},\n\n${introText}\n\nYour submitted reflection:\n${reflection.content}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
+      html: certificateEmailHtml({ name: reflection.name, sessionName: event.title, dateLabel: shortDateLabel, reflectionContent: reflection.content, override }),
       attachments: [{ filename: `${event.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });
 

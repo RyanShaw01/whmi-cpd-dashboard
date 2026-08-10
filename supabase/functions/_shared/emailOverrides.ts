@@ -8,7 +8,7 @@ import type { EmailOverride } from "./emailTemplate.ts";
 export async function getEmailOverride(
   // deno-lint-ignore no-explicit-any
   supabaseAdmin: any,
-  key: "registration_confirmation" | "post_event_thank_you" | "reflection_reminder",
+  key: "registration_confirmation" | "post_event_thank_you" | "reflection_reminder" | "certificate" | "reflection_copy" | "reflections_report",
   title: string,
 ): Promise<EmailOverride> {
   try {
