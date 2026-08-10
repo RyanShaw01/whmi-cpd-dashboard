@@ -863,7 +863,17 @@ export default function App() {
   );
   const handleUnregisterSelf = (eventId) => {
     const reg = session && registrations.find(r => r.eventId === eventId && r.userId === session.id);
-    if (reg) requestDeleteRegistration(reg);
+    if (!reg) return;
+    requestConfirm({
+      title: "Unregister from this event?",
+      message: "Are you sure you want to unregister from this event?",
+      confirmLabel: "Unregister",
+      onConfirm: () => {
+        setRegistrations(prev => prev.filter(r => r.id !== reg.id));
+        deleteRegistration(reg.id);
+        pushAudit({ actorId: session?.id, action: "registration.deleted", entityType: "registration", entityId: reg.id, details: { name: reg.name, eventId: reg.eventId } });
+      },
+    });
   };
 
   const handleUpdateRegistrationField = (reg, patch) => {

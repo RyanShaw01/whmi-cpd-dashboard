@@ -67,7 +67,12 @@ export default function PreviousEventDetailModal({
         <div className="whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
           <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
             <h2 className="disp text-[16px] font-extrabold">Edit Event</h2>
-            <button onClick={attemptCloseEdit} className="whmi-btn-ghost !p-2"><X size={14} /></button>
+            <div className="flex items-center gap-1.5">
+              {canManage && onRequestDelete && (
+                <button onClick={() => onRequestDelete(event)} className="whmi-btn-ghost !p-2" title="Delete event" style={{ color: "#D9534F" }}><Trash2 size={14} /></button>
+              )}
+              <button onClick={attemptCloseEdit} className="whmi-btn-ghost !p-2"><X size={14} /></button>
+            </div>
           </div>
           <div className="p-5">
             <EventForm

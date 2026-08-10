@@ -3,7 +3,7 @@ import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Pencil, ClipboardLis
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
-import RegisterOrUnregister, { RegisteredBadge } from "../components/EventRegisterControl";
+import RegisterOrUnregister from "../components/EventRegisterControl";
 import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
 
 const SORT_OPTIONS = [
@@ -208,7 +208,6 @@ export default function UpcomingEvents({
               className="whmi-card whmi-event-card whmi-row-hover group p-4 text-left transition relative"
               style={{ outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: 2 }}
             >
-              {registered && <RegisteredBadge onUnregister={() => onUnregister?.(ev.id)} />}
               {needsAttention && (
                 <button
                   onClick={(e) => { e.stopPropagation(); openEvent(ev); }}
@@ -307,10 +306,11 @@ export default function UpcomingEvents({
                   {ev.openToExternal !== false && ev.externalPrice != null && (
                     <span className="text-[15px] font-extrabold" style={{ color: "var(--accent-success)" }}>${Number(ev.externalPrice).toFixed(2)} AUD</span>
                   )}
-                  {!registered && onOpenRegister && ev.status === "Registration Open" && (
+                  {onOpenRegister && (registered || ev.status === "Registration Open") && (
                     <RegisterOrUnregister
-                      registered={false} size="md"
+                      registered={registered} size="md" corner={false}
                       onRegister={() => onOpenRegister(ev.id)}
+                      onUnregister={() => onUnregister?.(ev.id)}
                     />
                   )}
                 </div>

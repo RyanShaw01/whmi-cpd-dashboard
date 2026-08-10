@@ -10,7 +10,7 @@ import {
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
-import RegisterOrUnregister, { RegisteredBadge } from "../components/EventRegisterControl";
+import RegisterOrUnregister from "../components/EventRegisterControl";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, eventCountdownText, getShowDueSoonDefault, getShowDueSoonDatesDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
@@ -162,8 +162,7 @@ export default function Dashboard({
             const bannerUrl = eventBannerUrl(files, ev.id);
             const registered = registeredIds?.has(ev.id);
             return (
-              <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl relative" style={{ border: "1px solid var(--border)" }}>
-                {registered && <RegisteredBadge onUnregister={() => onUnregister?.(ev.id)} />}
+              <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl" style={{ border: "1px solid var(--border)" }}>
                 <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col text-left transition rounded-lg -m-1 p-1">
                   {bannerUrl && (
                     <div className="w-full h-28 rounded-lg mb-3 overflow-hidden" style={{ border: "1px solid var(--border)" }}>
@@ -202,11 +201,12 @@ export default function Dashboard({
                     </div>
                   </div>
                 </button>
-                {!registered && onOpenRegister && ev.status === "Registration Open" && (
+                {onOpenRegister && (registered || ev.status === "Registration Open") && (
                   <div className="flex justify-end mt-3">
                     <RegisterOrUnregister
-                      registered={false} size="md"
+                      registered={registered} size="md" corner={false}
                       onRegister={() => onOpenRegister(ev.id)}
+                      onUnregister={() => onUnregister?.(ev.id)}
                     />
                   </div>
                 )}

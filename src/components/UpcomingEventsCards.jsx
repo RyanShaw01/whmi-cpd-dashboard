@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronRight, Clock, MapPin, LayoutGrid, List } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
-import RegisterOrUnregister, { RegisteredBadge } from "./EventRegisterControl";
+import RegisterOrUnregister from "./EventRegisterControl";
 import { fmtDate, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, makeViewPref } from "../lib/helpers";
 
 // Same big-card/compact-list toggle and card styling as the admin Dashboard's Up Next and the
@@ -91,8 +91,7 @@ export default function UpcomingEventsCards({
             const registered = registeredIds?.has(ev.id);
             const showPrice = viewerUserType === "external" && ev.openToExternal !== false && ev.externalPrice != null;
             return (
-              <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl relative" style={{ border: "1px solid var(--border)" }}>
-                {registered && <RegisteredBadge onUnregister={() => onUnregister?.(ev.id)} />}
+              <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl" style={{ border: "1px solid var(--border)" }}>
                 <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col text-left transition rounded-lg -m-1 p-1">
                   {bannerUrl && (
                     <div className="w-full h-28 rounded-lg mb-3 overflow-hidden" style={{ border: "1px solid var(--border)" }}>
@@ -123,15 +122,16 @@ export default function UpcomingEventsCards({
                     </div>
                   </div>
                 </button>
-                {(showPrice || (!registered && mode === "register" && onOpenRegister && ev.status === "Registration Open")) && (
+                {(showPrice || (mode === "register" && onOpenRegister && (registered || ev.status === "Registration Open"))) && (
                   <div className="flex items-center justify-end gap-3 mt-3">
                     {showPrice && (
                       <span className="text-[15px] font-extrabold" style={{ color: "var(--accent-success)" }}>${Number(ev.externalPrice).toFixed(2)} AUD</span>
                     )}
-                    {!registered && mode === "register" && onOpenRegister && ev.status === "Registration Open" && (
+                    {mode === "register" && onOpenRegister && (registered || ev.status === "Registration Open") && (
                       <RegisterOrUnregister
-                        registered={false} size="md"
+                        registered={registered} size="md" corner={false}
                         onRegister={() => onOpenRegister(ev.id)}
+                        onUnregister={() => onUnregister?.(ev.id)}
                       />
                     )}
                   </div>
