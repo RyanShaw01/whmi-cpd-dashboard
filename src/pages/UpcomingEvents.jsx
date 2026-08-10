@@ -208,7 +208,7 @@ export default function UpcomingEvents({
               className="whmi-card whmi-event-card whmi-row-hover group p-4 text-left transition relative"
               style={{ outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: 2 }}
             >
-              {registered && <RegisteredBadge />}
+              {registered && <RegisteredBadge onUnregister={() => onUnregister?.(ev.id)} />}
               {needsAttention && (
                 <button
                   onClick={(e) => { e.stopPropagation(); openEvent(ev); }}
@@ -304,11 +304,13 @@ export default function UpcomingEvents({
                       {ev.capacity != null && <span className="ml-1">({Math.round((ev.registered / ev.capacity) * 100)}%)</span>}
                     </span>
                   )}
-                  {onOpenRegister && (registered || ev.status === "Registration Open") && (
+                  {ev.openToExternal !== false && ev.externalPrice != null && (
+                    <span className="text-[15px] font-extrabold" style={{ color: "var(--accent-success)" }}>${Number(ev.externalPrice).toFixed(2)} AUD</span>
+                  )}
+                  {!registered && onOpenRegister && ev.status === "Registration Open" && (
                     <RegisterOrUnregister
-                      registered={registered} size="md"
+                      registered={false} size="md"
                       onRegister={() => onOpenRegister(ev.id)}
-                      onUnregister={() => onUnregister?.(ev.id)}
                     />
                   )}
                 </div>

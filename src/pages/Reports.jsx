@@ -253,6 +253,7 @@ function hexToRgb(hex) {
 export default function Reports({ events, previousEvents, registrations, reflections, primaryHex, secondaryHex, successHex, tags = [], highlightId, onNavigatePage }) {
   const feedbackRef = useRef(null);
   const [expandedChart, setExpandedChart] = useState(null);
+  const [feedbackOpenSignal, setFeedbackOpenSignal] = useState(0);
   useEffect(() => {
     if (highlightId === "feedback-section" && feedbackRef.current) {
       feedbackRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -414,11 +415,11 @@ export default function Reports({ events, previousEvents, registrations, reflect
         <StatCard label={`Total Events (${year})`} value={eventsThisYear.length} icon={Calendar} accent={primaryHex} onClick={onNavigatePage ? () => onNavigatePage("previous") : undefined} />
         <StatCard label="Total Attendees" value={attendedCount} icon={Users} accent={successHex} hoverable />
         <StatCard label="Avg. attendance rate" value={attendanceRate != null ? `${attendanceRate}%` : "—"} icon={AlertCircle} accent={secondaryHex} onClick={() => setExpandedChart(chartCards.find(c => c.id === "rate"))} />
-        <StatCard label="Avg. Feedback" value={feedbackAvg != null ? `${feedbackAvg} / 10` : "—"} icon={TrendingUp} accent={primaryHex} onClick={() => feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+        <StatCard label="Avg. Feedback" value={feedbackAvg != null ? `${feedbackAvg} / 10` : "—"} icon={TrendingUp} accent={primaryHex} onClick={() => { setFeedbackOpenSignal(s => s + 1); feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
       </div>
 
       <div ref={feedbackRef}>
-        <AllFeedbackPanel events={previousEventsThisYear} reflections={reflections} defaultOpen={highlightId === "feedback-section"} />
+        <AllFeedbackPanel events={previousEventsThisYear} reflections={reflections} defaultOpen={highlightId === "feedback-section"} forceOpenSignal={feedbackOpenSignal} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

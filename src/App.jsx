@@ -44,7 +44,7 @@ import {
   insertUser, updateUser, deleteUser, insertStaff, updateStaff, deleteStaff, updateEventStatus, insertEvent, updateEvent, deleteEvent as deleteEventRow,
   updateCertificateStatus, deleteCertificate as deleteCertificateRow, insertRegistration, updateRegistration, deleteRegistration, insertExternalParticipant, updateExternalParticipant, deleteExternalParticipant,
   fetchReflections, insertReflection, deleteReflection, fetchDismissedPairs, insertDismissedPair,
-  fetchAllFiles, deleteEventFile, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
+  fetchAllFiles, deleteEventFile, duplicateEventFile, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
   fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType, sendCertificateEmail,
   fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog, sendReflectionReminder, sendThankYouEmail,
   fetchAvatarIcons, insertAvatarIcon, updateAvatarIcon, deleteAvatarIcon, uploadAvatarIconImage,
@@ -1076,14 +1076,22 @@ export default function App() {
   });
   const handleDuplicateEvent = (event, fromPrevious) => requestConfirm({
     title: "Duplicate this event?",
-    message: `Create a copy of "${event.title}" with all its details? You'll be able to edit the copy straight away.`,
+    message: `Create a copy of "${event.title}" with all its details, including its promotional poster? You'll be able to edit the copy straight away.`,
     confirmLabel: "Duplicate",
-    onConfirm: () => {
+    onConfirm: async () => {
       const dup = duplicateEventPayload(event);
       if (fromPrevious) setPreviousEvents(prev => [...prev, dup]);
       else setEvents(prev => [...prev, dup]);
       insertEvent(dup);
       pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: dup.id, details: { title: dup.title } });
+      // Files are keyed by event_id, so a new event id means the source's poster/flyer needs
+      // an actual copy, not just a reference — bannerFocalX/Y/Zoom already came along for free
+      // via the `...event` spread in duplicateEventPayload, since those live on the event row.
+      const sourceFiles = (files || []).filter(f => f.eventId === event.id);
+      for (const f of sourceFiles) {
+        const copy = await duplicateEventFile(f, dup.id, session?.id);
+        if (copy) setFiles(prev => [...prev, copy]);
+      }
       showToast("Event duplicated.");
       if (fromPrevious) openArchiveEvent(dup, null, true);
       else openEvent(dup, null, true);

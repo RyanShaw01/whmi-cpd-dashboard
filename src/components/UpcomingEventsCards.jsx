@@ -92,7 +92,7 @@ export default function UpcomingEventsCards({
             const showPrice = viewerUserType === "external" && ev.openToExternal !== false && ev.externalPrice != null;
             return (
               <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl relative" style={{ border: "1px solid var(--border)" }}>
-                {registered && <RegisteredBadge />}
+                {registered && <RegisteredBadge onUnregister={() => onUnregister?.(ev.id)} />}
                 <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col text-left transition rounded-lg -m-1 p-1">
                   {bannerUrl && (
                     <div className="w-full h-28 rounded-lg mb-3 overflow-hidden" style={{ border: "1px solid var(--border)" }}>
@@ -123,16 +123,15 @@ export default function UpcomingEventsCards({
                     </div>
                   </div>
                 </button>
-                {(showPrice || (mode === "register" && onOpenRegister && (registered || ev.status === "Registration Open"))) && (
+                {(showPrice || (!registered && mode === "register" && onOpenRegister && ev.status === "Registration Open")) && (
                   <div className="flex items-center justify-end gap-3 mt-3">
                     {showPrice && (
                       <span className="text-[15px] font-extrabold" style={{ color: "var(--accent-success)" }}>${Number(ev.externalPrice).toFixed(2)} AUD</span>
                     )}
-                    {mode === "register" && onOpenRegister && (registered || ev.status === "Registration Open") && (
+                    {!registered && mode === "register" && onOpenRegister && ev.status === "Registration Open" && (
                       <RegisterOrUnregister
-                        registered={registered} size="md"
+                        registered={false} size="md"
                         onRegister={() => onOpenRegister(ev.id)}
-                        onUnregister={() => onUnregister?.(ev.id)}
                       />
                     )}
                   </div>

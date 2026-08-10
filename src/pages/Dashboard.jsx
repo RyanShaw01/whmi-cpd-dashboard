@@ -163,7 +163,7 @@ export default function Dashboard({
             const registered = registeredIds?.has(ev.id);
             return (
               <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl relative" style={{ border: "1px solid var(--border)" }}>
-                {registered && <RegisteredBadge />}
+                {registered && <RegisteredBadge onUnregister={() => onUnregister?.(ev.id)} />}
                 <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col text-left transition rounded-lg -m-1 p-1">
                   {bannerUrl && (
                     <div className="w-full h-28 rounded-lg mb-3 overflow-hidden" style={{ border: "1px solid var(--border)" }}>
@@ -202,12 +202,11 @@ export default function Dashboard({
                     </div>
                   </div>
                 </button>
-                {onOpenRegister && (registered || ev.status === "Registration Open") && (
+                {!registered && onOpenRegister && ev.status === "Registration Open" && (
                   <div className="flex justify-end mt-3">
                     <RegisterOrUnregister
-                      registered={registered} size="md"
+                      registered={false} size="md"
                       onRegister={() => onOpenRegister(ev.id)}
-                      onUnregister={() => onUnregister?.(ev.id)}
                     />
                   </div>
                 )}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Layers, LayoutList, Star } from "lucide-react";
 import { fmtDate } from "../lib/helpers";
 
@@ -31,8 +31,11 @@ function FeedbackRow({ r }) {
   );
 }
 
-export default function AllFeedbackPanel({ events, reflections, defaultOpen = false }) {
+export default function AllFeedbackPanel({ events, reflections, defaultOpen = false, forceOpenSignal }) {
   const [open, setOpen] = useState(defaultOpen);
+  // Bumped by the parent (e.g. clicking the "Avg. Feedback" quick stat) to force this open even
+  // after mount, when `defaultOpen` alone can't reach it anymore.
+  useEffect(() => { if (forceOpenSignal) setOpen(true); }, [forceOpenSignal]);
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("date-desc");
   const [separate, setSeparate] = useState(false);

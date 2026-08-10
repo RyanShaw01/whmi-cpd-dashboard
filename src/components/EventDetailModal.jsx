@@ -12,7 +12,7 @@ import InfoTooltip from "./InfoTooltip";
 import EventForm from "./EventForm";
 import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
-import RegisterOrUnregister, { RegisteredBadge } from "./EventRegisterControl";
+import RegisterOrUnregister from "./EventRegisterControl";
 import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix, splitPeopleList } from "../lib/helpers";
 import { previewCertificateTemplate } from "../lib/db";
 
@@ -285,7 +285,6 @@ export default function EventDetailModal({
               )}
               {!canManage && onOpenRegister && (iRegistered || event.status === "Registration Open") && (
                 <div className="flex items-center justify-end gap-2">
-                  {iRegistered && <RegisteredBadge corner={false} />}
                   <RegisterOrUnregister
                     registered={iRegistered}
                     onRegister={() => onOpenRegister(event.id)}

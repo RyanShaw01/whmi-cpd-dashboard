@@ -577,6 +577,22 @@ export async function uploadEventFile({ eventId, kind, file, uploadedBy }) {
   return fileFromRow(row);
 }
 
+// Copies a single event file (storage object + row) onto a different event — used when
+// duplicating an event so its promotional poster/flyer comes along too, instead of the
+// duplicate landing with no banner (bannerFocalX/Y/Zoom on the event row are copied separately,
+// by the caller spreading the source event).
+export async function duplicateEventFile(file, newEventId, actorId) {
+  if (!supabaseConfigured) return null;
+  const filename = file.storagePath.split("/").pop();
+  const newPath = `${newEventId}/${filename}`;
+  const { error: copyError } = await supabase.storage.from("event-files").copy(file.storagePath, newPath);
+  if (copyError) { console.error("duplicateEventFile (storage copy)", copyError); return null; }
+  const row = { id: "f" + Date.now(), event_id: newEventId, kind: file.kind, storage_path: newPath, uploaded_by: actorId || null };
+  const { error } = await supabase.from("files").insert(row);
+  if (error) { console.error("duplicateEventFile (row)", error); return null; }
+  return fileFromRow(row);
+}
+
 export async function deleteEventFile(file, actorId) {
   if (!supabaseConfigured) return;
   await supabase.storage.from("event-files").remove([file.storagePath]);
