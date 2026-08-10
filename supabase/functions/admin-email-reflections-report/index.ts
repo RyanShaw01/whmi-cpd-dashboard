@@ -3,6 +3,7 @@
 // emails the caller's own account).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
+import { wrapEmailHtml, reflectionEntryCardHtml, boldHtml, BLUE } from "../_shared/emailTemplate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -56,10 +57,21 @@ Deno.serve(async (req) => {
     }
     bodyLines.push("- WHMI CPD Dashboard");
 
+    const html = wrapEmailHtml({
+      preheader: `CPD reflections report${toName ? ` for ${toName}` : ""}`,
+      title: `CPD Reflections Report${toName ? `: ${toName}` : ""}`,
+      bodyHtml: `
+        <h1 style="margin:0 0 4px 0;font-size:19px;font-weight:800;color:${BLUE};">CPD Reflections Report</h1>
+        <p style="margin:0 0 18px 0;font-size:12.5px;color:#6b7785;">${toName ? `${boldHtml(toName)} - ` : ""}${entries.length} reflection${entries.length === 1 ? "" : "s"}</p>
+        ${entries.map((entry: { activityName?: string; activityDate?: string; sections: unknown[] }) => reflectionEntryCardHtml(entry as any)).join("")}
+      `,
+    });
+
     const emailResult = await sendEmail({
       to: toEmail,
       subject: `CPD Reflections Report${toName ? `: ${toName}` : ""}`,
       text: bodyLines.filter(l => l !== undefined).join("\n"),
+      html,
     });
     if (!emailResult.ok) {
       return new Response(JSON.stringify({ ok: false, error: emailResult.error || "email failed to send" }), { status: 502, headers: CORS_HEADERS });

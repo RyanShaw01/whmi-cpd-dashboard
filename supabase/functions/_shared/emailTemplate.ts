@@ -88,6 +88,16 @@ export function reflectionSectionsHtml(sections: { label: string; items: { quest
     `).join("");
 }
 
+// A single reflection entry (used inside the admin's multi-entry reflections report) - a
+// bordered card with the activity name, date, and its Q&A sections.
+export function reflectionEntryCardHtml(entry: { activityName?: string; activityDate?: string; sections: { label: string; items: { question?: string; answer: string }[] }[] }): string {
+  return `<div style="margin:0 0 16px 0;padding:14px 16px;border:1px solid ${BORDER};border-radius:10px;">
+    <div style="font-size:14px;font-weight:700;color:${TEXT};">${escapeHtml(entry.activityName || "Reflection")}</div>
+    ${entry.activityDate ? `<div style="font-size:11.5px;color:${FAINT};margin-top:2px;">${escapeHtml(entry.activityDate)}</div>` : ""}
+    ${reflectionSectionsHtml(entry.sections || [])}
+  </div>`;
+}
+
 // Shared by the three certificate-sending functions (send-reflection-certificate,
 // send-certificate-email, create-manual-certificate) so the "here's your certificate" copy
 // stays identical no matter which flow generated it.
