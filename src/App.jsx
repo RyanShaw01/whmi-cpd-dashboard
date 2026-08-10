@@ -1404,7 +1404,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/event/:eventId" element={<PublicEventPage events={eventsWithLiveCounts} session={session} onPublicRegister={handlePublicRegister} files={files} />} />
+      <Route path="/event/:eventId" element={<PublicEventPage events={eventsWithLiveCounts} session={session} onPublicRegister={handlePublicRegister} files={files} loading={!ready} />} />
       <Route path="/event/:eventId/reflect" element={<ReflectionPage events={eventsWithLiveCounts} session={session} onSubmitReflection={handleSubmitReflection} />} />
       <Route path="/brainstorm/submit" element={<BrainstormSubmitPage session={session} onSubmit={handlePublicBrainstormSubmit} />} />
       <Route path="*" element={mainContent} />

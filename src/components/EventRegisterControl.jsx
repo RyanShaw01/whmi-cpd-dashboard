@@ -1,23 +1,29 @@
-import { CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, X } from "lucide-react";
 
 const NAVY = "#152A4E";
 const NAVY_HOVER = "#1E3A63";
+const RED = "#D9534F";
 
 // The single "you're registered" control — a green pill, clickable to unregister (the caller's
-// onUnregister is expected to confirm first). This is the ONLY registered-state control shown
-// anywhere: no separate "Unregister" button sits next to or on top of it, whether it's the
-// absolute corner badge on a card/grid tile or inline in a slot-style layout (compact rows,
-// modal header/footer).
+// onUnregister is expected to confirm first). Turns red and says "Unregister?" on hover, so the
+// action reads as a warning rather than looking like a second "success" affordance. This is the
+// ONLY registered-state control shown anywhere: no separate "Unregister" button sits next to or
+// on top of it, whether it's the absolute corner badge on a card/grid tile or inline in a
+// slot-style layout (compact rows, modal header/footer).
 export function RegisteredBadge({ corner = true, onUnregister, className = "" }) {
+  const [hover, setHover] = useState(false);
   const Tag = onUnregister ? "button" : "span";
   return (
     <Tag
       onClick={onUnregister ? (e) => { e.stopPropagation(); onUnregister(); } : undefined}
-      className={`${corner ? "absolute bottom-2 right-2 " : ""}z-10 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white shadow transition${onUnregister ? " hover:brightness-110" : ""} ${className}`}
-      style={{ background: "var(--accent-success)" }}
+      onMouseEnter={onUnregister ? () => setHover(true) : undefined}
+      onMouseLeave={onUnregister ? () => setHover(false) : undefined}
+      className={`${corner ? "absolute bottom-2 right-2 " : ""}z-10 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white shadow transition ${className}`}
+      style={{ background: onUnregister && hover ? RED : "var(--accent-success)" }}
       title={onUnregister ? "Click to unregister" : undefined}
     >
-      <CheckCircle2 size={12} />Registered
+      {onUnregister && hover ? <><X size={12} />Unregister?</> : <><CheckCircle2 size={12} />Registered</>}
     </Tag>
   );
 }

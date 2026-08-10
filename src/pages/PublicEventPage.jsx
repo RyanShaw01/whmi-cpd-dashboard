@@ -8,11 +8,16 @@ import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl } from ".
 const WH_DOMAIN = "@wh.org.au";
 const NAVY = "#152A4E";
 
-export default function PublicEventPage({ events, session, onPublicRegister, files }) {
+export default function PublicEventPage({ events, session, onPublicRegister, files, loading }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState(session?.name || "");
+  const [sessionNameParts] = useState(() => {
+    const parts = (session?.name || "").trim().split(/\s+/);
+    return { first: parts[0] || "", last: parts.slice(1).join(" ") || "" };
+  });
+  const [firstName, setFirstName] = useState(sessionNameParts.first);
+  const [lastName, setLastName] = useState(sessionNameParts.last);
   const [email, setEmail] = useState(session?.email || "");
   const [profession, setProfession] = useState(session?.profession || "");
   const [organisation, setOrganisation] = useState(session?.organisation || "");
@@ -24,6 +29,16 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
   const [flyerExpanded, setFlyerExpanded] = useState(false);
 
   if (!event) {
+    // While the app's initial data load is still in flight, this looks identical to a genuinely
+    // missing event — show a spinner instead of flashing "Event not found" at people testing
+    // their own share link while already signed in.
+    if (loading) {
+      return (
+        <div className="whmi-root light min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)", color: "var(--text)" }}>
+          <div className="whmi-logo-icon animate-pulse" style={{ width: 48, height: 26, opacity: 0.5 }} />
+        </div>
+      );
+    }
     return (
       <div className="whmi-root light min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)", color: "var(--text)" }}>
         <div className="text-center">
@@ -40,7 +55,7 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
 
   const submit = (e, whStaffAnswer) => {
     if (e) e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) return;
 
     if (!session && !isWhEmail && whStaffAnswer === undefined) {
       setAskWhStaff(true);
@@ -49,7 +64,7 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
 
     onPublicRegister({
       eventId: event.id,
-      name: name.trim(),
+      name: `${firstName.trim()} ${lastName.trim()}`.trim(),
       email: email.trim(),
       profession: profession.trim(),
       organisation: organisation.trim(),
@@ -123,9 +138,15 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
                 {session && (
                   <p className="text-[12px]" style={{ color: "var(--text-faint)" }}>Registering as <strong style={{ color: "var(--text)" }}>{session.name}</strong> ({session.email}), synced to your account.</p>
                 )}
-                <div>
-                  <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Name</label>
-                  <input required value={name} onChange={e => setName(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>First Name</label>
+                    <input required value={firstName} onChange={e => setFirstName(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Last Name</label>
+                    <input required value={lastName} onChange={e => setLastName(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />
+                  </div>
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Email</label>

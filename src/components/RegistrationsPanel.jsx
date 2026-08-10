@@ -94,10 +94,10 @@ export default function RegistrationsPanel({ event, registrations, canManage, di
                     return (
                       <button
                         key={t.id}
-                        onClick={() => onUpdateAttendanceStatus(r, t.id)}
+                        onClick={() => onUpdateAttendanceStatus(r, active ? "Registered" : t.id)}
                         className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold transition"
                         style={{ background: active ? t.color + "22" : "transparent", color: active ? t.color : "var(--text-faint)", border: `1px solid ${active ? t.color : "var(--border)"}` }}
-                        title={t.label}
+                        title={active ? `Click to unmark ${t.label}` : t.label}
                       >
                         <t.icon size={11} />{t.label}
                       </button>

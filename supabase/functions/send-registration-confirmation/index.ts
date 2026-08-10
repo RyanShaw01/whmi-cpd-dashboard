@@ -5,6 +5,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
 import { wrapEmailHtml, paragraphsHtml, detailRowsHtml, sideBySideButtonsHtml, disclaimerHtml, boldHtml, escapeHtml, BLUE, GREEN } from "../_shared/emailTemplate.ts";
+import { campusAddress } from "../_shared/campusAddresses.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -48,6 +49,9 @@ Deno.serve(async (req) => {
     const timeRange = `${fmtTime(event.start_time)} - ${fmtTime(event.end_time)}`;
     const eventUrl = `${SITE_URL}/event/${eventId}`;
     const isOnline = (event.mode === "Online" || event.mode === "Hybrid") && !!event.meeting_url;
+    // In-person/Hybrid events show the campus street address so recipients can find the venue.
+    const isInPerson = event.mode === "In-person" || event.mode === "Hybrid";
+    const address = isInPerson ? campusAddress(event.campus) : null;
 
     const bodyLines = [
       `Hi ${name},`,
@@ -57,6 +61,7 @@ Deno.serve(async (req) => {
       `Date: ${fmtDate(event.date)}`,
       `Time: ${timeRange}`,
       location ? `Location: ${location}` : "",
+      address ? `Address: ${address}` : "",
       event.presenter ? `Presenter: ${event.presenter}` : "",
       "",
       `View the event: ${eventUrl}`,
@@ -71,13 +76,14 @@ Deno.serve(async (req) => {
       preheader: `You're registered for ${event.title}`,
       title: `Registration confirmed: ${event.title}`,
       bodyHtml: `
-        <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">You're registered</h1>
+        <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};text-align:center;text-transform:uppercase;letter-spacing:.4px;">You're Registered</h1>
         <p style="margin:0 0 14px 0;">Hi ${escapeHtml(name)},</p>
         <p style="margin:0 0 14px 0;">You're registered for ${boldHtml(event.title)}.</p>
         ${detailRowsHtml([
           { label: "Date", value: fmtDate(event.date) },
           { label: "Time", value: timeRange },
           { label: "Location", value: location },
+          { label: "Address", value: address },
           { label: "Presenter", value: event.presenter },
         ])}
         ${sideBySideButtonsHtml([
