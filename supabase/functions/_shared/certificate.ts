@@ -55,17 +55,22 @@ export async function buildCertificatePdf(templateBytes: Uint8Array, fields: Cer
     const w = font.widthOfTextAtSize(display, size);
     page.drawText(display, { x: centerX - w / 2, y: PH - bottom + 4, size, font, color });
   };
-  const drawLeft = (text: string | null, x: number, top: number, bottom: number, size: number, font: PDFFont, color: ReturnType<typeof rgb>) => {
+  const drawLeft = (text: string | null, x: number, top: number, bottom: number, size: number, font: PDFFont, color: ReturnType<typeof rgb>, maxWidth = 160) => {
     // Always erase the placeholder here (it's baked into the template), even when there's no replacement text to draw.
-    page.drawRectangle({ x: x - 4, y: PH - bottom - 3, width: 160, height: (bottom - top) + 6, color: WHITE });
-    if (text) page.drawText(text, { x, y: PH - bottom + 3, size, font, color });
+    page.drawRectangle({ x: x - 4, y: PH - bottom - 3, width: maxWidth + 8, height: (bottom - top) + 6, color: WHITE });
+    if (text) {
+      // Shrink to fit rather than letting a long code/label bleed past its allotted width and
+      // get visually clipped by whatever's next to it on the template.
+      const fitted = fitFontSize(text, font, size, 7, maxWidth);
+      page.drawText(text, { x, y: PH - bottom + 3, size: fitted, font, color });
+    }
   };
 
   drawCentered(fields.name, 200, 248, 30, bold, BLUE);
   drawCentered(fields.sessionName, 288, 320, 17, bold, BLUE);
   drawCentered(fields.dateLabel, 322, 354, 14, regular, BLACK);
-  drawLeft(fields.code, 487, 420, 444, 11, regular, BLACK);
-  drawLeft(fields.hoursLabel, 488, 443, 467, 11, regular, BLACK);
+  drawLeft(fields.code, 487, 420, 444, 11, regular, BLACK, 155);
+  drawLeft(fields.hoursLabel, 488, 443, 467, 11, regular, BLACK, 155);
 
   return doc.save();
 }

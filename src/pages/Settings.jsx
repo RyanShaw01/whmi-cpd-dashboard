@@ -91,19 +91,30 @@ const EMAIL_TEMPLATE_DEFS = [
 ];
 
 function EmailTemplateEditor({ def, override, onSave }) {
-  const [subject, setSubject] = useState(override?.subject || "");
-  const [heading, setHeading] = useState(override?.heading || "");
-  const [intro, setIntro] = useState(override?.intro || "");
+  // Pre-filled with the actual wording that'll be sent (the override if one's set, otherwise
+  // the default copy) — editing a blank field with the real text only shown as faint placeholder
+  // text told you nothing about what you were actually changing.
+  const [subject, setSubject] = useState(override?.subject ?? def.defaultSubject);
+  const [heading, setHeading] = useState(override?.heading ?? def.defaultHeading);
+  const [intro, setIntro] = useState(override?.intro ?? def.defaultIntro);
   const [preview, setPreview] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   const sample = (s) => (s || "").replace(/\{title\}/g, "Ultrasound-Guided Procedures Workshop");
-  const effectiveSubject = sample(subject || def.defaultSubject);
-  const effectiveHeading = sample(heading || def.defaultHeading);
-  const effectiveIntro = sample(intro || def.defaultIntro);
+  const effectiveSubject = sample(subject);
+  const effectiveHeading = sample(heading);
+  const effectiveIntro = sample(intro);
 
   const save = () => {
-    onSave(def.key, { subject: subject.trim() || null, heading: heading.trim() || null, intro: intro.trim() || null });
+    // Only actually stored as an override if it differs from the default — typing the default
+    // text back in (or never touching the field) just clears any override, rather than saving
+    // a redundant copy of copy that already lives in code.
+    const patch = {
+      subject: subject.trim() !== def.defaultSubject.trim() ? subject.trim() : null,
+      heading: heading.trim() !== def.defaultHeading.trim() ? heading.trim() : null,
+      intro: intro.trim() !== def.defaultIntro.trim() ? intro.trim() : null,
+    };
+    onSave(def.key, patch);
     setDirty(false);
   };
 
@@ -142,7 +153,13 @@ function EmailTemplateEditor({ def, override, onSave }) {
             <textarea value={intro} onChange={e => { setIntro(e.target.value); setDirty(true); }} placeholder={def.defaultIntro} rows={2} className="whmi-input w-full px-2.5 py-1.5 mt-0.5 text-[12.5px] resize-none" />
             <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>Use <code>{"{title}"}</code> anywhere you want the event's name to appear.</p>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => { setSubject(def.defaultSubject); setHeading(def.defaultHeading); setIntro(def.defaultIntro); setDirty(true); }}
+              className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] flex items-center gap-1.5"
+            >
+              <RotateCcw size={12} />Reset to Default
+            </button>
             <button onClick={save} disabled={!dirty} className="whmi-btn-primary !py-1.5 !px-3 text-[12px] flex items-center gap-1.5" style={{ opacity: dirty ? 1 : 0.5 }}><Save size={12} />Save</button>
           </div>
         </div>

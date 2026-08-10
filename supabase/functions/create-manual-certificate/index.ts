@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
 
     const hours = Number(cpdHours) || 1;
     const eventDate = new Date(`${date}T00:00:00`);
-    const dateLabel = `On ${eventDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`;
+    const dateLabel = `on ${eventDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`;
 
     const { data: templateFile, error: templateError } = await supabaseAdmin.storage.from("certificates").download("templates/certificate-of-attendance.pdf");
     if (templateError || !templateFile) {
