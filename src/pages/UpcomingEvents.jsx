@@ -4,7 +4,8 @@ import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
 import RegisterOrUnregister from "../components/EventRegisterControl";
-import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
+import RecentlyCompletedCard from "../components/RecentlyCompletedCard";
+import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, isRecentlyCompleted, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
 
 const SORT_OPTIONS = [
   { id: "date-asc", label: "Date (Closest - Furthest Away)" },
@@ -201,6 +202,9 @@ export default function UpcomingEvents({
           const bannerUrl = eventBannerUrl(files, ev.id);
           const countdown = eventCountdownText(ev.date, ev.start, ev.end);
           const registered = registeredIds?.has(ev.id);
+          if (isRecentlyCompleted(ev.date, ev.end)) {
+            return <RecentlyCompletedCard key={ev.id} event={ev} files={files} openEvent={openEvent} registered={registered} />;
+          }
           return (
             <div
               key={ev.id}

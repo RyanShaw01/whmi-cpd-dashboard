@@ -3,7 +3,8 @@ import { ChevronRight, Clock, MapPin, LayoutGrid, List } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
 import RegisterOrUnregister from "./EventRegisterControl";
-import { fmtDate, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, makeViewPref } from "../lib/helpers";
+import RecentlyCompletedCard from "./RecentlyCompletedCard";
+import { fmtDate, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, makeViewPref, isRecentlyCompleted } from "../lib/helpers";
 
 // Same big-card/compact-list toggle and card styling as the admin Dashboard's Up Next and the
 // Upcoming Events page, reused for the viewer-facing dashboards (MyCpd, ExternalDashboard) so
@@ -90,6 +91,9 @@ export default function UpcomingEventsCards({
             const bannerUrl = eventBannerUrl(files, ev.id);
             const registered = registeredIds?.has(ev.id);
             const showPrice = viewerUserType === "external" && ev.openToExternal !== false && ev.externalPrice != null;
+            if (isRecentlyCompleted(ev.date, ev.end)) {
+              return <RecentlyCompletedCard key={ev.id} event={ev} files={files} openEvent={openEvent} registered={registered} accentHex={accentHex} />;
+            }
             return (
               <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl" style={{ border: "1px solid var(--border)" }}>
                 <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col text-left transition rounded-lg -m-1 p-1">

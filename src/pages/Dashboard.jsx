@@ -11,7 +11,8 @@ import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import RegisterOrUnregister from "../components/EventRegisterControl";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, eventCountdownText, getShowDueSoonDefault, getShowDueSoonDatesDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
+import RecentlyCompletedCard from "../components/RecentlyCompletedCard";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, eventCountdownText, isRecentlyCompleted, getShowDueSoonDefault, getShowDueSoonDatesDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
 const QUICK_ACTIONS = [
@@ -161,6 +162,9 @@ export default function Dashboard({
           {nonLiveEvents.slice(0, 6).map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
             const registered = registeredIds?.has(ev.id);
+            if (isRecentlyCompleted(ev.date, ev.end)) {
+              return <RecentlyCompletedCard key={ev.id} event={ev} files={files} openEvent={openEvent} registered={registered} accentHex={primaryHex} />;
+            }
             return (
               <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl" style={{ border: "1px solid var(--border)" }}>
                 <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col text-left transition rounded-lg -m-1 p-1">

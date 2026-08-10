@@ -150,6 +150,17 @@ export function hasEventEnded(dateStr, endTime) {
   return new Date() > end;
 }
 
+/* True for the 24h grace window between an event ending and the complete-finished-events cron
+ * actually flipping its status to Completed (see supabase/functions/complete-finished-events) —
+ * during that window it still shows in Upcoming/Up Next, just stripped down to a "reflect and
+ * get your certificate" prompt instead of the usual event details. */
+export function isRecentlyCompleted(dateStr, endTime) {
+  if (!dateStr || !endTime) return false;
+  const end = new Date(`${dateStr}T${endTime}:00`);
+  const hoursSinceEnd = (Date.now() - end.getTime()) / 3600000;
+  return hoursSinceEnd >= 0 && hoursSinceEnd < 24;
+}
+
 /* A user's own certificates — externals match by recipient email (or name, for
  * manually-created certs before an account existed), internal viewers by name. */
 export function myCertificates(certificates, user) {
