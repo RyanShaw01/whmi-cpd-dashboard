@@ -1,7 +1,8 @@
 // Any signed-in user: emails a copy of one of THEIR OWN reflections (personal or WH-event) to
-// their own account email — never an arbitrary address supplied by the client.
+// their own account email - never an arbitrary address supplied by the client.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
+import { wrapEmailHtml, reflectionSectionsHtml, boldHtml, escapeHtml, BLUE } from "../_shared/emailTemplate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -46,10 +47,22 @@ Deno.serve(async (req) => {
     }
     bodyLines.push("", "- WHMI CPD Dashboard");
 
+    const html = wrapEmailHtml({
+      preheader: `Your CPD reflection for ${activityName}`,
+      title: `Your CPD Reflection: ${activityName}`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Your reflection</h1>
+        <p style="margin:0 0 4px 0;">${boldHtml(activityName)}</p>
+        ${activityDate ? `<p style="margin:0 0 14px 0;font-size:12.5px;color:#6b7785;">${escapeHtml(activityDate)}</p>` : ""}
+        ${reflectionSectionsHtml(sections)}
+      `,
+    });
+
     const emailResult = await sendEmail({
       to: callerRow.email,
       subject: `Your CPD Reflection: ${activityName}`,
       text: bodyLines.filter(l => l !== undefined).join("\n"),
+      html,
     });
     if (!emailResult.ok) {
       return new Response(JSON.stringify({ ok: false, error: emailResult.error || "email failed to send" }), { status: 502, headers: CORS_HEADERS });

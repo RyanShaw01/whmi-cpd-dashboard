@@ -42,7 +42,7 @@ export function paragraphsHtml(text: string): string {
 }
 
 export function btnHtml(label: string, href: string, color: string = BLUE): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 18px 0;"><tr><td style="border-radius:8px;background:${color};"><a href="${href}" style="display:inline-block;padding:11px 22px;font-size:13.5px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${escapeHtml(label)}</a></td></tr></table>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:6px 0 18px 0;"><tr><td align="center"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:8px;background:${color};"><a href="${href}" style="display:inline-block;padding:11px 22px;font-size:13.5px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${escapeHtml(label)}</a></td></tr></table></td></tr></table>`;
 }
 
 // Two buttons, centred, side by side - used for "View event details" + "Join online" together.
@@ -70,6 +70,22 @@ export function calloutHtml(bodyHtml: string, color: string = BLUE): string {
 // A small muted disclaimer line - e.g. "this link only works 20 minutes before the event".
 export function disclaimerHtml(text: string): string {
   return `<p style="margin:2px 0 18px 0;font-size:11px;color:${FAINT};text-align:center;">${escapeHtml(text)}</p>`;
+}
+
+// Shared by email-reflection-copy and admin-email-reflections-report so a reflection's
+// Q&A sections render identically wherever they're emailed from.
+export function reflectionSectionsHtml(sections: { label: string; items: { question?: string; answer: string }[] }[]): string {
+  return sections
+    .filter(s => s.items?.some(i => i.answer))
+    .map(s => `
+      <div style="margin:20px 0 8px 0;font-size:11px;font-weight:700;letter-spacing:.4px;color:${NAVY};text-transform:uppercase;">${escapeHtml(s.label)}</div>
+      ${s.items.filter(i => i.answer).map(i => `
+        <div style="margin:0 0 12px 0;">
+          ${i.question ? `<div style="font-size:12px;font-weight:600;color:${FAINT};margin-bottom:3px;">${escapeHtml(i.question)}</div>` : ""}
+          <div style="font-size:13px;color:${TEXT};">${escapeHtml(i.answer)}</div>
+        </div>
+      `).join("")}
+    `).join("");
 }
 
 // Shared by the three certificate-sending functions (send-reflection-certificate,
