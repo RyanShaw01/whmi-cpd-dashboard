@@ -21,6 +21,10 @@ function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme, cardTheme, setCar
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  // This popover stays mounted (only its panel toggles), so Advanced needs to be collapsed
+  // again explicitly every time the popover closes — otherwise it'd stay open on next open.
+  useEffect(() => { if (!open) setAdvancedOpen(false); }, [open]);
+
   const CurrentIcon = THEME_OPTIONS.find(o => o.id === theme)?.icon || Sun;
   const resolvedMain = mainTheme ?? theme;
   const resolvedCard = cardTheme ?? resolvedMain;

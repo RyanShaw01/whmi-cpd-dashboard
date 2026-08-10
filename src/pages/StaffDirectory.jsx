@@ -84,7 +84,17 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
         <div className="flex items-center gap-2 flex-wrap">
           <div className="whmi-input flex items-center gap-2 px-3 py-2 w-56">
             <Search size={13} style={{ color: "var(--text-faint)" }} />
-            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search staff..." className="bg-transparent outline-none w-full text-[13px]" style={{ color: "var(--text)" }} />
+            <input
+              value={q}
+              onChange={e => {
+                const next = e.target.value;
+                setQ(next);
+                // Searching is pointless if the results are hidden behind a collapsed section —
+                // open both the moment there's a query, so matches are visible immediately.
+                if (next.trim()) { setStaffExpanded(true); setStatsExpanded(true); }
+              }}
+              placeholder="Search staff..." className="bg-transparent outline-none w-full text-[13px]" style={{ color: "var(--text)" }}
+            />
           </div>
           <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2 py-2 text-[12px]">
             {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
@@ -106,7 +116,7 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
               <BarChart3 size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Quick Stats</div>
             </div>
           </button>
-          {statsExpanded && <div className="mt-3"><StaffQuickStats staffDirectory={staffDirectory} onSelectStaff={openStaff} /></div>}
+          {statsExpanded && <div className="mt-3"><StaffQuickStats staffDirectory={staffDirectory} onSelectStaff={openStaff} query={q} /></div>}
         </div>
       )}
 

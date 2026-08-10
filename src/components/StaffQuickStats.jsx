@@ -13,14 +13,15 @@ const SORT_OPTIONS = [
 function firstName(s) { return s.name.split(" ")[0]; }
 function lastName(s) { return s.name.split(" ").slice(-1)[0]; }
 
-export default function StaffQuickStats({ staffDirectory, onSelectStaff }) {
+export default function StaffQuickStats({ staffDirectory, onSelectStaff, query = "" }) {
   const [sortBy, setSortBy] = useState("lastName");
   const [desc, setDesc] = useState(false);
 
   const currentYear = new Date().getFullYear();
 
   const sorted = useMemo(() => {
-    const list = [...staffDirectory];
+    const q = query.trim().toLowerCase();
+    const list = (q ? staffDirectory.filter(s => s.name.toLowerCase().includes(q)) : [...staffDirectory]);
     list.sort((a, b) => {
       let av, bv;
       switch (sortBy) {
@@ -39,14 +40,20 @@ export default function StaffQuickStats({ staffDirectory, onSelectStaff }) {
 
   return (
     <div>
-      <div className="flex items-center justify-end gap-1.5 mb-2">
+      <div className="flex items-center justify-between gap-1.5 mb-2">
+        {query.trim() && <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>{sorted.length} matching "{query.trim()}"</span>}
+        <div className="flex items-center gap-1.5 ml-auto">
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="whmi-input px-2 py-1 text-[11px]">
           {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
         </select>
         <button onClick={() => setDesc(d => !d)} className="whmi-btn-ghost !p-1.5" title={desc ? "Descending" : "Ascending"}>
           {desc ? <ArrowDown size={13} /> : <ArrowUp size={13} />}
         </button>
+        </div>
       </div>
+      {sorted.length === 0 ? (
+        <div className="text-[12px] text-center py-4" style={{ color: "var(--text-faint)" }}>No staff match "{query.trim()}".</div>
+      ) : (
       <div className="overflow-auto whmi-scroll max-h-[260px]">
         <table className="w-full text-[11.5px]">
           <thead className="sticky top-0" style={{ background: "var(--surface)" }}>
@@ -75,6 +82,7 @@ export default function StaffQuickStats({ staffDirectory, onSelectStaff }) {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }
