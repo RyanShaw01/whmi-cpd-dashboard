@@ -1,10 +1,16 @@
 import { useState, useMemo } from "react";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, Check, X, Ban } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import DuplicateWarnings from "./DuplicateWarnings";
 import { findDuplicates } from "../lib/duplicates";
 
-const ATTENDANCE_STATUSES = ["Registered", "Attended", "No Show", "Cancelled", "Waitlisted"];
+// Manually-settable outcomes — "Registered"/"Waitlisted" stay automatic states driven by
+// registration/capacity, shown read-only via StatusBadge when none of these three apply.
+const ATTENDANCE_TICKS = [
+  { id: "Attended", label: "Attended", icon: Check, color: "var(--accent-success)" },
+  { id: "No Show", label: "No Show", icon: X, color: "#D9534F" },
+  { id: "Cancelled", label: "Cancelled", icon: Ban, color: "var(--text-faint)" },
+];
 
 const SORT_OPTIONS = [
   { id: "date-desc", label: "Newest - Oldest" },
@@ -82,13 +88,22 @@ export default function RegistrationsPanel({ event, registrations, canManage, di
             <div className="flex items-center gap-1.5 shrink-0">
               {r.isExternal && <span className="whmi-badge" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>External</span>}
               {canManage && onUpdateAttendanceStatus ? (
-                <select
-                  value={r.attendanceStatus || "Registered"}
-                  onChange={e => onUpdateAttendanceStatus(r, e.target.value)}
-                  className="whmi-input px-1.5 py-1 text-[10.5px]"
-                >
-                  {ATTENDANCE_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <div className="flex items-center gap-1">
+                  {ATTENDANCE_TICKS.map(t => {
+                    const active = r.attendanceStatus === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => onUpdateAttendanceStatus(r, t.id)}
+                        className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold transition"
+                        style={{ background: active ? t.color + "22" : "transparent", color: active ? t.color : "var(--text-faint)", border: `1px solid ${active ? t.color : "var(--border)"}` }}
+                        title={t.label}
+                      >
+                        <t.icon size={11} />{t.label}
+                      </button>
+                    );
+                  })}
+                </div>
               ) : (
                 <StatusBadge status={r.attendanceStatus || "Registered"} />
               )}

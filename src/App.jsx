@@ -46,7 +46,7 @@ import {
   fetchReflections, insertReflection, deleteReflection, fetchDismissedPairs, insertDismissedPair,
   fetchAllFiles, deleteEventFile, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
   fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType, sendCertificateEmail,
-  fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog, sendReflectionReminder,
+  fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog, sendReflectionReminder, sendThankYouEmail,
   fetchAvatarIcons, insertAvatarIcon, updateAvatarIcon, deleteAvatarIcon, uploadAvatarIconImage,
   fetchAvatarColors, insertAvatarColor, updateAvatarColor, deleteAvatarColor,
   fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea, updateBrainstormIdea,
@@ -461,6 +461,53 @@ export default function App() {
       }
     },
   });
+  // Bulk version of handleSendReflectionReminder — one confirm, then a reminder to every
+  // registrant in the list who hasn't submitted a reflection yet.
+  const handleSendAllReflectionReminders = (registrationsList, event) => {
+    if (!registrationsList || registrationsList.length === 0) return;
+    requestConfirm({
+      title: "Send follow-up to everyone?",
+      message: `Email ${registrationsList.length} attendee${registrationsList.length === 1 ? "" : "s"} of "${event.title}" a reminder to submit their reflection?`,
+      confirmLabel: "Send",
+      onConfirm: async () => {
+        let sent = 0;
+        for (const registration of registrationsList) {
+          const res = await sendReflectionReminder({ name: registration.name, email: registration.email, eventId: event.id, eventTitle: event.title });
+          if (res.ok) {
+            const sentAt = new Date().toISOString();
+            setRegistrations(prev => prev.map(r => r.id === registration.id ? { ...r, reflectionEmailSentAt: sentAt } : r));
+            updateRegistration(registration.id, { reflectionEmailSentAt: sentAt });
+            sent++;
+          }
+        }
+        pushAudit({ actorId: session?.id, action: "reflection.reminder_sent", entityType: "event", entityId: event.id, details: { bulkCount: sent } });
+        showToast(`Follow-up sent to ${sent} attendee${sent === 1 ? "" : "s"}.`);
+      },
+    });
+  };
+  // Bulk "thanks for attending" send for every eligible attendee of a past event who hasn't
+  // received it yet (from either this manual action or the automated post-event cron — both
+  // paths write the same reminder_sent_at column, so this can't double-send).
+  const handleSendThankYouEmail = (event) => requestConfirm({
+    title: "Send thank-you email?",
+    message: `Email everyone who attended "${event.title}" a thank-you and reflection request, if they haven't already been sent one?`,
+    confirmLabel: "Send",
+    onConfirm: async () => {
+      const res = await sendThankYouEmail({ eventId: event.id });
+      if (res.ok) {
+        pushAudit({ actorId: session?.id, action: "event.thank_you_sent", entityType: "event", entityId: event.id, details: { sentCount: res.sentCount } });
+        const sentAt = res.sentAt || new Date().toISOString();
+        setRegistrations(prev => prev.map(r =>
+          r.eventId === event.id && !r.reminderSentAt && ["Registered", "Attended"].includes(r.attendanceStatus || "Registered")
+            ? { ...r, reminderSentAt: sentAt }
+            : r
+        ));
+        showToast(res.sentCount > 0 ? `Thank-you email sent to ${res.sentCount} attendee${res.sentCount === 1 ? "" : "s"}.` : "Everyone had already been emailed.");
+      } else {
+        showToast("Couldn't send the thank-you email. Please try again.");
+      }
+    },
+  });
   const handleSendReflectionsReport = async ({ email, name, entries }) => {
     const res = await emailReflectionsReport({ toEmail: email, toName: name, entries });
     showToast(res.ok ? "Report emailed." : "Couldn't send the report. Please try again.");
@@ -805,6 +852,19 @@ export default function App() {
     deleteRegistration(reg.id);
     pushAudit({ actorId: session?.id, action: "registration.deleted", entityType: "registration", entityId: reg.id, details: { name: reg.name, eventId: reg.eventId } });
   });
+
+  // The signed-in user's own active registrations, for the "Registered" badge + self-serve
+  // unregister control shown on event cards everywhere (Up Next, Upcoming Events, viewer
+  // dashboards, the event detail modal) — every role can register for events, including
+  // admins/owners viewing their own cards.
+  const myRegisteredEventIds = useMemo(
+    () => new Set(session ? registrations.filter(r => r.userId === session.id && r.attendanceStatus !== "Cancelled").map(r => r.eventId) : []),
+    [registrations, session]
+  );
+  const handleUnregisterSelf = (eventId) => {
+    const reg = session && registrations.find(r => r.eventId === eventId && r.userId === session.id);
+    if (reg) requestDeleteRegistration(reg);
+  };
 
   const handleUpdateRegistrationField = (reg, patch) => {
     setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, ...patch } : r));
@@ -1166,13 +1226,14 @@ export default function App() {
                 onOpenReportsFeedback={openReportsFeedback}
                 onOpenOutstandingReflections={openOutstandingReflections}
                 onOpenEventsCurrentlyOpen={openEventsCurrentlyOpen}
+                registeredIds={myRegisteredEventIds} onUnregister={handleUnregisterSelf}
               />
             )}
             {page === "mycpd" && viewSession.userType === "external" && (
-              <ExternalDashboard user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
+              <ExternalDashboard user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycpd" && viewSession.userType !== "external" && (
-              <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
+              <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
             {page === "upcoming" && (canManage || viewSession.userType === "internal") && (
@@ -1181,6 +1242,7 @@ export default function App() {
                 registrations={registrations} onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField} onUpdateAttendanceStatus={handleUpdateAttendanceStatus}
                 dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
                 highlightRegIds={highlightRegIds}
+                registeredIds={myRegisteredEventIds} onUnregister={handleUnregisterSelf}
               />
             )}
             {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} onRequestDeleteMultiple={requestDeletePreviousEvents} />}
@@ -1259,6 +1321,7 @@ export default function App() {
           dismissedReflectionPairs={dismissedReflectionPairs} onMergeReflections={handleMergeReflections} onDismissReflectionPair={handleDismissReflectionPair}
           cpdTypes={cpdTypes} files={files} tags={tags} onSaveTag={handleAddTag} viewerUserType={viewSession.userType} onFilesChange={refreshFiles}
           onUpdateBannerCrop={handleUpdateBannerCrop} onRemoveBanner={handleRemoveBanner}
+          onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf}
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}
@@ -1275,6 +1338,8 @@ export default function App() {
           cpdTypes={cpdTypes} tags={tags} onSaveTag={handleAddTag} onFilesChange={refreshFiles} files={files}
           onUpdateBannerCrop={handleUpdateBannerCrop} onRemoveBanner={handleRemoveBanner}
           onCreateCertificateFor={handleCreateCertificateForRegistrant} onSendReflectionReminder={handleSendReflectionReminder}
+          onSendAllReflectionReminders={handleSendAllReflectionReminders}
+          onSendThankYouEmail={handleSendThankYouEmail}
         />
         <EventFormModal
           open={createEventOpen} onClose={() => setCreateEventOpen(false)} event={null}

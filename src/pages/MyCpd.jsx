@@ -4,7 +4,7 @@ import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
 import { fmtDate, hasEventEnded } from "../lib/helpers";
 
-export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onNavigatePage, onSuggestIdea }) {
+export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea }) {
   const staff = staffDirectory.find(s => s.id === user.staffId);
   const myPastEvents = staff?.attendedEventIds
     ? previousEvents.filter(ev => staff.attendedEventIds.includes(ev.id))
@@ -51,7 +51,7 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
 
       <UpcomingEventsCards
         title="Upcoming CPD" events={events.filter(e => e.status === "Registration Open")} files={files} openEvent={openEvent}
-        storageKey="whmi_mycpd_upcoming_view" mode="register" onOpenRegister={onOpenRegister} registeredIds={myRegisteredEventIds}
+        storageKey="whmi_mycpd_upcoming_view" mode="register" onOpenRegister={onOpenRegister} onUnregister={onUnregister} registeredIds={myRegisteredEventIds}
         emptyText="No upcoming CPD events open for registration."
       />
       {onSuggestIdea && (

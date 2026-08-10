@@ -2,10 +2,8 @@ import { useState } from "react";
 import { ChevronRight, Clock, MapPin, LayoutGrid, List } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
+import RegisterOrUnregister, { RegisteredBadge } from "./EventRegisterControl";
 import { fmtDate, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, makeViewPref } from "../lib/helpers";
-
-const REGISTER_NAVY = "#152A4E";
-const REGISTER_NAVY_HOVER = "#1E3A63";
 
 // Same big-card/compact-list toggle and card styling as the admin Dashboard's Up Next and the
 // Upcoming Events page, reused for the viewer-facing dashboards (MyCpd, ExternalDashboard) so
@@ -13,7 +11,7 @@ const REGISTER_NAVY_HOVER = "#1E3A63";
 // admins/owners, each page remembering its own view choice independently.
 export default function UpcomingEventsCards({
   title, events, files, openEvent, accentHex = "var(--accent-primary)", storageKey,
-  mode = "register", onOpenRegister, viewerUserType, emptyText = "No upcoming events.", maxItems = 6, registeredIds,
+  mode = "register", onOpenRegister, onUnregister, viewerUserType, emptyText = "No upcoming events.", maxItems = 6, registeredIds,
 }) {
   const viewPref = makeViewPref(storageKey);
   const [view, setViewState] = useState(viewPref.get);
@@ -50,6 +48,8 @@ export default function UpcomingEventsCards({
           {events.slice(0, maxItems).map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
             const [, day, month] = fmtDate(ev.date).split(" ");
+            const registered = registeredIds?.has(ev.id);
+            const showPrice = viewerUserType === "external" && ev.openToExternal !== false && ev.externalPrice != null;
             return (
               <button key={ev.id} onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex items-center gap-3.5 p-2 rounded-xl text-left transition">
                 <div className="w-[58px] h-[58px] rounded-lg shrink-0 relative overflow-hidden p-1.5 flex flex-col items-start justify-start" style={!bannerUrl ? { background: accentHex } : undefined}>
@@ -66,20 +66,17 @@ export default function UpcomingEventsCards({
                     <span className="flex items-center gap-1 truncate"><MapPin size={10} className="shrink-0" />{ev.campus || eventLocationSuffix(ev) || "—"}</span>
                   </div>
                 </div>
-                {registeredIds?.has(ev.id) ? (
-                  <ChevronRight size={15} style={{ color: "var(--text-faint)" }} className="shrink-0" />
-                ) : mode === "manage" ? (
+                {showPrice && (
+                  <span className="text-[14px] font-extrabold shrink-0" style={{ color: "var(--accent-success)" }}>${Number(ev.externalPrice).toFixed(2)}</span>
+                )}
+                {mode === "manage" && !registered ? (
                   <StatusBadge status={ev.status} />
-                ) : onOpenRegister && ev.status === "Registration Open" ? (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onOpenRegister(ev.id); }}
-                    className="text-[11.5px] font-semibold px-2.5 py-1.5 rounded-lg transition shrink-0"
-                    style={{ background: REGISTER_NAVY, color: "white" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = REGISTER_NAVY_HOVER; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = REGISTER_NAVY; }}
-                  >
-                    Register
-                  </button>
+                ) : onOpenRegister && (registered || ev.status === "Registration Open") ? (
+                  <RegisterOrUnregister
+                    registered={registered}
+                    onRegister={() => onOpenRegister(ev.id)}
+                    onUnregister={() => onUnregister?.(ev.id)}
+                  />
                 ) : (
                   <ChevronRight size={15} style={{ color: "var(--text-faint)" }} className="shrink-0" />
                 )}
@@ -91,8 +88,11 @@ export default function UpcomingEventsCards({
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {events.slice(0, maxItems).map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
+            const registered = registeredIds?.has(ev.id);
+            const showPrice = viewerUserType === "external" && ev.openToExternal !== false && ev.externalPrice != null;
             return (
-              <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl" style={{ border: "1px solid var(--border)" }}>
+              <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl relative" style={{ border: "1px solid var(--border)" }}>
+                {registered && <RegisteredBadge />}
                 <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col text-left transition rounded-lg -m-1 p-1">
                   {bannerUrl && (
                     <div className="w-full h-28 rounded-lg mb-3 overflow-hidden" style={{ border: "1px solid var(--border)" }}>
@@ -120,23 +120,21 @@ export default function UpcomingEventsCards({
                         {mode === "manage" && <StatusBadge status={ev.status} />}
                         <ModeBadge mode={ev.mode} />
                       </div>
-                      {viewerUserType === "external" && ev.openToExternal !== false && ev.externalPrice != null && (
-                        <div className="mt-2 text-[11.5px] font-semibold" style={{ color: "var(--accent-success)" }}>${Number(ev.externalPrice).toFixed(2)} AUD</div>
-                      )}
                     </div>
                   </div>
                 </button>
-                {mode === "register" && onOpenRegister && ev.status === "Registration Open" && !registeredIds?.has(ev.id) && (
-                  <div className="flex justify-end mt-3">
-                    <button
-                      onClick={() => onOpenRegister(ev.id)}
-                      className="text-[12px] font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1"
-                      style={{ background: REGISTER_NAVY, color: "white" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = REGISTER_NAVY_HOVER; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = REGISTER_NAVY; }}
-                    >
-                      Register <span>→</span>
-                    </button>
+                {(showPrice || (mode === "register" && onOpenRegister && (registered || ev.status === "Registration Open"))) && (
+                  <div className="flex items-center justify-end gap-3 mt-3">
+                    {showPrice && (
+                      <span className="text-[15px] font-extrabold" style={{ color: "var(--accent-success)" }}>${Number(ev.externalPrice).toFixed(2)} AUD</span>
+                    )}
+                    {mode === "register" && onOpenRegister && (registered || ev.status === "Registration Open") && (
+                      <RegisterOrUnregister
+                        registered={registered} size="md"
+                        onRegister={() => onOpenRegister(ev.id)}
+                        onUnregister={() => onUnregister?.(ev.id)}
+                      />
+                    )}
                   </div>
                 )}
               </div>

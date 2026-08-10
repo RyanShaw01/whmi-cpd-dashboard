@@ -131,6 +131,17 @@ export const setShowDueSoonDefault = (value) => {
   try { localStorage.setItem(SHOW_DUE_SOON_KEY, String(value)); } catch { /* ignore */ }
 };
 
+/* Whether the due-soon list also spells out each event's literal date/time (in addition to the
+ * relative countdown, which always shows) — off by default since the countdown already conveys
+ * urgency and the literal date/time reads as clutter for most people. */
+const SHOW_DUE_SOON_DATES_KEY = "whmi_dashboard_due_soon_dates";
+export const getShowDueSoonDatesDefault = () => {
+  try { const v = localStorage.getItem(SHOW_DUE_SOON_DATES_KEY); return v === "true"; } catch { return false; }
+};
+export const setShowDueSoonDatesDefault = (value) => {
+  try { localStorage.setItem(SHOW_DUE_SOON_DATES_KEY, String(value)); } catch { /* ignore */ }
+};
+
 /* Whether an event has finished, independent of its admin-set status;
  * "Leave Feedback" eligibility follows wall-clock time, not manual lifecycle state. */
 export function hasEventEnded(dateStr, endTime) {

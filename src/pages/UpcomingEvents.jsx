@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Pencil, ClipboardList, Lightbulb, LayoutGrid, List, Users } from "lucide-react";
+import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Pencil, ClipboardList, Lightbulb, LayoutGrid, List, Users, Radio } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
+import RegisterOrUnregister, { RegisteredBadge } from "../components/EventRegisterControl";
 import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
 
 const SORT_OPTIONS = [
@@ -13,16 +14,22 @@ const SORT_OPTIONS = [
 ];
 
 export default function UpcomingEvents({
-  events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea,
+  events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onUnregister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea,
   registrations, onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
-  dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair, highlightRegIds,
+  dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair, highlightRegIds, registeredIds,
 }) {
   const [filter, setFilter] = useState("All");
   const [view, setViewState] = useState(getEventCardViewDefault);
   const setView = (v) => { setViewState(v); setEventCardViewDefault(v); };
   const [sortBy, setSortBy] = useState("date-asc");
   const statuses = ["All", "Registration Open", "Draft", "Awaiting Approval"];
-  const filteredUnsorted = filter === "All" ? events : events.filter(e => e.status === filter);
+  // Live events get pulled out into their own "Happening Now" section above everything else,
+  // regardless of status filter — a Draft/Awaiting Approval event can't be live, but this keeps
+  // the split consistent with Dashboard's Up Next.
+  const liveEvents = events.filter(ev => eventCountdownText(ev.date, ev.start, ev.end)?.happening);
+  const liveIds = new Set(liveEvents.map(ev => ev.id));
+  const nonLiveEvents = events.filter(ev => !liveIds.has(ev.id));
+  const filteredUnsorted = filter === "All" ? nonLiveEvents : nonLiveEvents.filter(e => e.status === filter);
   const filtered = useMemo(() => {
     const list = [...filteredUnsorted];
     list.sort((a, b) => {
@@ -65,6 +72,38 @@ export default function UpcomingEvents({
         </div>
       </div>
 
+      {liveEvents.length > 0 && (
+        <div className="whmi-card p-5" style={{ borderColor: "#D9534F" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#D9534F" }} />
+            <h2 className="disp text-[15px] font-extrabold uppercase tracking-wide" style={{ color: "#D9534F" }}>Happening Now</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {liveEvents.map(ev => (
+              <div key={ev.id} className="p-4 rounded-xl flex flex-col gap-2" style={{ border: "1px solid rgba(217,83,79,.35)", background: "rgba(217,83,79,.06)" }}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="whmi-badge flex items-center gap-1 font-extrabold" style={{ background: "#D9534F", color: "white" }}><Radio size={11} />LIVE NOW</span>
+                  <ModeBadge mode={ev.mode} />
+                </div>
+                <button onClick={() => openEvent(ev)} className="text-left">
+                  <div className="font-bold text-[14.5px] break-words">{ev.title}</div>
+                  <div className="text-[11.5px] mt-0.5" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</div>
+                </button>
+                {ev.meetingUrl && (
+                  <a
+                    href={ev.meetingUrl} target="_blank" rel="noreferrer"
+                    className="mt-1 flex items-center justify-center gap-1.5 font-bold text-[12.5px] px-3 py-1.5 rounded-lg text-white"
+                    style={{ background: "#D9534F" }}
+                  >
+                    <Link2 size={13} />Join
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 whmi-scroll overflow-x-auto pb-1">
           {statuses.map(s => (
@@ -94,6 +133,7 @@ export default function UpcomingEvents({
           {filtered.map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
             const needsAttention = canManage && (ev.status === "Draft" || ev.status === "Awaiting Approval");
+            const registered = registeredIds?.has(ev.id);
             // fmtDate() already returns e.g. "Mon, 10 Aug" with the comma baked in — only pull
             // day/month out of it for the date box; re-adding a comma with the weekday token
             // elsewhere double-punctuates it.
@@ -132,11 +172,18 @@ export default function UpcomingEvents({
                       </div>
                     )}
                   </div>
+                  {onOpenRegister && (registered || ev.status === "Registration Open") && (
+                    <RegisterOrUnregister
+                      registered={registered}
+                      onRegister={() => onOpenRegister(ev.id)}
+                      onUnregister={() => onUnregister?.(ev.id)}
+                    />
+                  )}
                 </button>
                 {canManage && (
                   <button
                     onClick={(e) => { e.stopPropagation(); openEvent(ev, undefined, true); }}
-                    className="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition whmi-btn-ghost !p-1.5"
+                    className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition whmi-btn-ghost !p-1.5"
                     title="Edit event"
                   >
                     <Pencil size={13} />
@@ -153,6 +200,7 @@ export default function UpcomingEvents({
           const needsAttention = canManage && (ev.status === "Draft" || ev.status === "Awaiting Approval");
           const bannerUrl = eventBannerUrl(files, ev.id);
           const countdown = eventCountdownText(ev.date, ev.start, ev.end);
+          const registered = registeredIds?.has(ev.id);
           return (
             <div
               key={ev.id}
@@ -160,6 +208,7 @@ export default function UpcomingEvents({
               className="whmi-card whmi-event-card whmi-row-hover group p-4 text-left transition relative"
               style={{ outline: ev.id === highlightId ? "2px solid #D9534F" : "none", outlineOffset: 2 }}
             >
+              {registered && <RegisteredBadge />}
               {needsAttention && (
                 <button
                   onClick={(e) => { e.stopPropagation(); openEvent(ev); }}
@@ -255,16 +304,12 @@ export default function UpcomingEvents({
                       {ev.capacity != null && <span className="ml-1">({Math.round((ev.registered / ev.capacity) * 100)}%)</span>}
                     </span>
                   )}
-                  {onOpenRegister && ev.status === "Registration Open" && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onOpenRegister(ev.id); }}
-                      className="text-[12px] font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1"
-                      style={{ background: "#152A4E", color: "white" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "#1E3A63"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "#152A4E"; }}
-                    >
-                      Register <span className="transition-transform">→</span>
-                    </button>
+                  {onOpenRegister && (registered || ev.status === "Registration Open") && (
+                    <RegisterOrUnregister
+                      registered={registered} size="md"
+                      onRegister={() => onOpenRegister(ev.id)}
+                      onUnregister={() => onUnregister?.(ev.id)}
+                    />
                   )}
                 </div>
               </div>

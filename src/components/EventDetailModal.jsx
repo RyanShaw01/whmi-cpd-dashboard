@@ -12,6 +12,7 @@ import InfoTooltip from "./InfoTooltip";
 import EventForm from "./EventForm";
 import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
+import RegisterOrUnregister, { RegisteredBadge } from "./EventRegisterControl";
 import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix, splitPeopleList } from "../lib/helpers";
 import { previewCertificateTemplate } from "../lib/db";
 
@@ -82,6 +83,7 @@ export default function EventDetailModal({
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
   initialTab, initialEditing, highlightMissing, seriesEvents = [], onSwitchEvent, onDuplicate,
+  onOpenRegister, onUnregister,
 }) {
   const [regTab, setRegTab] = useState(initialTab || "overview");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -170,6 +172,13 @@ export default function EventDetailModal({
             </div>
             {canManage && (
               <div className="flex items-center gap-1.5">
+                {onOpenRegister && (iRegistered || event.status === "Registration Open") && (
+                  <RegisterOrUnregister
+                    registered={iRegistered}
+                    onRegister={() => onOpenRegister(event.id)}
+                    onUnregister={() => onUnregister?.(event.id)}
+                  />
+                )}
                 {onEdit && (
                   <button onClick={() => setEditing(true)} className="whmi-btn-ghost !p-2" title="Edit event">
                     <Pencil size={14} />
@@ -274,6 +283,17 @@ export default function EventDetailModal({
               {canLeaveFeedback && (
                 <Link to={`/event/${event.id}/reflect`} className="whmi-btn-primary flex items-center justify-center gap-1.5 w-full"><MessageSquareText size={14} />Leave Feedback & Get Certificate</Link>
               )}
+              {!canManage && onOpenRegister && (iRegistered || event.status === "Registration Open") && (
+                <div className="flex items-center justify-end gap-2">
+                  {iRegistered && <RegisteredBadge corner={false} />}
+                  <RegisterOrUnregister
+                    registered={iRegistered}
+                    onRegister={() => onOpenRegister(event.id)}
+                    onUnregister={() => onUnregister?.(event.id)}
+                  />
+                </div>
+              )}
+              {canManage && (
               <div className="flex gap-2 flex-wrap">
                 <button onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/event/${event.id}`); if (canManage) setRegTab("qr"); }} className="whmi-btn-ghost flex items-center gap-1.5"><ArrowUpRight size={14} />Copy Registration Link</button>
                 <div className="relative">
@@ -308,6 +328,7 @@ export default function EventDetailModal({
                   )}
                 </div>
               </div>
+              )}
             </div>
           )}
 

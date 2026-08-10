@@ -116,6 +116,7 @@ const registrationFromRow = (r) => ({
   profession: r.profession, campus: r.campus, attendanceType: r.attendance_type,
   accessibility: r.accessibility, comments: r.comments, organisation: r.organisation,
   reflectionEmailSentAt: r.reflection_email_sent_at || null,
+  reminderSentAt: r.reminder_sent_at || null,
 });
 const registrationToRow = (r) => ({
   id: r.id, event_id: r.eventId, user_id: r.userId ?? null, external_participant_id: r.externalParticipantId ?? null,
@@ -690,6 +691,16 @@ export async function sendReflectionReminder({ name, email, eventId, eventTitle 
     body: { name, email, eventId, eventTitle },
   });
   if (error) { console.error("sendReflectionReminder", error); return { ok: false }; }
+  return { ok: true, ...data };
+}
+
+// Bulk "thanks for attending, please reflect" email to every eligible attendee of an event who
+// hasn't received it yet — same copy/column (`reminder_sent_at`) as the automated post-event
+// cron, so a manual send here and the cron never double up.
+export async function sendThankYouEmail({ eventId }) {
+  if (!supabaseConfigured) return { ok: false };
+  const { data, error } = await supabase.functions.invoke("send-thank-you-email", { body: { eventId } });
+  if (error) { console.error("sendThankYouEmail", error); return { ok: false }; }
   return { ok: true, ...data };
 }
 

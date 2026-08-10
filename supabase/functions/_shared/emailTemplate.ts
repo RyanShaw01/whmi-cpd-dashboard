@@ -159,3 +159,25 @@ export function wrapEmailHtml({ preheader = "", title, bodyHtml, footerNote }: {
   </body>
 </html>`;
 }
+
+// Shared "thanks for attending, please reflect" copy, used both by the automated post-event
+// cron (send-event-reminders) and the admin-triggered manual "Send Thank-You Email" action
+// (send-thank-you-email) so the wording never drifts between the two paths.
+export function thankYouEmailText(name: string, eventTitle: string, reflectUrl: string): string {
+  return `Hi ${name},\n\nThanks for attending ${eventTitle}. We hope you found it valuable.\n\nWe'd love to hear your thoughts. Please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.\n\nFill in your reflection here: ${reflectUrl}\n\n- WHMI Education Team`;
+}
+
+export function thankYouEmailHtml(name: string, eventTitle: string, reflectUrl: string): string {
+  return wrapEmailHtml({
+    preheader: `Submit your reflection for ${eventTitle} to get your CPD certificate`,
+    title: `Thanks for attending ${eventTitle}`,
+    bodyHtml: `
+      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thanks for coming along</h1>
+      <p style="margin:0 0 14px 0;">Hi ${escapeHtml(name)},</p>
+      <p style="margin:0 0 14px 0;">Thanks for attending ${boldHtml(eventTitle)}. We hope you found it valuable.</p>
+      <p style="margin:0 0 14px 0;">We'd love to hear your thoughts. Please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.</p>
+      ${btnHtml("Submit your reflection", reflectUrl)}
+      <p style="margin:0 0 14px 0;">It only takes a couple of minutes, and your certificate lands in your inbox right after.</p>
+    `,
+  });
+}

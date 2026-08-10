@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Copy, Mail, Award, Trash2, Lock } from "lucide-react";
+import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Copy, Mail, Award, Trash2, Lock, MailCheck } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
 import EventFilesPanel from "./EventFilesPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
 import RegistrationsPanel from "./RegistrationsPanel";
 import EventForm from "./EventForm";
-import { fmtDate, eventLocationSuffix } from "../lib/helpers";
+import { fmtDate, eventLocationSuffix, relativeTime } from "../lib/helpers";
 
-const TABS = ["overview", "attendance", "files", "recording", "feedback", "reflections", "certificates"];
+const TABS = ["overview", "attendance", "files", "recording", "feedback", "reflections", "certificates", "email"];
 
 const CERT_SORT_OPTIONS = [
   { id: "date-desc", label: "Newest - Oldest" },
@@ -40,7 +40,7 @@ export default function PreviousEventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner,
-  onCreateCertificateFor, onSendReflectionReminder, initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
+  onCreateCertificateFor, onSendReflectionReminder, onSendAllReflectionReminders, onSendThankYouEmail, initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
 }) {
   const [tab, setTab] = useState(initialTab || "overview");
   const [certSortBy, setCertSortBy] = useState("date-desc");
@@ -95,7 +95,7 @@ export default function PreviousEventDetailModal({
   // recordings/files if they attended (or the event had a price, implying they paid to be there).
   const myRegistration = session ? (registrations || []).find(r => r.eventId === event.id && r.userId === session.id) : null;
   const viewerHasFileAccess = canManage || !!(myRegistration && (myRegistration.attendanceStatus === "Attended" || event.externalPrice != null));
-  const visibleTabs = canManage ? TABS : TABS.filter(t => !["attendance", "certificates", "reflections"].includes(t));
+  const visibleTabs = canManage ? TABS : TABS.filter(t => !["attendance", "certificates", "reflections", "email"].includes(t));
 
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
   // `event.attendance` is already live-computed with a seed-data fallback (Phase 10); reuse
@@ -111,6 +111,30 @@ export default function PreviousEventDetailModal({
   const awaitingReflection = eventRegistrations.filter(r =>
     (r.attendanceStatus === "Registered" || r.attendanceStatus === "Attended") &&
     !reflectedEmails.has((r.email || "").toLowerCase())
+  );
+
+  // Thank-you email eligibility: same population the automated post-event cron and the manual
+  // send both target (Registered/Attended), so "everyone already emailed" here matches exactly
+  // what would grey the button out whether it was sent automatically or by hand.
+  const thankYouEligible = eventRegistrations.filter(r => ["Registered", "Attended"].includes(r.attendanceStatus || "Registered"));
+  const thankYouUnsent = thankYouEligible.filter(r => !r.reminderSentAt);
+  const thankYouLastSentAt = thankYouEligible.reduce((latest, r) => (r.reminderSentAt && (!latest || r.reminderSentAt > latest)) ? r.reminderSentAt : latest, null);
+
+  const SendThankYouControl = () => (
+    onSendThankYouEmail ? (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onSendThankYouEmail(event)}
+          disabled={thankYouEligible.length === 0 || thankYouUnsent.length === 0}
+          className="whmi-btn-ghost !py-1.5 !px-2.5 text-[11.5px] flex items-center gap-1.5"
+          style={{ opacity: (thankYouEligible.length === 0 || thankYouUnsent.length === 0) ? 0.5 : 1 }}
+          title={thankYouUnsent.length === 0 ? "Everyone's already been emailed" : "Email everyone who attended a thank-you and reflection request"}
+        >
+          <Mail size={13} />Send Thank-You Email
+        </button>
+        {thankYouLastSentAt && <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Sent {relativeTime(thankYouLastSentAt)}</span>}
+      </div>
+    ) : null
   );
 
   const avgQuality = avg(eventReflections.map(r => r.rating));
@@ -231,11 +255,14 @@ export default function PreviousEventDetailModal({
           )}
 
           {tab === "attendance" && (
-            <RegistrationsPanel
-              event={event} registrations={eventRegistrations} canManage
-              onDelete={onDeleteRegistration} onUpdate={onUpdateRegistration} onUpdateAttendanceStatus={onUpdateAttendanceStatus}
-              dismissedPairs={dismissedRegistrationPairs} onMerge={onMergeRegistrations} onDismissPair={onDismissRegistrationPair}
-            />
+            <div className="space-y-3">
+              <RegistrationsPanel
+                event={event} registrations={eventRegistrations} canManage
+                onDelete={onDeleteRegistration} onUpdate={onUpdateRegistration} onUpdateAttendanceStatus={onUpdateAttendanceStatus}
+                dismissedPairs={dismissedRegistrationPairs} onMerge={onMergeRegistrations} onDismissPair={onDismissRegistrationPair}
+              />
+              <SendThankYouControl />
+            </div>
           )}
 
           {tab === "files" && (
@@ -298,20 +325,65 @@ export default function PreviousEventDetailModal({
                   </div>
                 </div>
               )}
+              <SendThankYouControl />
             </div>
           )}
 
           {tab === "reflections" && (
-            <ReflectionsPanel
-              event={event} reflections={eventReflections} canManage
-              dismissedPairs={dismissedReflectionPairs} onDelete={onDeleteReflection}
-              onMerge={onMergeReflections} onDismissPair={onDismissReflectionPair}
-            />
+            <div className="space-y-4">
+              <ReflectionsPanel
+                event={event} reflections={eventReflections} canManage
+                dismissedPairs={dismissedReflectionPairs} onDelete={onDeleteReflection}
+                onMerge={onMergeReflections} onDismissPair={onDismissReflectionPair}
+              />
+              <SendThankYouControl />
+
+              <div>
+                <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Awaiting Reflection ({awaitingReflection.length})</div>
+                <p className="text-[11px] mb-1.5" style={{ color: "var(--text-faint)" }}>Registrants who haven't submitted a reflection yet; no certificate has been generated for them.</p>
+                {awaitingReflection.length === 0 && <div className="text-[12px] pb-2" style={{ color: "var(--text-faint)" }}>Everyone's reflected.</div>}
+                <div className="space-y-1.5">
+                  {awaitingReflection.map(r => (
+                    <div key={r.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg flex-wrap" style={{ background: "var(--surface-2)" }}>
+                      <div className="min-w-0">
+                        <div className="text-[12.5px] font-semibold truncate">{r.name}</div>
+                        <div className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>{r.email}</div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {onSendReflectionReminder && (
+                          <div className="flex flex-col items-end gap-0.5">
+                            <button
+                              onClick={() => onSendReflectionReminder(r, event)}
+                              className="!py-1 !px-2 text-[11px] flex items-center gap-1 rounded-lg transition"
+                              style={r.reflectionEmailSentAt
+                                ? { color: "var(--text-faint)", border: "1px solid var(--border)" }
+                                : { color: "white", background: "var(--accent-secondary)" }}
+                              title="Email a follow-up reminder"
+                            >
+                              {r.reflectionEmailSentAt ? <MailCheck size={12} /> : <Mail size={12} />}Follow Up
+                            </button>
+                            {r.reflectionEmailSentAt && (
+                              <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>Followed up {relativeTime(r.reflectionEmailSentAt)}</span>
+                            )}
+                          </div>
+                        )}
+                        {onCreateCertificateFor && event.certificatesEnabled !== false && (
+                          <button onClick={() => onCreateCertificateFor(r, event)} className="whmi-btn-ghost !py-1 !px-2 text-[11px] flex items-center gap-1" title="Create a certificate for them regardless of reflection status">
+                            <Award size={12} />Certify Anyway
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
 
           {tab === "certificates" && (
             <div className="space-y-4">
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <SendThankYouControl />
                 <select value={certSortBy} onChange={e => setCertSortBy(e.target.value)} className="whmi-input px-2 py-1.5 text-[11.5px]">
                   {CERT_SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                 </select>
@@ -350,32 +422,33 @@ export default function PreviousEventDetailModal({
                   ))}
                 </div>
               </div>
+            </div>
+          )}
 
-              <div>
-                <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Awaiting Reflection ({awaitingReflection.length})</div>
-                <p className="text-[11px] mb-1.5" style={{ color: "var(--text-faint)" }}>Registrants who haven't submitted a reflection yet; no certificate has been generated for them.</p>
-                {awaitingReflection.length === 0 && <div className="text-[12px] pb-2" style={{ color: "var(--text-faint)" }}>Everyone's reflected.</div>}
-                <div className="space-y-1.5">
-                  {awaitingReflection.map(r => (
-                    <div key={r.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg flex-wrap" style={{ background: "var(--surface-2)" }}>
-                      <div className="min-w-0">
-                        <div className="text-[12.5px] font-semibold truncate">{r.name}</div>
-                        <div className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>{r.email}</div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {onSendReflectionReminder && (
-                          <button onClick={() => onSendReflectionReminder(r, event)} className="whmi-btn-ghost !py-1 !px-2 text-[11px] flex items-center gap-1" title="Email a follow-up reminder">
-                            <Mail size={12} />Follow Up
-                          </button>
-                        )}
-                        {onCreateCertificateFor && event.certificatesEnabled !== false && (
-                          <button onClick={() => onCreateCertificateFor(r, event)} className="whmi-btn-ghost !py-1 !px-2 text-[11px] flex items-center gap-1" title="Create a certificate for them regardless of reflection status">
-                            <Award size={12} />Certify Anyway
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+          {tab === "email" && (
+            <div className="space-y-3">
+              <div className="whmi-card p-3.5">
+                <div className="font-semibold text-[13px] mb-0.5">Thank-you &amp; feedback request</div>
+                <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>
+                  Sent to everyone who attended (or is still marked Registered), asking for their CPD reflection. Skips anyone already emailed — automatically 25-40 minutes after the event ends, or manually here.
+                </p>
+                <SendThankYouControl />
+              </div>
+              <div className="whmi-card p-3.5">
+                <div className="font-semibold text-[13px] mb-0.5">Reflection follow-up</div>
+                <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>
+                  A second nudge to anyone with an outstanding reflection — the same email as the "Follow Up" button on the Certificates tab, just sent to everyone at once.
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onSendAllReflectionReminders?.(awaitingReflection, event)}
+                    disabled={!onSendAllReflectionReminders || awaitingReflection.length === 0}
+                    className="whmi-btn-ghost !py-1.5 !px-2.5 text-[11.5px] flex items-center gap-1.5"
+                    style={{ opacity: awaitingReflection.length === 0 ? 0.5 : 1 }}
+                    title={awaitingReflection.length === 0 ? "No outstanding reflections" : "Email everyone with an outstanding reflection"}
+                  >
+                    <Mail size={13} />Send Follow-Up to All ({awaitingReflection.length})
+                  </button>
                 </div>
               </div>
             </div>

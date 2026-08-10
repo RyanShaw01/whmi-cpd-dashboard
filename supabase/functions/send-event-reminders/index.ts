@@ -3,30 +3,11 @@
 // 25-40 minutes ago and emails a reminder to every registrant who hasn't been reminded yet.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
-import { wrapEmailHtml, boldHtml, escapeHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
+import { thankYouEmailText, thankYouEmailHtml } from "../_shared/emailTemplate.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
 const SITE_URL = Deno.env.get("SITE_URL") || "http://localhost:5173";
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-function reminderText(name: string, eventTitle: string, reflectUrl: string) {
-  return `Hi ${name},\n\nThanks for attending ${eventTitle}. We hope you found it valuable.\n\nWe'd love to hear your thoughts. Please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.\n\nFill in your reflection here: ${reflectUrl}\n\n- WHMI Education Team`;
-}
-
-function reminderHtml(name: string, eventTitle: string, reflectUrl: string) {
-  return wrapEmailHtml({
-    preheader: `Submit your reflection for ${eventTitle} to get your CPD certificate`,
-    title: `Thanks for attending ${eventTitle}`,
-    bodyHtml: `
-      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thanks for coming along</h1>
-      <p style="margin:0 0 14px 0;">Hi ${escapeHtml(name)},</p>
-      <p style="margin:0 0 14px 0;">Thanks for attending ${boldHtml(eventTitle)}. We hope you found it valuable.</p>
-      <p style="margin:0 0 14px 0;">We'd love to hear your thoughts. Please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.</p>
-      ${btnHtml("Submit your reflection", reflectUrl)}
-      <p style="margin:0 0 14px 0;">It only takes a couple of minutes, and your certificate lands in your inbox right after.</p>
-    `,
-  });
-}
 
 Deno.serve(async (req) => {
   const auth = req.headers.get("Authorization");
@@ -63,8 +44,8 @@ Deno.serve(async (req) => {
         const result = await sendEmail({
           to: reg.email,
           subject: `Thanks for attending ${event.title}: share your feedback`,
-          text: reminderText(reg.name, event.title, reflectUrl),
-          html: reminderHtml(reg.name, event.title, reflectUrl),
+          text: thankYouEmailText(reg.name, event.title, reflectUrl),
+          html: thankYouEmailHtml(reg.name, event.title, reflectUrl),
         });
         if (result.ok) {
           await supabase.from("registrations").update({ reminder_sent_at: new Date().toISOString() }).eq("id", reg.id);

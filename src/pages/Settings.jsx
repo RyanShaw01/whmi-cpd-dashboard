@@ -5,7 +5,7 @@ import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
 import { getSeparateWhDefault, setSeparateWhDefault } from "./Reflection";
 import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS, DEFAULT_LAYOUT, STAFF_FIELD_DEFS } from "../data/mockData";
-import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault, getEventCardViewDefault, setEventCardViewDefault, getDashboardEventViewDefault, setDashboardEventViewDefault, tagIsModality } from "../lib/helpers";
+import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault, getShowDueSoonDatesDefault, setShowDueSoonDatesDefault, getEventCardViewDefault, setEventCardViewDefault, getDashboardEventViewDefault, setDashboardEventViewDefault, tagIsModality } from "../lib/helpers";
 
 // Click-and-drag reordering for any of the arrow-reorderable lists below, as an addition
 // alongside the up/down buttons (not a replacement — arrows stay for keyboard/touch use).
@@ -84,6 +84,8 @@ export default function Settings({
   };
   const [showDueSoon, setShowDueSoonState] = useState(getShowDueSoonDefault);
   const toggleShowDueSoon = (next) => { setShowDueSoonState(next); setShowDueSoonDefault(next); };
+  const [showDueSoonDates, setShowDueSoonDatesState] = useState(getShowDueSoonDatesDefault);
+  const toggleShowDueSoonDates = (next) => { setShowDueSoonDatesState(next); setShowDueSoonDatesDefault(next); };
   const [eventCardView, setEventCardViewState] = useState(getEventCardViewDefault);
   const setEventCardView = (next) => { setEventCardViewState(next); setEventCardViewDefault(next); };
   const [dashboardEventView, setDashboardEventViewState] = useState(getDashboardEventViewDefault);
@@ -513,6 +515,16 @@ export default function Settings({
           </div>
           <button onClick={() => toggleShowDueSoon(!showDueSoon)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: showDueSoon ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
             <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: showDueSoon ? "20px" : "3px", width: 18, height: 18 }} />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 flex-wrap pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="min-w-0">
+            <div className="font-semibold text-[13px]">Show Dates in Due-Soon List</div>
+            <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>Also spell out each event's literal date and time, not just the countdown. Off by default.</div>
+          </div>
+          <button onClick={() => toggleShowDueSoonDates(!showDueSoonDates)} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: showDueSoonDates ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+            <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: showDueSoonDates ? "20px" : "3px", width: 18, height: 18 }} />
           </button>
         </div>
 

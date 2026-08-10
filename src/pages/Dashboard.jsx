@@ -5,12 +5,13 @@ import {
 } from "recharts";
 import {
   Clock, ClipboardList, Award, TrendingUp, ChevronRight, MapPin,
-  Calendar, UserPlus, Download, Link2, MessageSquareText, UserCircle2, CalendarCheck2, LayoutGrid, List, Users,
+  Calendar, UserPlus, Download, Link2, MessageSquareText, UserCircle2, CalendarCheck2, LayoutGrid, List, Users, Radio,
 } from "lucide-react";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, getShowDueSoonDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
+import RegisterOrUnregister, { RegisteredBadge } from "../components/EventRegisterControl";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, eventCountdownText, getShowDueSoonDefault, getShowDueSoonDatesDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
 const QUICK_ACTIONS = [
@@ -50,6 +51,7 @@ function groupActivity(auditLog, users) {
 export default function Dashboard({
   events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onOpenRegister, onActivityClick,
   onOpenReports, onOpenCurrentRegistrations, onOpenCertificatesAwaiting, onOpenReportsFeedback, onOpenOutstandingReflections, onOpenEventsCurrentlyOpen,
+  registeredIds, onUnregister,
 }) {
   // Up Next's own big-card/compact-list choice, independent of the Upcoming Events page's.
   const [upNextView, setUpNextViewState] = useState(getDashboardEventViewDefault);
@@ -62,7 +64,15 @@ export default function Dashboard({
     return () => clearInterval(id);
   }, []);
 
-  const dueSoonEvents = events
+  // Events in progress right now come out of Up Next/due-soon entirely and get their own
+  // "Happening Now" section instead — an event finishing doesn't move it to Completed by
+  // itself (that's a 24h-later lifecycle transition), so it falls back into the normal lists
+  // once it's no longer live.
+  const liveEvents = events.filter(ev => eventCountdownText(ev.date, ev.start, ev.end)?.happening);
+  const liveIds = new Set(liveEvents.map(ev => ev.id));
+  const nonLiveEvents = events.filter(ev => !liveIds.has(ev.id));
+
+  const dueSoonEvents = nonLiveEvents
     .filter(ev => ev.status === "Registration Open")
     .map(ev => ({ ...ev, dayOffset: daysUntil(ev.date) }))
     .filter(ev => ev.dayOffset >= 0 && ev.dayOffset <= 14)
@@ -97,7 +107,7 @@ export default function Dashboard({
         <div className="flex items-center justify-between mb-4 gap-2">
           <h2 className="disp text-[15px] font-bold">Up Next</h2>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{events.length} upcoming</span>
+            <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{nonLiveEvents.length} upcoming</span>
             <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
               <button onClick={() => setUpNextView("grid")} className="px-2 py-1.5 flex items-center" style={{ background: upNextView === "grid" ? "var(--accent-primary)" : "transparent", color: upNextView === "grid" ? "white" : "var(--text-dim)" }} title="Big cards">
                 <LayoutGrid size={12} />
@@ -110,8 +120,9 @@ export default function Dashboard({
         </div>
         {upNextView === "list" ? (
           <div className="space-y-1.5">
-            {events.slice(0, 6).map(ev => {
+            {nonLiveEvents.slice(0, 6).map(ev => {
               const bannerUrl = eventBannerUrl(files, ev.id);
+              const registered = registeredIds?.has(ev.id);
               // fmtDate() already returns e.g. "Mon, 10 Aug" (comma baked in by the locale
               // formatter) — only pull day/month out of it for the date box, never the
               // weekday token, or re-adding a comma in the label below double-punctuates it.
@@ -134,53 +145,73 @@ export default function Dashboard({
                     </div>
                   </div>
                   <StatusBadge status={ev.status} />
+                  {onOpenRegister && (registered || ev.status === "Registration Open") && (
+                    <RegisterOrUnregister
+                      registered={registered}
+                      onRegister={() => onOpenRegister(ev.id)}
+                      onUnregister={() => onUnregister?.(ev.id)}
+                    />
+                  )}
                 </button>
               );
             })}
           </div>
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {events.slice(0, 6).map(ev => {
+          {nonLiveEvents.slice(0, 6).map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
+            const registered = registeredIds?.has(ev.id);
             return (
-              <button key={ev.id} onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col p-4 rounded-xl text-left transition" style={{ border: "1px solid var(--border)" }}>
-                {bannerUrl && (
-                  <div className="w-full h-28 rounded-lg mb-3 overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-                    <img
-                      src={bannerUrl} alt="" className="w-full h-full object-cover"
-                      style={{
-                        objectPosition: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%`,
-                        transform: `scale(${ev.bannerZoom ?? 1})`, transformOrigin: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%`,
-                      }}
+              <div key={ev.id} className="w-full flex flex-col p-4 rounded-xl relative" style={{ border: "1px solid var(--border)" }}>
+                {registered && <RegisteredBadge />}
+                <button onClick={() => openEvent(ev)} className="whmi-row-hover w-full flex flex-col text-left transition rounded-lg -m-1 p-1">
+                  {bannerUrl && (
+                    <div className="w-full h-28 rounded-lg mb-3 overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                      <img
+                        src={bannerUrl} alt="" className="w-full h-full object-cover"
+                        style={{
+                          objectPosition: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%`,
+                          transform: `scale(${ev.bannerZoom ?? 1})`, transformOrigin: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="w-full flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-lg shrink-0 flex flex-col items-center justify-center" style={{ background: primaryHex }}>
+                      <span className="text-white text-[10.5px] font-bold uppercase">{fmtDate(ev.date).split(" ")[2]}</span>
+                      <span className="text-white text-[18px] font-extrabold leading-none">{fmtDate(ev.date).split(" ")[1]}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-semibold text-[14.5px] break-words">{ev.title}</div>
+                        <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
+                        <span className="flex items-center gap-1 min-w-0"><Clock size={11} className="shrink-0" /><span className="truncate">{fmtTimeRange12h(ev.start, ev.end)}</span></span>
+                        <span className="flex items-center gap-1 min-w-0"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
+                        <span className="flex items-center gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0" /><span className="truncate">{ev.presenter}</span></span>
+                        <span className="flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                        <StatusBadge status={ev.status} />
+                        <ModeBadge mode={ev.mode} />
+                      </div>
+                      {ev.openToExternal !== false && ev.externalPrice != null && (
+                        <div className="mt-2 text-[11.5px] font-semibold" style={{ color: "var(--accent-success)" }}>External price: ${Number(ev.externalPrice).toFixed(2)} AUD</div>
+                      )}
+                    </div>
+                  </div>
+                </button>
+                {onOpenRegister && (registered || ev.status === "Registration Open") && (
+                  <div className="flex justify-end mt-3">
+                    <RegisterOrUnregister
+                      registered={registered} size="md"
+                      onRegister={() => onOpenRegister(ev.id)}
+                      onUnregister={() => onUnregister?.(ev.id)}
                     />
                   </div>
                 )}
-                <div className="w-full flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-lg shrink-0 flex flex-col items-center justify-center" style={{ background: primaryHex }}>
-                    <span className="text-white text-[10.5px] font-bold uppercase">{fmtDate(ev.date).split(" ")[2]}</span>
-                    <span className="text-white text-[18px] font-extrabold leading-none">{fmtDate(ev.date).split(" ")[1]}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="font-semibold text-[14.5px] break-words">{ev.title}</div>
-                      <ChevronRight size={16} style={{ color: "var(--text-faint)" }} className="shrink-0" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
-                      <span className="flex items-center gap-1 min-w-0"><Clock size={11} className="shrink-0" /><span className="truncate">{fmtTimeRange12h(ev.start, ev.end)}</span></span>
-                      <span className="flex items-center gap-1 min-w-0"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
-                      <span className="flex items-center gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0" /><span className="truncate">{ev.presenter}</span></span>
-                      <span className="flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                      <StatusBadge status={ev.status} />
-                      <ModeBadge mode={ev.mode} />
-                    </div>
-                    {ev.openToExternal !== false && ev.externalPrice != null && (
-                      <div className="mt-2 text-[11.5px] font-semibold" style={{ color: "var(--accent-success)" }}>External price: ${Number(ev.externalPrice).toFixed(2)} AUD</div>
-                    )}
-                  </div>
-                </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -255,20 +286,23 @@ export default function Dashboard({
         <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Here's what's happening across WHMI CPD today, {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}.</p>
 
         {getShowDueSoonDefault() && dueSoonEvents.length > 0 && (
-          <ul className="mt-2 space-y-0.5">
+          <ul className="mt-2 space-y-0.5 pl-5" style={{ listStyleType: "disc" }}>
             {dueSoonEvents.slice(0, 5).map(ev => {
               const joinable = ev.meetingUrl && canJoinMeeting(ev.date, ev.start, ev.end);
               return (
                 <li key={ev.id} className="flex items-start gap-2">
-                  <span className="w-1 h-1 rounded-full shrink-0" style={{ background: "var(--text-faint)", marginTop: 8 }} />
                   <div className="min-w-0 flex-1">
                     <button onClick={() => openEvent(ev)} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[12px] sm:text-[13px] px-1 py-1 -mx-1 rounded-lg whmi-row-hover transition text-left w-full">
                       <span className="font-medium" style={{ color: "var(--text)" }}>{ev.title}</span>
                       <span className="flex items-center gap-x-2 whitespace-nowrap shrink-0">
                         <span style={{ color: "var(--text-faint)" }}>·</span>
                         <span className="font-extrabold" style={{ color: primaryHex }}>{formatCountdown(ev.date, ev.start)}</span>
-                        <span style={{ color: "var(--text-faint)" }}>·</span>
-                        <span style={{ color: "var(--text-faint)" }}>({fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)})</span>
+                        {getShowDueSoonDatesDefault() && (
+                          <>
+                            <span style={{ color: "var(--text-faint)" }}>·</span>
+                            <span style={{ color: "var(--text-faint)" }}>({fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)})</span>
+                          </>
+                        )}
                       </span>
                     </button>
                     {joinable && (
@@ -313,6 +347,38 @@ export default function Dashboard({
           ))}
         </div>
       </div>
+
+      {liveEvents.length > 0 && (
+        <div className="whmi-card p-5" style={{ borderColor: "#D9534F" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#D9534F" }} />
+            <h2 className="disp text-[15px] font-extrabold uppercase tracking-wide" style={{ color: "#D9534F" }}>Happening Now</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {liveEvents.map(ev => (
+              <div key={ev.id} className="p-4 rounded-xl flex flex-col gap-2" style={{ border: "1px solid rgba(217,83,79,.35)", background: "rgba(217,83,79,.06)" }}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="whmi-badge flex items-center gap-1 font-extrabold" style={{ background: "#D9534F", color: "white" }}><Radio size={11} />LIVE NOW</span>
+                  <ModeBadge mode={ev.mode} />
+                </div>
+                <button onClick={() => openEvent(ev)} className="text-left">
+                  <div className="font-bold text-[14.5px] break-words">{ev.title}</div>
+                  <div className="text-[11.5px] mt-0.5" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</div>
+                </button>
+                {ev.meetingUrl && (
+                  <a
+                    href={ev.meetingUrl} target="_blank" rel="noreferrer"
+                    className="mt-1 flex items-center justify-center gap-1.5 font-bold text-[12.5px] px-3 py-1.5 rounded-lg text-white"
+                    style={{ background: "#D9534F" }}
+                  >
+                    <Link2 size={13} />Join
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {(() => {
         const visible = layoutOrder.filter(id => sections[id]);

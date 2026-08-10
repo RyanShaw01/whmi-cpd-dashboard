@@ -7,7 +7,7 @@ import { fmtDate, daysUntil, formatCountdown, canJoinMeeting } from "../lib/help
 // (past + upcoming, recordings, certificates) plus a "Browse & Register" section covering
 // every event admins have opted into external visibility (events.open_to_external) — unlike
 // the internal viewer catalog, this is deliberately scoped to only externally-open events.
-export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onNavigatePage, onSuggestIdea }) {
+export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea }) {
   const myRegisteredEventIds = new Set((registrations || []).filter(r => r.userId === user.id).map(r => r.eventId));
   const myUpcoming = events.filter(e => myRegisteredEventIds.has(e.id));
   const myPast = previousEvents.filter(e => myRegisteredEventIds.has(e.id));
@@ -52,7 +52,7 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
 
       <UpcomingEventsCards
         title="Upcoming" events={myUpcoming} files={files} openEvent={openEvent}
-        storageKey="whmi_external_upcoming_view" mode="register" onOpenRegister={onOpenRegister}
+        storageKey="whmi_external_upcoming_view" mode="register" onOpenRegister={onOpenRegister} onUnregister={onUnregister}
         registeredIds={myRegisteredEventIds} viewerUserType={user.userType}
         emptyText="No upcoming events registered."
       />
