@@ -3,8 +3,9 @@
 // button (isResend: true, tracks resend_count/last_resent_at instead of touching sent_at/status).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/mailer.ts";
-import { certificateEmailHtml, certificateEmailSubject } from "../_shared/emailTemplate.ts";
+import { certificateEmailHtml, certificateEmailSubject, firstName } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
+import { bytesToBase64 } from "../_shared/certificate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "certificate PDF missing" }), { status: 500, headers: CORS_HEADERS });
     }
     const pdfBytes = new Uint8Array(await pdfFile.arrayBuffer());
-    const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+    const base64Pdf = bytesToBase64(pdfBytes);
 
     const shortDateLabel = cert.date
       ? `on ${new Date(`${cert.date}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}`
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
     const emailResult = await sendEmail({
       to: cert.recipient_email,
       subject: certificateEmailSubject(cert.event_title, override),
-      text: `Hello ${cert.staff_name},\n\n${introText}${reflectionContent ? `\n\nYour submitted reflection:\n${reflectionContent}` : ""}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
+      text: `Hi ${firstName(cert.staff_name)},\n\n${introText}${reflectionContent ? `\n\nYour submitted reflection:\n${reflectionContent}` : ""}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
       html: certificateEmailHtml({ name: cert.staff_name, sessionName: cert.event_title, dateLabel: shortDateLabel, reflectionContent, override }),
       attachments: [{ filename: `${cert.event_title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });

@@ -3,6 +3,7 @@
 // own layout. Table-based markup + inline styles only - this has to render in Outlook and
 // Gmail's stripped-down HTML sandboxes, not just a modern browser.
 // No emoji, no em dashes anywhere in this file or in copy that runs through it (house style).
+import { WH_LOGO_DATA_URI } from "./logoBase64.ts";
 
 export const NAVY = "#152A4E";
 export const BLUE = "#35A8DD";
@@ -12,10 +13,17 @@ const FAINT = "#6b7785";
 const BORDER = "#e2e6ea";
 const BG = "#f2f4f6";
 
-// Logo lives in /public so it's served at a stable, unhashed URL Vite won't fingerprint on
-// each build - email clients cache/link by URL, so it has to stay the same across deploys.
-const SITE_URL = Deno.env.get("SITE_URL") || "https://whmi-cpd-dashboard.vercel.app";
-const LOGO_URL = `${SITE_URL}/wh-logo.png`;
+// Embedded as base64 (see logoBase64.ts) rather than linked by URL - a remote <img src> gets
+// silently blocked by default in most email clients until the recipient clicks "show images",
+// which a data: URI sidesteps entirely since there's no separate image request to block.
+
+// Greeting uses first name only ("Hi Ryan," not "Hi Ryan Shaw,") - friendlier, and avoids
+// spelling out a full name (sometimes lowercased or oddly cased in older/manually-entered data)
+// right at the top of the email.
+export function firstName(fullName: string | null | undefined): string {
+  const first = (fullName || "").trim().split(/\s+/)[0] || "";
+  return first ? first.charAt(0).toUpperCase() + first.slice(1) : "there";
+}
 
 export function escapeHtml(s: string | null | undefined): string {
   return String(s ?? "")
@@ -121,7 +129,7 @@ export function certificateEmailHtml({ name, sessionName, dateLabel, reflectionC
     title: `Your CPD Certificate: ${sessionName}`,
     bodyHtml: `
       <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${GREEN};">${escapeHtml(heading)}</h1>
-      <p style="margin:0 0 14px 0;">Hello ${escapeHtml(name)},</p>
+      <p style="margin:0 0 14px 0;">Hi ${escapeHtml(firstName(name))},</p>
       ${introHtml}
       ${reflectionContent ? `<div style="margin:16px 0 4px 0;font-size:11.5px;font-weight:600;color:${FAINT};">YOUR SUBMITTED REFLECTION</div>${calloutHtml(paragraphsHtml(reflectionContent), GREEN)}` : ""}
     `,
@@ -144,7 +152,7 @@ export function wrapEmailHtml({ preheader = "", title, bodyHtml, footerNote }: {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid ${BORDER};">
             <tr>
               <td style="background:#ffffff;padding:20px 28px 14px 28px;text-align:center;border-bottom:3px solid ${NAVY};">
-                <img src="${LOGO_URL}" alt="Western Health" width="82" style="display:block;margin:0 auto 6px auto;height:auto;border:0;" />
+                <img src="${WH_LOGO_DATA_URI}" alt="Western Health" width="82" style="display:block;margin:0 auto 6px auto;height:auto;border:0;" />
                 <div style="font-size:10px;font-weight:700;letter-spacing:1.4px;color:${NAVY};text-transform:uppercase;">Medical Imaging CPD</div>
               </td>
             </tr>
@@ -180,7 +188,7 @@ export function thankYouEmailSubject(eventTitle: string, override?: EmailOverrid
 
 export function thankYouEmailText(name: string, eventTitle: string, reflectUrl: string, override?: EmailOverride): string {
   const intro = override?.intro || `Thanks for attending ${eventTitle}. We hope you found it valuable.`;
-  return `Hi ${name},\n\n${intro}\n\nWe'd love to hear your thoughts. Please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.\n\nFill in your reflection here: ${reflectUrl}\n\n- WHMI Education Team`;
+  return `Hi ${firstName(name)},\n\n${intro}\n\nWe'd love to hear your thoughts. Please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.\n\nFill in your reflection here: ${reflectUrl}\n\n- WHMI Education Team`;
 }
 
 export function thankYouEmailHtml(name: string, eventTitle: string, reflectUrl: string, override?: EmailOverride): string {
@@ -191,7 +199,7 @@ export function thankYouEmailHtml(name: string, eventTitle: string, reflectUrl: 
     title: `Thanks for attending ${eventTitle}`,
     bodyHtml: `
       <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">${escapeHtml(heading)}</h1>
-      <p style="margin:0 0 14px 0;">Hi ${escapeHtml(name)},</p>
+      <p style="margin:0 0 14px 0;">Hi ${escapeHtml(firstName(name))},</p>
       ${introHtml}
       <p style="margin:0 0 14px 0;">We'd love to hear your thoughts. Please take a few minutes to complete your CPD reflection and feedback form. Once submitted, your CPD certificate will be emailed to you automatically.</p>
       ${btnHtml("Submit your reflection", reflectUrl)}

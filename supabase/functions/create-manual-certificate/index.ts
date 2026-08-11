@@ -4,9 +4,9 @@
 // Emails the certificate to the recipient automatically, and if they don't match an existing
 // users row, links them to a staff (internal, @wh.org.au) or external_participants record.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildCertificatePdf, hoursLabel } from "../_shared/certificate.ts";
+import { buildCertificatePdf, hoursLabel, bytesToBase64 } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/mailer.ts";
-import { certificateEmailHtml, certificateEmailSubject } from "../_shared/emailTemplate.ts";
+import { certificateEmailHtml, certificateEmailSubject, firstName } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
 const CORS_HEADERS = {
@@ -64,14 +64,14 @@ Deno.serve(async (req) => {
     const { error: uploadError } = await supabaseAdmin.storage.from("certificates").upload(pdfPath, pdfBytes, { contentType: "application/pdf" });
     if (uploadError) console.error("certificate upload failed", uploadError);
 
-    const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+    const base64Pdf = bytesToBase64(pdfBytes);
     const shortDateLabel = dateLabel.charAt(0).toLowerCase() + dateLabel.slice(1);
     const override = await getEmailOverride(supabaseAdmin, "certificate", sessionName);
     const introText = override.intro || `Please find attached your CPD certificate for ${sessionName} ${shortDateLabel}.`;
     const emailResult = await sendEmail({
       to: email,
       subject: certificateEmailSubject(sessionName, override),
-      text: `Hello ${name},\n\n${introText}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
+      text: `Hi ${firstName(name)},\n\n${introText}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
       html: certificateEmailHtml({ name, sessionName, dateLabel: shortDateLabel, override }),
       attachments: uploadError ? undefined : [{ filename: `${sessionName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });

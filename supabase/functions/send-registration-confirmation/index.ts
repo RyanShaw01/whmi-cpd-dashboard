@@ -4,7 +4,7 @@
 // public QR/link flow has no session to email-from-account-context the way other functions do.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/mailer.ts";
-import { wrapEmailHtml, paragraphsHtml, detailRowsHtml, sideBySideButtonsHtml, disclaimerHtml, boldHtml, escapeHtml, BLUE, GREEN } from "../_shared/emailTemplate.ts";
+import { wrapEmailHtml, paragraphsHtml, detailRowsHtml, sideBySideButtonsHtml, disclaimerHtml, boldHtml, escapeHtml, BLUE, GREEN, firstName } from "../_shared/emailTemplate.ts";
 import { campusAddress } from "../_shared/campusAddresses.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const override = await getEmailOverride(supabaseAdmin, "registration_confirmation", event.title);
 
     const bodyLines = [
-      `Hi ${name},`,
+      `Hi ${firstName(name)},`,
       "",
       override.intro || `You're registered for "${event.title}".`,
       "",
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       title: `Registration confirmed: ${event.title}`,
       bodyHtml: `
         <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};text-align:center;text-transform:uppercase;letter-spacing:.4px;">${escapeHtml(override.heading || "You're Registered")}</h1>
-        <p style="margin:0 0 14px 0;">Hi ${escapeHtml(name)},</p>
+        <p style="margin:0 0 14px 0;">Hi ${escapeHtml(firstName(name))},</p>
         ${override.intro ? `<p style="margin:0 0 14px 0;">${escapeHtml(override.intro)}</p>` : `<p style="margin:0 0 14px 0;">You're registered for ${boldHtml(event.title)}.</p>`}
         ${detailRowsHtml([
           { label: "Date", value: fmtDate(event.date) },

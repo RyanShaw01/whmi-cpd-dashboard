@@ -255,6 +255,12 @@ export default function App() {
       } else {
         setSession(null);
         clearAppData();
+        // `events` is the one table that stays publicly readable under RLS (the public QR/
+        // email-link registration flow depends on it) - fetch it even with no session, or
+        // /event/:id and /event/:id/reflect permanently show "Event not found" for anyone who
+        // isn't already logged in, since mainContent's routes render off this same `events`
+        // state regardless of which URL matched.
+        setEvents(await fetchEvents());
       }
       setReady(true);
     });

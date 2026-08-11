@@ -10,6 +10,19 @@ const WHITE = rgb(1, 1, 1);
 const BLUE = rgb(0.14, 0.42, 0.68);
 const BLACK = rgb(0.12, 0.12, 0.12);
 
+// `btoa(String.fromCharCode(...bytes))` blows the call stack once a PDF gets past roughly
+// 65,000 bytes (V8's argument-spread limit) - certificate PDFs cross that easily once a template
+// has embedded fonts/artwork, so every cert-sending function needs this instead of the spread
+// version. Encodes in 8KB chunks so no single String.fromCharCode call gets a huge argument list.
+export function bytesToBase64(bytes: Uint8Array): string {
+  const CHUNK_SIZE = 8192;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK_SIZE));
+  }
+  return btoa(binary);
+}
+
 function fitFontSize(text: string, font: PDFFont, maxSize: number, minSize: number, maxWidth: number) {
   let size = maxSize;
   while (size > minSize && font.widthOfTextAtSize(text, size) > maxWidth) size -= 1;

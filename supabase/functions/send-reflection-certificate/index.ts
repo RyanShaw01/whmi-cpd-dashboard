@@ -2,9 +2,9 @@
 // reflection is inserted. Public/unauthenticated by design — only a reflectionId is trusted
 // from the caller, everything else is re-fetched server-side with the service-role key.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildCertificatePdf, hoursLabel } from "../_shared/certificate.ts";
+import { buildCertificatePdf, hoursLabel, bytesToBase64 } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/mailer.ts";
-import { certificateEmailHtml, certificateEmailSubject } from "../_shared/emailTemplate.ts";
+import { certificateEmailHtml, certificateEmailSubject, firstName } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
 const CORS_HEADERS = {
@@ -61,14 +61,14 @@ Deno.serve(async (req) => {
     const { error: uploadError } = await supabase.storage.from("certificates").upload(pdfPath, pdfBytes, { contentType: "application/pdf" });
     if (uploadError) console.error("certificate upload failed", uploadError);
 
-    const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+    const base64Pdf = bytesToBase64(pdfBytes);
     const shortDateLabel = `on ${eventDate.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}`;
     const override = await getEmailOverride(supabase, "certificate", event.title);
     const introText = override.intro || `Please find attached your CPD certificate for ${event.title} ${shortDateLabel}.`;
     const emailResult = await sendEmail({
       to: reflection.email,
       subject: certificateEmailSubject(event.title, override),
-      text: `Hello ${reflection.name},\n\n${introText}\n\nYour submitted reflection:\n${reflection.content}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
+      text: `Hi ${firstName(reflection.name)},\n\n${introText}\n\nYour submitted reflection:\n${reflection.content}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
       html: certificateEmailHtml({ name: reflection.name, sessionName: event.title, dateLabel: shortDateLabel, reflectionContent: reflection.content, override }),
       attachments: [{ filename: `${event.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });
