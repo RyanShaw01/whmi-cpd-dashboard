@@ -37,6 +37,17 @@ Deno.serve(async (req) => {
     if (certError || !cert) return new Response(JSON.stringify({ ok: false, error: "certificate not found" }), { status: 404, headers: CORS_HEADERS });
     if (!cert.pdf_path) return new Response(JSON.stringify({ ok: false, error: "no PDF on file for this certificate" }), { status: 400, headers: CORS_HEADERS });
 
+    // Certificates created via the auto-instant path (send-reflection-certificate) are linked to
+    // the reflection that triggered them - re-include it here too, so a certificate that sat in
+    // "Awaiting Approval" (manual-approval mode) and only gets emailed once an admin approves it
+    // still shows the recipient's own reflection alongside the certificate, same as the instant
+    // path always has.
+    let reflectionContent: string | null = null;
+    if (cert.reflection_id) {
+      const { data: reflection } = await supabaseAdmin.from("reflections").select("content").eq("id", cert.reflection_id).maybeSingle();
+      reflectionContent = reflection?.content ?? null;
+    }
+
     const { data: pdfFile, error: downloadError } = await supabaseAdmin.storage.from("certificates").download(cert.pdf_path);
     if (downloadError || !pdfFile) {
       console.error("certificate pdf download failed", downloadError);
@@ -53,8 +64,8 @@ Deno.serve(async (req) => {
     const emailResult = await sendEmail({
       to: cert.recipient_email,
       subject: certificateEmailSubject(cert.event_title, override),
-      text: `Hello ${cert.staff_name},\n\n${introText}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
-      html: certificateEmailHtml({ name: cert.staff_name, sessionName: cert.event_title, dateLabel: shortDateLabel, override }),
+      text: `Hello ${cert.staff_name},\n\n${introText}${reflectionContent ? `\n\nYour submitted reflection:\n${reflectionContent}` : ""}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
+      html: certificateEmailHtml({ name: cert.staff_name, sessionName: cert.event_title, dateLabel: shortDateLabel, reflectionContent, override }),
       attachments: [{ filename: `${cert.event_title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
     });
     if (!emailResult.ok) {
