@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Copy, Mail, Award, Trash2, Lock, MailCheck } from "lucide-react";
+import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Copy, Mail, Award, Trash2, Lock, MailCheck, Maximize2 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
 import EventFilesPanel from "./EventFilesPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
 import RegistrationsPanel from "./RegistrationsPanel";
 import EventForm from "./EventForm";
-import { fmtDate, eventLocationSuffix, relativeTime, eventBannerUrl } from "../lib/helpers";
+import { fmtDate, eventLocationSuffix, relativeTime, eventBannerUrl, splitPeopleList, parsePerson } from "../lib/helpers";
 
 const TABS = ["overview", "attendance", "files", "recording", "feedback", "reflections", "certificates", "email"];
 
@@ -46,6 +46,7 @@ export default function PreviousEventDetailModal({
   const [certSortBy, setCertSortBy] = useState("date-desc");
   const [recordingUrl, setRecordingUrl] = useState(event?.recordingUrl || "");
   const [savedNote, setSavedNote] = useState(false);
+  const [posterExpanded, setPosterExpanded] = useState(false);
   // This modal remounts on every event change (App.jsx keys it by event.id), so a one-time
   // useState initializer is enough to jump straight into edit mode for a freshly-duplicated event.
   const [editing, setEditing] = useState(!!initialEditing);
@@ -217,14 +218,18 @@ export default function PreviousEventDetailModal({
         </div>
 
         {bannerUrl && (
-          <div className="w-full h-40 overflow-hidden" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div className="relative w-full h-40 overflow-hidden" style={{ borderBottom: "1px solid var(--border)" }}>
             <img
-              src={bannerUrl} alt="" className="w-full h-full object-cover"
+              src={bannerUrl} alt="" className="w-full h-full object-cover cursor-pointer"
               style={{
                 objectPosition: `${event.bannerFocalX ?? 50}% ${event.bannerFocalY ?? 50}%`,
                 transform: `scale(${event.bannerZoom ?? 1})`, transformOrigin: `${event.bannerFocalX ?? 50}% ${event.bannerFocalY ?? 50}%`,
               }}
+              onClick={() => setPosterExpanded(true)}
             />
+            <button onClick={() => setPosterExpanded(true)} className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,.45)" }} title="View full poster" type="button">
+              <Maximize2 size={14} color="white" />
+            </button>
           </div>
         )}
 
@@ -236,7 +241,20 @@ export default function PreviousEventDetailModal({
 
           <div className="grid grid-cols-2 gap-3 text-[13px]">
             <div className="flex items-center gap-2"><Calendar size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtDate(event.date)}</span></div>
-            <div className="flex items-center gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{event.presenter}</span></div>
+            <div className="flex items-start gap-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" />
+              {(() => {
+                const presenters = splitPeopleList(event.presenter).map(parsePerson);
+                return presenters.length > 1 ? (
+                  <ul className="break-words" style={{ paddingLeft: 14, listStyleType: "disc" }}>
+                    {presenters.map((p, i) => <li key={i}>{p.name}{p.title && <span style={{ color: "var(--text-faint)" }}> — {p.title}</span>}</li>)}
+                  </ul>
+                ) : (
+                  <span className="break-words">
+                    {presenters[0]?.name}{presenters[0]?.title && <span style={{ color: "var(--text-faint)" }}> — {presenters[0].title}</span>}
+                  </span>
+                );
+              })()}
+            </div>
           </div>
 
           {canManage && (
@@ -477,6 +495,17 @@ export default function PreviousEventDetailModal({
           )}
         </div>
       </div>
+      {posterExpanded && bannerUrl && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,.85)" }}
+          onClick={(e) => { e.stopPropagation(); setPosterExpanded(false); }}
+        >
+          <img src={bannerUrl} alt="" className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
+          <button onClick={(e) => { e.stopPropagation(); setPosterExpanded(false); }} className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
+            <X size={18} color="white" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

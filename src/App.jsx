@@ -1353,6 +1353,7 @@ export default function App() {
           cpdTypes={cpdTypes} files={files} tags={tags} onSaveTag={handleAddTag} viewerUserType={viewSession.userType} onFilesChange={refreshFiles}
           onUpdateBannerCrop={handleUpdateBannerCrop} onRemoveBanner={handleRemoveBanner}
           onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf}
+          onSendAllReflectionReminders={handleSendAllReflectionReminders}
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}

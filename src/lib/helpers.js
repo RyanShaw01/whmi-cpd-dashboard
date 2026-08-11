@@ -299,6 +299,21 @@ export function splitPeopleList(str) {
   return (str || "").split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
 }
 
+/* A presenter/organiser entry may carry an optional job title appended after an em dash
+ * ("Dr Jane Smith — Senior Radiographer"), entered via PeopleListField's two-field editor.
+ * Splitting on " — " (em dash, spaced) rather than a plain hyphen means a hyphenated name or
+ * title (e.g. "Mary-Anne", "Radiologist - Locum") is never mistaken for the separator. */
+export function parsePerson(entry) {
+  const idx = (entry || "").indexOf(" — ");
+  if (idx === -1) return { name: (entry || "").trim(), title: "" };
+  return { name: entry.slice(0, idx).trim(), title: entry.slice(idx + 3).trim() };
+}
+export function formatPerson(name, title) {
+  const n = (name || "").trim();
+  const t = (title || "").trim();
+  return t ? `${n} — ${t}` : n;
+}
+
 export function eventCpdHours(start, end) {
   if (!start || !end) return null;
   const [sh, sm] = start.split(":").map(Number);

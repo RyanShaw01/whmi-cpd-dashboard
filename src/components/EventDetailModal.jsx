@@ -13,7 +13,7 @@ import EventForm from "./EventForm";
 import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
 import RegisterOrUnregister from "./EventRegisterControl";
-import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix, splitPeopleList } from "../lib/helpers";
+import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix, splitPeopleList, parsePerson } from "../lib/helpers";
 import { previewCertificateTemplate } from "../lib/db";
 
 function exportAttendeesCsv(event, regs) {
@@ -83,7 +83,7 @@ export default function EventDetailModal({
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
   initialTab, initialEditing, highlightMissing, seriesEvents = [], onSwitchEvent, onDuplicate,
-  onOpenRegister, onUnregister,
+  onOpenRegister, onUnregister, onSendAllReflectionReminders,
 }) {
   const [regTab, setRegTab] = useState(initialTab || "overview");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -125,6 +125,11 @@ export default function EventDetailModal({
   })();
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
   const eventReflections = (reflections || []).filter(r => r.eventId === event.id);
+  const reflectedEmails = new Set(eventReflections.map(r => (r.email || "").toLowerCase()));
+  const awaitingReflection = eventRegistrations.filter(r =>
+    (r.attendanceStatus === "Registered" || r.attendanceStatus === "Attended") &&
+    !reflectedEmails.has((r.email || "").toLowerCase())
+  );
   const myReflection = session ? eventReflections.find(r => r.email?.toLowerCase() === session.email.toLowerCase()) : null;
   const iRegistered = session ? eventRegistrations.some(r => r.userId === session.id) : false;
   const canLeaveFeedback = session && iRegistered && hasEventEnded(event.date, event.end) && !myReflection;
@@ -218,12 +223,16 @@ export default function EventDetailModal({
             <div className="flex items-center gap-2"><Clock size={14} style={{ color: "var(--text-faint)" }} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(event.start, event.end)}</span></div>
             <div className="flex items-start gap-2 col-span-2"><UserCircle2 size={14} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" />
               {(() => {
-                const presenters = splitPeopleList(event.presenter);
+                const presenters = splitPeopleList(event.presenter).map(parsePerson);
                 return presenters.length > 1 ? (
                   <ul className="break-words" style={{ paddingLeft: 14, listStyleType: "disc" }}>
-                    {presenters.map((p, i) => <li key={i}>{p}</li>)}
+                    {presenters.map((p, i) => <li key={i}>{p.name}{p.title && <span style={{ color: "var(--text-faint)" }}> — {p.title}</span>}</li>)}
                   </ul>
-                ) : <span className="break-words">{event.presenter}</span>;
+                ) : (
+                  <span className="break-words">
+                    {presenters[0]?.name}{presenters[0]?.title && <span style={{ color: "var(--text-faint)" }}> — {presenters[0].title}</span>}
+                  </span>
+                );
               })()}
             </div>
           </div>
@@ -295,9 +304,9 @@ export default function EventDetailModal({
               {canManage && (
               <div className="flex gap-2 flex-wrap">
                 <button onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/event/${event.id}`); if (canManage) setRegTab("qr"); }} className="whmi-btn-ghost flex items-center gap-1.5"><ArrowUpRight size={14} />Copy Registration Link</button>
-                <div className="relative">
+                <div>
                   <button
-                    onClick={() => setExportMenuOpen(o => !o)}
+                    onClick={() => setExportMenuOpen(true)}
                     disabled={eventRegistrations.length === 0}
                     className="whmi-btn-ghost flex items-center gap-1.5"
                     style={{ opacity: eventRegistrations.length === 0 ? 0.5 : 1 }}
@@ -305,9 +314,19 @@ export default function EventDetailModal({
                     <Download size={14} />Export Attendees<ChevronDown size={12} />
                   </button>
                   {exportMenuOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)} />
-                      <div className="absolute left-0 top-full mt-1 z-20 whmi-card p-1.5 w-64" style={{ boxShadow: "0 8px 24px rgba(0,0,0,.15)" }}>
+                    // Centred popup with a blurred backdrop rather than an absolute-positioned
+                    // dropdown — an absolute dropdown here could render past the edge of this
+                    // scrollable card and get clipped or pushed out of view.
+                    <div
+                      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                      style={{ background: "rgba(0,0,0,.5)", backdropFilter: "blur(3px)" }}
+                      onClick={() => setExportMenuOpen(false)}
+                    >
+                      <div className="whmi-card w-full max-w-xs p-1.5 whmi-fade-in" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-2.5 py-2">
+                          <span className="text-[12px] font-bold uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>Export Attendees</span>
+                          <button type="button" onClick={() => setExportMenuOpen(false)} className="whmi-btn-ghost !p-1.5"><X size={13} /></button>
+                        </div>
                         <button
                           onClick={() => { exportAttendeesCsv(event, eventRegistrations); setExportMenuOpen(false); }}
                           className="w-full text-left px-2.5 py-2 rounded-lg text-[12.5px] flex items-start gap-2 whmi-row-hover"
@@ -323,7 +342,7 @@ export default function EventDetailModal({
                           <span><span className="font-semibold block">Attendance Roll Call (PDF)</span><span style={{ color: "var(--text-faint)" }}>Printable sign-in sheet with checkboxes and a signature line.</span></span>
                         </button>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
@@ -376,7 +395,15 @@ export default function EventDetailModal({
               </div>
               <div className="flex gap-2 flex-wrap">
                 <button onClick={previewTemplate} disabled={previewingTemplate} className="whmi-btn-ghost flex items-center gap-1.5"><Eye size={14} />{previewingTemplate ? "Generating…" : "Preview Template"}</button>
-                <button className="whmi-btn-ghost flex items-center gap-1.5"><Send size={14} />Send Reflection Requests</button>
+                <button
+                  onClick={() => onSendAllReflectionReminders?.(awaitingReflection, event)}
+                  disabled={!onSendAllReflectionReminders || awaitingReflection.length === 0}
+                  className="whmi-btn-ghost flex items-center gap-1.5"
+                  style={{ opacity: awaitingReflection.length === 0 ? 0.5 : 1 }}
+                  title={awaitingReflection.length === 0 ? "No outstanding reflections" : "Email everyone with an outstanding reflection"}
+                >
+                  <Send size={14} />Send Reflection Requests ({awaitingReflection.length})
+                </button>
               </div>
             </div>
             )
