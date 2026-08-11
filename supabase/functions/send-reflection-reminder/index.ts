@@ -3,7 +3,7 @@
 // post-event email job (send-event-reminders) to follow up with stragglers individually.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/mailer.ts";
-import { wrapEmailHtml, boldHtml, escapeHtml, btnHtml, BLUE, firstName } from "../_shared/emailTemplate.ts";
+import { reflectionReminderHtml, reflectionReminderSubject, firstName } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
 const CORS_HEADERS = {
@@ -39,27 +39,13 @@ Deno.serve(async (req) => {
 
     const link = `${SITE_URL}/event/${eventId}/reflect`;
     const override = await getEmailOverride(supabaseAdmin, "reflection_reminder", eventTitle);
-    const heading = override.heading || "Just a friendly reminder";
-    const introHtml = override.intro
-      ? `<p style="margin:0 0 14px 0;">${escapeHtml(override.intro)}</p>`
-      : `<p style="margin:0 0 14px 0;">You attended ${boldHtml(eventTitle)}, but we haven't received your reflection yet. Submit it to get your CPD certificate.</p>`;
     const introText = override.intro || `You attended ${eventTitle}, but we haven't received your reflection yet.`;
 
-    const html = wrapEmailHtml({
-      preheader: `Submit your reflection for ${eventTitle} to get your CPD certificate`,
-      title: `Reminder: submit your reflection for ${eventTitle}`,
-      bodyHtml: `
-        <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">${escapeHtml(heading)}</h1>
-        <p style="margin:0 0 14px 0;">Hi ${escapeHtml(firstName(name))},</p>
-        ${introHtml}
-        ${btnHtml("Submit your reflection", link)}
-        <p style="margin:0 0 14px 0;">If you've already submitted this, you can disregard this reminder.</p>
-      `,
-    });
+    const html = reflectionReminderHtml({ name, title: eventTitle, link, override });
 
     const emailResult = await sendEmail({
       to: email,
-      subject: override.subject || `Reminder: submit your reflection for ${eventTitle}`,
+      subject: reflectionReminderSubject(eventTitle, override),
       text: `Hi ${firstName(name)},\n\n${introText} Submit it here to get your CPD certificate:\n${link}\n\nIf you've already submitted this, you can disregard this reminder.\n\n- WHMI Education Team`,
       html,
     });

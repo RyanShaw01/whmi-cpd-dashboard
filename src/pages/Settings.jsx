@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload, Users, SlidersHorizontal, GripVertical, LayoutGrid, List, Mail } from "lucide-react";
+import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload, Users, SlidersHorizontal, GripVertical, LayoutGrid, List, Mail, Send } from "lucide-react";
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
 import { getSeparateWhDefault, setSeparateWhDefault } from "./Reflection";
 import { BRAND_HEX, CHARACTERS, DASHBOARD_SECTIONS, DEFAULT_LAYOUT, STAFF_FIELD_DEFS } from "../data/mockData";
 import { relativeTime, ACTION_LABELS, getShowDueSoonDefault, setShowDueSoonDefault, getShowDueSoonDatesDefault, setShowDueSoonDatesDefault, getEventCardViewDefault, setEventCardViewDefault, getDashboardEventViewDefault, setDashboardEventViewDefault, tagIsModality } from "../lib/helpers";
+import { EMAIL_TEMPLATE_DEFAULT_HTML } from "../lib/emailTemplateDefaults";
+import { sendTestEmail } from "../lib/db";
 
 // Click-and-drag reordering for any of the arrow-reorderable lists below, as an addition
 // alongside the up/down buttons (not a replacement — arrows stay for keyboard/touch use).
@@ -35,47 +37,53 @@ function useDragReorder(list, onReorder) {
   return dragProps;
 }
 
-// The most commonly-sent emails, editable from Settings without a code change. `{title}` is the
-// only supported placeholder — the edge function substitutes it with the actual event name at
-// send time. Keep in sync with the `key`s the edge functions look for
-// (email_template_overrides app_setting, see supabase/functions/_shared/emailOverrides.ts).
+// The most commonly-sent emails, editable from Settings without a code change. Keep in sync with
+// the `key`s the edge functions look for (email_template_overrides app_setting, see
+// supabase/functions/_shared/emailOverrides.ts).
+//
+// The first 4 support a full raw-HTML override (registered in emailTemplate.ts alongside their
+// default builder) - their whole body can be rewritten, not just a few fields. The last two
+// (reflection_copy, reflections_report) stay on the older subject/heading/intro-only system,
+// since their content is a dynamic list of Q&A entries that doesn't reduce to a static HTML
+// template with simple placeholders.
 const EMAIL_TEMPLATE_DEFS = [
   {
     key: "registration_confirmation",
     label: "Registration Confirmation",
     description: "Sent immediately when someone registers for an event.",
+    supportsHtml: true,
     defaultSubject: "Registration confirmed: {title}",
-    defaultHeading: "You're Registered",
-    defaultIntro: "You're registered for {title}.",
+    placeholderHelp: "{{name}}, {{title}}, {{date}}, {{time}}, {{location}}, {{address}}, {{presenter}}, {{eventUrl}}, {{meetingUrl}} - plus the pre-built {{detailsTable}} and {{buttons}} blocks, and {{disclaimer}} (only appears when the event is online).",
   },
   {
     key: "post_event_thank_you",
     label: "Post-Event Thank You",
     description: "Sent automatically 25-40 minutes after an event ends (or manually from the event's Email tab), asking attendees to submit their reflection.",
+    supportsHtml: true,
     defaultSubject: "Thanks for attending {title}: share your feedback",
-    defaultHeading: "Thanks for coming along",
-    defaultIntro: "Thanks for attending {title}. We hope you found it valuable.",
+    placeholderHelp: "{{name}}, {{title}}, {{reflectUrl}}, and the pre-built {{button}} block.",
   },
   {
     key: "reflection_reminder",
     label: "Reflection Reminder",
     description: "One-off nudge an admin can send to a specific person who hasn't submitted their reflection yet.",
+    supportsHtml: true,
     defaultSubject: "Reminder: submit your reflection for {title}",
-    defaultHeading: "Just a friendly reminder",
-    defaultIntro: "You attended {title}, but we haven't received your reflection yet.",
+    placeholderHelp: "{{name}}, {{title}}, {{link}}, and the pre-built {{button}} block.",
   },
   {
     key: "certificate",
     label: "CPD Certificate",
-    description: "Sent whenever a certificate is issued — right after a reflection is submitted, when an admin approves/resends one, or a manually-created certificate. {title} is the event/session name.",
+    description: "Sent whenever a certificate is issued — right after a reflection is submitted, when an admin approves/resends one, or a manually-created certificate.",
+    supportsHtml: true,
     defaultSubject: "Your CPD Certificate: {title}",
-    defaultHeading: "Your certificate is attached",
-    defaultIntro: "Please find attached your CPD certificate for {title}.",
+    placeholderHelp: "{{name}}, {{title}}, {{dateLabel}}, and {{reflectionSection}} (only appears when a reflection was submitted).",
   },
   {
     key: "reflection_copy",
     label: "Email Me My Reflection",
     description: "Self-service — any signed-in user can email themselves a copy of one of their own reflections. {title} is the activity name.",
+    supportsHtml: false,
     defaultSubject: "Your CPD Reflection: {title}",
     defaultHeading: "Your reflection",
     defaultIntro: "",
@@ -84,12 +92,140 @@ const EMAIL_TEMPLATE_DEFS = [
     key: "reflections_report",
     label: "Reflections Report",
     description: "Admin compiles someone's reflection history into one report and emails it to any address. {title} is the recipient's name.",
+    supportsHtml: false,
     defaultSubject: "CPD Reflections Report: {title}",
     defaultHeading: "CPD Reflections Report",
     defaultIntro: "",
   },
 ];
 
+// Sample values for the Settings preview pane only — an approximation, not byte-for-byte what
+// gets sent (the block-level tokens like {{detailsTable}}/{{buttons}} are simplified markup
+// here). Use "Send Test Email" for an exact, real render straight from the actual builders.
+const HTML_PREVIEW_SAMPLE_VARS = {
+  registration_confirmation: {
+    name: "Alex", title: "Ultrasound-Guided Procedures Workshop", date: "Thursday 15 August 2026", time: "5:00 PM - 7:00 PM",
+    location: "Footscray Hospital - Auditorium", address: "160 Gordon St, Footscray VIC 3011", presenter: "Dr. Jane Smith",
+    eventUrl: "#", meetingUrl: "#",
+    detailsTable: `<table style="width:100%;border:1px solid #e2e6ea;border-radius:10px;border-collapse:collapse;font-size:13px;margin:14px 0;">
+      <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;width:110px;">Date</td><td style="padding:9px 14px;">Thursday 15 August 2026</td></tr>
+      <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;border-top:1px solid #e2e6ea;">Time</td><td style="padding:9px 14px;border-top:1px solid #e2e6ea;">5:00 PM - 7:00 PM</td></tr>
+      <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;border-top:1px solid #e2e6ea;">Location</td><td style="padding:9px 14px;border-top:1px solid #e2e6ea;">Footscray Hospital - Auditorium</td></tr>
+    </table>`,
+    buttons: `<div style="text-align:center;margin:6px 0 4px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;margin:0 6px;">View event details</a><a style="display:inline-block;padding:11px 22px;background:#9CCB3B;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;margin:0 6px;">Join online</a></div>`,
+    disclaimer: `<p style="text-align:center;color:#6b7785;font-size:11px;margin:2px 0 18px 0;">The online event button will only work from 20 minutes before the event starts.</p>`,
+  },
+  reflection_reminder: {
+    name: "Alex", title: "Ultrasound-Guided Procedures Workshop", link: "#",
+    button: `<div style="text-align:center;margin:6px 0 18px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;">Submit your reflection</a></div>`,
+  },
+  post_event_thank_you: {
+    name: "Alex", title: "Ultrasound-Guided Procedures Workshop", reflectUrl: "#",
+    button: `<div style="text-align:center;margin:6px 0 18px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;">Submit your reflection</a></div>`,
+  },
+  certificate: {
+    name: "Alex", title: "Ultrasound-Guided Procedures Workshop", dateLabel: "on Thursday 15 August 2026",
+    reflectionSection: `<div style="margin:16px 0 4px 0;font-size:11.5px;font-weight:600;color:#6b7785;">YOUR SUBMITTED REFLECTION</div><div style="margin:14px 0;padding:14px 16px;background:#9CCB3B14;border-left:3px solid #9CCB3B;border-radius:6px;font-size:13px;color:#1a2233;line-height:1.6;">This session helped me understand probe positioning for deeper vascular access under real-time guidance.</div>`,
+  },
+};
+
+function applyPreviewPlaceholders(html, vars) {
+  return html.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? "");
+}
+
+// Shared by both editor variants below — sends a real sample of this template (using whatever's
+// currently saved, including an unsaved-but-typed edit isn't included, only the saved override)
+// to the admin's own inbox.
+function SendTestEmailButton({ templateKey }) {
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null); // { ok, sentTo } | { ok: false }
+  const send = async () => {
+    setSending(true); setResult(null);
+    const res = await sendTestEmail(templateKey);
+    setResult(res);
+    setSending(false);
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={send} disabled={sending} className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] flex items-center gap-1.5">
+        <Send size={12} />{sending ? "Sending…" : "Send Test Email"}
+      </button>
+      {result && (
+        <span className="text-[11px]" style={{ color: result.ok ? "var(--accent-success)" : "#D9534F" }}>
+          {result.ok ? `Sent to ${result.sentTo}` : "Failed to send"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// The 4 supportsHtml: true templates — subject line stays a short text field, but the body is
+// edited as raw HTML with {{placeholder}} tokens, giving a full WYSIWYG-ish rewrite instead of
+// only being able to tweak 3 short fields (which, in practice, meant most of what admins actually
+// wanted to change had no override field at all).
+function EmailTemplateHtmlEditor({ def, override, onSave }) {
+  const defaultHtml = EMAIL_TEMPLATE_DEFAULT_HTML[def.key];
+  const [subject, setSubject] = useState(override?.subject ?? def.defaultSubject);
+  const [html, setHtml] = useState(override?.html ?? defaultHtml);
+  const [preview, setPreview] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  const previewHtml = applyPreviewPlaceholders(html, HTML_PREVIEW_SAMPLE_VARS[def.key] || {});
+
+  const save = () => {
+    const patch = {
+      subject: subject.trim() !== def.defaultSubject.trim() ? subject.trim() : null,
+      html: html.trim() !== defaultHtml.trim() ? html : null,
+      // Clear the legacy 3-field override too, so an old subject/heading/intro override left
+      // over from before this template supported HTML doesn't linger unused in storage.
+      heading: null, intro: null,
+    };
+    onSave(def.key, patch);
+    setDirty(false);
+  };
+
+  const reset = () => { setSubject(def.defaultSubject); setHtml(defaultHtml); setDirty(true); };
+
+  return (
+    <div className="p-3 rounded-xl space-y-2.5" style={{ border: "1px solid var(--border)" }}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-semibold text-[13px]">{def.label}</div>
+          <div className="text-[11px]" style={{ color: "var(--text-faint)" }}>{def.description}</div>
+        </div>
+        <button onClick={() => setPreview(p => !p)} className="whmi-btn-ghost !py-1 !px-2 text-[11px] flex items-center gap-1 shrink-0"><Eye size={12} />{preview ? "Edit" : "Preview"}</button>
+      </div>
+      {preview ? (
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)", height: 440 }}>
+          <iframe title={`${def.key}-preview`} srcDoc={previewHtml} className="w-full h-full" style={{ border: "none", background: "#fff" }} sandbox="" />
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div>
+            <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Subject line</label>
+            <input value={subject} onChange={e => { setSubject(e.target.value); setDirty(true); }} className="whmi-input w-full px-2.5 py-1.5 mt-0.5 text-[12.5px]" />
+          </div>
+          <div>
+            <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Email body (HTML)</label>
+            <textarea
+              value={html} onChange={e => { setHtml(e.target.value); setDirty(true); }} rows={14} spellCheck={false}
+              className="whmi-input w-full px-2.5 py-1.5 mt-0.5 text-[11px] resize-y" style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+            />
+            <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>Placeholders: <code>{def.placeholderHelp}</code></p>
+          </div>
+          <div className="flex justify-end gap-2 flex-wrap">
+            <SendTestEmailButton templateKey={def.key} />
+            <button onClick={reset} className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] flex items-center gap-1.5"><RotateCcw size={12} />Reset to Default</button>
+            <button onClick={save} disabled={!dirty} className="whmi-btn-primary !py-1.5 !px-3 text-[12px] flex items-center gap-1.5" style={{ opacity: dirty ? 1 : 0.5 }}><Save size={12} />Save</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The 2 remaining templates (reflection_copy, reflections_report) - unchanged subject/heading/
+// intro-only editor.
 function EmailTemplateEditor({ def, override, onSave }) {
   // Pre-filled with the actual wording that'll be sent (the override if one's set, otherwise
   // the default copy) — editing a blank field with the real text only shown as faint placeholder
@@ -153,7 +289,8 @@ function EmailTemplateEditor({ def, override, onSave }) {
             <textarea value={intro} onChange={e => { setIntro(e.target.value); setDirty(true); }} placeholder={def.defaultIntro} rows={2} className="whmi-input w-full px-2.5 py-1.5 mt-0.5 text-[12.5px] resize-none" />
             <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>Use <code>{"{title}"}</code> anywhere you want the event's name to appear.</p>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 flex-wrap">
+            <SendTestEmailButton templateKey={def.key} />
             <button
               onClick={() => { setSubject(def.defaultSubject); setHeading(def.defaultHeading); setIntro(def.defaultIntro); setDirty(true); }}
               className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] flex items-center gap-1.5"
@@ -725,11 +862,13 @@ export default function Settings({
           {emailTemplatesExpanded && (
             <>
               <p className="text-[11.5px] mt-2 mb-3" style={{ color: "var(--text-faint)" }}>
-                Edit the subject line, heading, and intro text for the most commonly-sent emails. Leave a field blank to keep the default wording. Use Preview to see roughly how it'll look in an inbox.
+                Edit the wording for the most commonly-sent emails — the first four support a full HTML rewrite of the body, not just a few fields. Use Preview for a rough look, or Send Test Email for an exact one straight to your own inbox.
               </p>
               <div className="space-y-2.5">
                 {EMAIL_TEMPLATE_DEFS.map(def => (
-                  <EmailTemplateEditor key={def.key} def={def} override={emailTemplateOverrides[def.key]} onSave={onSaveEmailTemplateOverride} />
+                  def.supportsHtml
+                    ? <EmailTemplateHtmlEditor key={def.key} def={def} override={emailTemplateOverrides[def.key]} onSave={onSaveEmailTemplateOverride} />
+                    : <EmailTemplateEditor key={def.key} def={def} override={emailTemplateOverrides[def.key]} onSave={onSaveEmailTemplateOverride} />
                 ))}
               </div>
             </>

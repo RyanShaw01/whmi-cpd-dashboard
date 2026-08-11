@@ -4,7 +4,7 @@
 // public QR/link flow has no session to email-from-account-context the way other functions do.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/mailer.ts";
-import { wrapEmailHtml, paragraphsHtml, detailRowsHtml, sideBySideButtonsHtml, disclaimerHtml, boldHtml, escapeHtml, BLUE, GREEN, firstName } from "../_shared/emailTemplate.ts";
+import { registrationConfirmationHtml, registrationConfirmationSubject, firstName } from "../_shared/emailTemplate.ts";
 import { campusAddress } from "../_shared/campusAddresses.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
@@ -74,32 +74,14 @@ Deno.serve(async (req) => {
       "- WHMI Education Team",
     ];
 
-    const html = wrapEmailHtml({
-      preheader: `You're registered for ${event.title}`,
-      title: `Registration confirmed: ${event.title}`,
-      bodyHtml: `
-        <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};text-align:center;text-transform:uppercase;letter-spacing:.4px;">${escapeHtml(override.heading || "You're Registered")}</h1>
-        <p style="margin:0 0 14px 0;">Hi ${escapeHtml(firstName(name))},</p>
-        ${override.intro ? `<p style="margin:0 0 14px 0;">${escapeHtml(override.intro)}</p>` : `<p style="margin:0 0 14px 0;">You're registered for ${boldHtml(event.title)}.</p>`}
-        ${detailRowsHtml([
-          { label: "Date", value: fmtDate(event.date) },
-          { label: "Time", value: timeRange },
-          { label: "Location", value: location },
-          { label: "Address", value: address },
-          { label: "Presenter", value: event.presenter },
-        ])}
-        ${sideBySideButtonsHtml([
-          { label: "View event details", href: eventUrl, color: BLUE },
-          ...(isOnline ? [{ label: "Join online", href: event.meeting_url, color: GREEN }] : []),
-        ])}
-        ${isOnline ? disclaimerHtml("The online event button will only work from 20 minutes before the event starts.") : ""}
-        ${paragraphsHtml("We look forward to seeing you there. You'll receive a follow-up email with a link to submit your reflection and receive your CPD certificate after the event.")}
-      `,
+    const html = registrationConfirmationHtml({
+      name, title: event.title, date: fmtDate(event.date), time: timeRange, location, address,
+      presenter: event.presenter, eventUrl, meetingUrl: isOnline ? event.meeting_url : null, override,
     });
 
     const emailResult = await sendEmail({
       to: email,
-      subject: override.subject || `Registration confirmed: ${event.title}`,
+      subject: registrationConfirmationSubject(event.title, override),
       text: bodyLines.filter(l => l !== undefined).join("\n"),
       html,
     });

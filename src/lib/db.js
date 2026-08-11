@@ -705,6 +705,16 @@ export async function previewCertificateTemplate({ sessionName, date, cpdHours, 
   return { ok: true, blob: data instanceof Blob ? data : new Blob([data], { type: "application/pdf" }) };
 }
 
+// Sends a sample of any of the 6 email templates to the caller's own address, using whatever is
+// currently saved in Settings > Email Templates - lets an admin verify a template (including a
+// full-HTML override) actually looks right without creating a real event/registration/reflection.
+export async function sendTestEmail(templateKey) {
+  if (!supabaseConfigured) return { ok: false };
+  const { data, error } = await supabase.functions.invoke("send-test-email", { body: { templateKey } });
+  if (error) { console.error("sendTestEmail", error); return { ok: false }; }
+  return { ok: true, ...data };
+}
+
 export async function sendReflectionReminder({ name, email, eventId, eventTitle }) {
   if (!supabaseConfigured) return { ok: false };
   const { data, error } = await supabase.functions.invoke("send-reflection-reminder", {
