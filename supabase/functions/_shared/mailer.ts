@@ -15,6 +15,22 @@
 // Gmail account, 2000/day on Google Workspace - fine for this app's volume, but worth knowing if
 // event volume grows a lot.
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.173.0/encoding/base64.ts";
+
+// denomailer's default body encoding (used whenever `content`/`html` are passed straight to
+// client.send()) is quoted-printable: trailing spaces become literal "=20", and every line over
+// 74 characters gets a soft "=\r\n" break - including, sometimes, straight through the middle of
+// a URL. Clients that don't decode that quoted-printable encoding show the raw "=20"/"=3D"/soft
+// breaks as literal text, and a URL split by a soft break in the middle no longer works as a
+// link. Base64-encoding the body ourselves (via the `mimeContent` escape hatch, bypassing
+// denomailer's own text/html handling) sidesteps this entirely - it's the same encoding already
+// used for the certificate PDF attachments below, which every mail client decodes unambiguously.
+function base64Body(str: string) {
+  const encoded = base64Encode(str);
+  const lines = [];
+  for (let i = 0; i < encoded.length; i += 76) lines.push(encoded.slice(i, i + 76));
+  return lines.join("\r\n");
+}
 
 const GMAIL_USER = Deno.env.get("GMAIL_USER") || "whmieducation@gmail.com";
 const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
@@ -47,12 +63,15 @@ export async function sendEmail({
   });
 
   try {
+    const mimeContent = [
+      { mimeType: 'text/plain; charset="utf-8"', content: base64Body(text), transferEncoding: "base64" },
+      ...(html ? [{ mimeType: 'text/html; charset="utf-8"', content: base64Body(html), transferEncoding: "base64" }] : []),
+    ];
     await client.send({
       from: FROM_EMAIL,
       to,
       subject,
-      content: text,
-      html,
+      mimeContent,
       attachments: attachments?.map(a => ({
         filename: a.filename, content: a.content, encoding: "base64" as const,
         contentType: a.contentType || "application/pdf", // every attachment this app sends today is a certificate PDF

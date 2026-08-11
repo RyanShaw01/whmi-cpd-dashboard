@@ -5,6 +5,7 @@ import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
 import RegisterOrUnregister from "../components/EventRegisterControl";
 import RecentlyCompletedCard from "../components/RecentlyCompletedCard";
+import PresenterLine from "../components/PresenterLine";
 import { fmtDate, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, eventCountdownText, isRecentlyCompleted, getEventCardViewDefault, setEventCardViewDefault } from "../lib/helpers";
 
 const SORT_OPTIONS = [
@@ -262,7 +263,7 @@ export default function UpcomingEvents({
                   </div>
                   <div className="flex items-center gap-1.5"><Clock size={12} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(ev.start, ev.end)}</span></div>
                   <div className="flex items-start gap-1.5"><MapPin size={12} className="shrink-0 mt-0.5" /><span className="break-words">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></div>
-                  <div className="flex items-start gap-1.5"><UserCircle2 size={12} className="shrink-0 mt-0.5" /><span className="break-words">{ev.presenter}</span></div>
+                  <div className="flex items-start gap-1.5"><UserCircle2 size={12} className="shrink-0 mt-0.5" /><PresenterLine presenter={ev.presenter} className="break-words" /></div>
                 </div>
               </button>
               {ev.capacity != null && (

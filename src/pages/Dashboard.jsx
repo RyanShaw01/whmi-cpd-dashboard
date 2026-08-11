@@ -14,6 +14,7 @@ import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import RegisterOrUnregister from "../components/EventRegisterControl";
 import RecentlyCompletedCard from "../components/RecentlyCompletedCard";
+import PresenterLine from "../components/PresenterLine";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, eventCountdownText, isRecentlyCompleted, getShowDueSoonDefault, getShowDueSoonDatesDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
@@ -206,7 +207,7 @@ export default function Dashboard({
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
                         <span className="flex items-center gap-1 min-w-0"><Clock size={11} className="shrink-0" /><span className="truncate">{fmtTimeRange12h(ev.start, ev.end)}</span></span>
                         <span className="flex items-center gap-1 min-w-0"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
-                        <span className="flex items-center gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0" /><span className="truncate">{ev.presenter}</span></span>
+                        <span className="flex items-center gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0" /><PresenterLine presenter={ev.presenter} className="truncate" /></span>
                         <span className="flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap mt-2">
@@ -397,8 +398,11 @@ export default function Dashboard({
                       />
                       <button
                         onClick={() => setExpandedPoster({ url: bannerUrl, event: ev })}
-                        className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(0,0,0,.45)" }} title="View full poster" type="button"
+                        className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center transition hover:scale-110"
+                        style={{ background: "rgba(0,0,0,.45)" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,.75)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,0,0,.45)"; }}
+                        title="View full poster" type="button"
                       >
                         <Maximize2 size={12} color="white" />
                       </button>
@@ -417,7 +421,7 @@ export default function Dashboard({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
                       <span className="flex items-center gap-1 min-w-0"><Clock size={11} className="shrink-0" /><span className="truncate">{fmtTimeRange12h(ev.start, ev.end)}</span></span>
                       <span className="flex items-center gap-1 min-w-0"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
-                      {ev.presenter && <span className="flex items-center gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0" /><span className="truncate">{ev.presenter}</span></span>}
+                      {ev.presenter && <span className="flex items-center gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0" /><PresenterLine presenter={ev.presenter} className="truncate" /></span>}
                       <span className="flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap mt-1">
