@@ -1087,6 +1087,38 @@ export default function App() {
     sendRegistrationConfirmation({ eventId, name, email });
   };
 
+  // Admin/owner manually recording someone's registration (e.g. they registered by phone or in
+  // person) from the event's Registrations tab. Mirrors handlePublicRegister's account-matching
+  // so the person still shows up properly linked to an existing staff/external record, but skips
+  // the anonymous-vs-signed-in branching since the caller here is always an admin acting on
+  // someone else's behalf, never their own session.
+  const handleAdminAddRegistration = (eventId, { name, email, profession, organisation, attendanceType, dietary, accessibility, comments }) => {
+    let userId = null;
+    let isExternal = false;
+    const matchedUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (matchedUser) {
+      userId = matchedUser.id;
+    } else {
+      const existingExternal = externalParticipants.find(p => p.email.toLowerCase() === email.toLowerCase());
+      if (!existingExternal) {
+        const newExternal = { id: "ext" + Date.now(), name, email };
+        setExternalParticipants(prev => [...prev, newExternal]);
+        insertExternalParticipant(newExternal);
+      }
+      isExternal = true;
+    }
+
+    const reg = {
+      id: "r" + Date.now(), eventId, name, email, profession, organisation, attendanceType, dietary, accessibility, comments,
+      userId, isExternal, attendanceStatus: nextAttendanceStatus(eventId), createdAt: new Date().toISOString(),
+    };
+    setRegistrations(prev => [...prev, reg]);
+    insertRegistration(reg);
+    pushAudit({ actorId: session?.id, action: "registration.created", entityType: "event", entityId: eventId, details: { name: reg.name, eventTitle: events.find(e => e.id === eventId)?.title } });
+    sendRegistrationConfirmation({ eventId, name, email });
+    showToast("Registration added.");
+  };
+
   const primaryHex = BRAND_HEX[colorPrefs.primary] || BRAND_HEX.blue;
   const secondaryHex = BRAND_HEX[colorPrefs.secondary] || BRAND_HEX.purple;
   const successHex = BRAND_HEX[colorPrefs.success] || BRAND_HEX.green;
@@ -1360,6 +1392,7 @@ export default function App() {
           onUpdateBannerCrop={handleUpdateBannerCrop} onRemoveBanner={handleRemoveBanner}
           onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf}
           onSendAllReflectionReminders={handleSendAllReflectionReminders}
+          onAddRegistration={handleAdminAddRegistration} users={users} staffDirectory={staffDirectory} onViewStaffProfile={openStaff}
         />
         <PreviousEventDetailModal
           key={selectedArchiveEvent?.id} event={selectedArchiveEvent} onClose={() => setSelectedArchiveEvent(null)} registrations={registrations}

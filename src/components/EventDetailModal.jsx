@@ -84,6 +84,7 @@ export default function EventDetailModal({
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
   initialTab, initialEditing, highlightMissing, seriesEvents = [], onSwitchEvent, onDuplicate,
   onOpenRegister, onUnregister, onSendAllReflectionReminders,
+  onAddRegistration, users, staffDirectory, onViewStaffProfile,
 }) {
   const [regTab, setRegTab] = useState(initialTab || "overview");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -356,6 +357,8 @@ export default function EventDetailModal({
                 event={event} registrations={eventRegistrations} canManage={canManage}
                 onDelete={onDeleteRegistration} onUpdate={onUpdateRegistration} onUpdateAttendanceStatus={onUpdateAttendanceStatus}
                 dismissedPairs={dismissedRegistrationPairs} onMerge={onMergeRegistrations} onDismissPair={onDismissRegistrationPair}
+                onAdd={onAddRegistration ? (patch) => onAddRegistration(event.id, patch) : undefined}
+                users={users} staffDirectory={staffDirectory} onViewStaffProfile={onViewStaffProfile}
               />
               {canManage && (
                 <button

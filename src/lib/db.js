@@ -507,6 +507,10 @@ export async function insertRegistration(reg) {
 export async function updateRegistration(id, patch) {
   if (!supabaseConfigured) return;
   const row = {};
+  if ("name" in patch) row.name = patch.name;
+  if ("email" in patch) row.email = patch.email;
+  if ("profession" in patch) row.profession = patch.profession;
+  if ("campus" in patch) row.campus = patch.campus;
   if ("attendanceStatus" in patch) row.attendance_status = patch.attendanceStatus;
   if ("attendanceType" in patch) row.attendance_type = patch.attendanceType;
   if ("dietary" in patch) row.dietary = patch.dietary;
