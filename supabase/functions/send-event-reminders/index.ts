@@ -2,7 +2,7 @@
 // user - protected by a shared secret instead of a user session. Finds events that ended
 // 25-40 minutes ago and emails a reminder to every registrant who hasn't been reminded yet.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { sendEmail } from "../_shared/resend.ts";
+import { sendEmail } from "../_shared/mailer.ts";
 import { thankYouEmailText, thankYouEmailHtml, thankYouEmailSubject } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 

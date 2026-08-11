@@ -1,7 +1,7 @@
 // Any signed-in user: emails a copy of one of THEIR OWN reflections (personal or WH-event) to
 // their own account email - never an arbitrary address supplied by the client.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { sendEmail } from "../_shared/resend.ts";
+import { sendEmail } from "../_shared/mailer.ts";
 import { wrapEmailHtml, reflectionSectionsHtml, boldHtml, escapeHtml, BLUE } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 

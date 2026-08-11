@@ -3,7 +3,7 @@
 // (RLS-gated); this just emails the person a copy of what they registered for, since the
 // public QR/link flow has no session to email-from-account-context the way other functions do.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { sendEmail } from "../_shared/resend.ts";
+import { sendEmail } from "../_shared/mailer.ts";
 import { wrapEmailHtml, paragraphsHtml, detailRowsHtml, sideBySideButtonsHtml, disclaimerHtml, boldHtml, escapeHtml, BLUE, GREEN } from "../_shared/emailTemplate.ts";
 import { campusAddress } from "../_shared/campusAddresses.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";

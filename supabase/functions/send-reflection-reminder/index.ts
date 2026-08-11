@@ -2,7 +2,7 @@
 // specific registrant for a past event, so admins aren't stuck waiting on the automated
 // post-event email job (send-event-reminders) to follow up with stragglers individually.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { sendEmail } from "../_shared/resend.ts";
+import { sendEmail } from "../_shared/mailer.ts";
 import { wrapEmailHtml, boldHtml, escapeHtml, btnHtml, BLUE } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 

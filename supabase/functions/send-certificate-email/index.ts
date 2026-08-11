@@ -2,7 +2,7 @@
 // "Approve & Send All" bulk action (isResend: false, first send) and the per-certificate resend
 // button (isResend: true, tracks resend_count/last_resent_at instead of touching sent_at/status).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { sendEmail } from "../_shared/resend.ts";
+import { sendEmail } from "../_shared/mailer.ts";
 import { certificateEmailHtml, certificateEmailSubject } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 

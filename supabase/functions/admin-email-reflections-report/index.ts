@@ -2,7 +2,7 @@
 // to an arbitrary address the admin chooses (unlike email-reflection-copy, which only ever
 // emails the caller's own account).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { sendEmail } from "../_shared/resend.ts";
+import { sendEmail } from "../_shared/mailer.ts";
 import { wrapEmailHtml, reflectionEntryCardHtml, boldHtml, escapeHtml, BLUE } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 

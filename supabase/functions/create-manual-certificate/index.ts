@@ -5,7 +5,7 @@
 // users row, links them to a staff (internal, @wh.org.au) or external_participants record.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildCertificatePdf, hoursLabel } from "../_shared/certificate.ts";
-import { sendEmail } from "../_shared/resend.ts";
+import { sendEmail } from "../_shared/mailer.ts";
 import { certificateEmailHtml, certificateEmailSubject } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
