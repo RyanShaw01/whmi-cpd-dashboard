@@ -1,6 +1,7 @@
 import { Video, Link2, Lightbulb } from "lucide-react";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
+import HappeningNowSection from "../components/HappeningNowSection";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting } from "../lib/helpers";
 
 // Landing page for external accounts (non @wh.org.au). Shows events they've registered for
@@ -48,6 +49,14 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
       <PersonalStatsRow
         user={user} certificates={certificates} events={events} registrations={registrations} reflections={reflections}
         onNavigateCertificates={onNavigatePage ? () => onNavigatePage("mycertificates") : undefined}
+      />
+
+      {/* Scoped to externally-open events only (same as Browse & Register below) - external
+          viewers shouldn't see an internal-only event surface here even if it happens to be
+          live right now. */}
+      <HappeningNowSection
+        events={events.filter(e => e.openToExternal !== false)} files={files} registeredIds={myRegisteredEventIds}
+        onOpenRegister={onOpenRegister} onUnregister={onUnregister} openEvent={openEvent}
       />
 
       <UpcomingEventsCards

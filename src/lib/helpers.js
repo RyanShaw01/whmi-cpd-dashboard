@@ -161,6 +161,19 @@ export function isRecentlyCompleted(dateStr, endTime) {
   return hoursSinceEnd >= 0 && hoursSinceEnd < 24;
 }
 
+/* Splits a raw event list into the "featured" set shown in HappeningNowSection (currently live,
+ * or ended within the last 24h) versus everything else — shared by every dashboard that shows
+ * that section (admin/owner Dashboard, MyCpd, ExternalDashboard) so "live" and "recently ended"
+ * are defined in exactly one place. */
+export function splitFeaturedEvents(events) {
+  const liveEvents = events.filter(ev => eventCountdownText(ev.date, ev.start, ev.end)?.happening);
+  const liveIds = new Set(liveEvents.map(ev => ev.id));
+  const recentlyEndedEvents = events.filter(ev => !liveIds.has(ev.id) && isRecentlyCompleted(ev.date, ev.end));
+  const featuredEvents = [...liveEvents, ...recentlyEndedEvents];
+  const featuredIds = new Set(featuredEvents.map(ev => ev.id));
+  return { liveEvents, liveIds, recentlyEndedEvents, featuredEvents, featuredIds };
+}
+
 /* A user's own certificates — externals match by recipient email (or name, for
  * manually-created certs before an account existed), internal viewers by name. */
 export function myCertificates(certificates, user) {

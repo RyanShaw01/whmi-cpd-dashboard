@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ClipboardList, MessageSquareText, Lightbulb } from "lucide-react";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
+import HappeningNowSection from "../components/HappeningNowSection";
 import { fmtDate, hasEventEnded } from "../lib/helpers";
 
 export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea }) {
@@ -29,6 +30,11 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
       <PersonalStatsRow
         user={user} certificates={certificates} events={events} registrations={registrations} reflections={reflections}
         onNavigateCertificates={onNavigatePage ? () => onNavigatePage("mycertificates") : undefined}
+      />
+
+      <HappeningNowSection
+        events={events} files={files} registeredIds={myRegisteredEventIds}
+        onOpenRegister={onOpenRegister} onUnregister={onUnregister} openEvent={openEvent}
       />
 
       {needsFeedback.length > 0 && (

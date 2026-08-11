@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ChevronRight, Clock, MapPin, LayoutGrid, List } from "lucide-react";
+import { ChevronRight, Clock, MapPin, LayoutGrid, List, UserCircle2, Users } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
 import RegisterOrUnregister from "./EventRegisterControl";
 import RecentlyCompletedCard from "./RecentlyCompletedCard";
+import PresenterLine from "./PresenterLine";
 import { fmtDate, fmtTimeRange12h, eventBannerUrl, eventLocationSuffix, makeViewPref, isRecentlyCompleted } from "../lib/helpers";
 
 // Same big-card/compact-list toggle and card styling as the admin Dashboard's Up Next and the
@@ -118,6 +119,8 @@ export default function UpcomingEventsCards({
                       <div className="grid grid-cols-1 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
                         <span className="flex items-center gap-1"><Clock size={11} className="shrink-0" />{fmtTimeRange12h(ev.start, ev.end)}</span>
                         <span className="flex items-center gap-1"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
+                        {ev.presenter && <span className="flex items-start gap-1"><UserCircle2 size={11} className="shrink-0 mt-0.5" /><PresenterLine presenter={ev.presenter} className="truncate" /></span>}
+                        <span className="flex items-center gap-1 font-bold"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap mt-2">
                         {mode === "manage" && <StatusBadge status={ev.status} />}

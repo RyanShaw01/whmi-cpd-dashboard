@@ -255,12 +255,14 @@ export default function App() {
       } else {
         setSession(null);
         clearAppData();
-        // `events` is the one table that stays publicly readable under RLS (the public QR/
-        // email-link registration flow depends on it) - fetch it even with no session, or
-        // /event/:id and /event/:id/reflect permanently show "Event not found" for anyone who
-        // isn't already logged in, since mainContent's routes render off this same `events`
-        // state regardless of which URL matched.
+        // `events` (fully) and `files` (flyer-kind rows only, see migration_phase34.sql) are the
+        // two tables that stay publicly readable under RLS - the public QR/email-link
+        // registration flow depends on both. Fetch them even with no session, or
+        // /event/:id and /event/:id/reflect permanently show "Event not found" (and never show
+        // a promotional flyer even once that's fixed) for anyone who isn't already logged in,
+        // since mainContent's routes render off this same state regardless of which URL matched.
         setEvents(await fetchEvents());
+        setFiles(await fetchAllFiles());
       }
       setReady(true);
     });
