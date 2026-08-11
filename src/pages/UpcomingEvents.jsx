@@ -263,7 +263,9 @@ export default function UpcomingEvents({
                   </div>
                   <div className="flex items-center gap-1.5"><Clock size={12} className="shrink-0" /><span className="break-words">{fmtTimeRange12h(ev.start, ev.end)}</span></div>
                   <div className="flex items-start gap-1.5"><MapPin size={12} className="shrink-0 mt-0.5" /><span className="break-words">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></div>
-                  <div className="flex items-start gap-1.5"><UserCircle2 size={12} className="shrink-0 mt-0.5" /><PresenterLine presenter={ev.presenter} className="break-words" /></div>
+                  {/* Own full-width row rather than sharing one with Location - "+N more" can grow
+                      this to several lines, which would otherwise stretch Location's cell too. */}
+                  <div className="col-span-2 flex items-start gap-1.5"><UserCircle2 size={12} className="shrink-0 mt-0.5" /><PresenterLine presenter={ev.presenter} className="break-words" /></div>
                 </div>
               </button>
               {ev.capacity != null && (

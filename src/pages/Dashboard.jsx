@@ -207,8 +207,13 @@ export default function Dashboard({
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
                         <span className="flex items-center gap-1 min-w-0"><Clock size={11} className="shrink-0" /><span className="truncate">{fmtTimeRange12h(ev.start, ev.end)}</span></span>
                         <span className="flex items-center gap-1 min-w-0"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
-                        <span className="flex items-center gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0" /><PresenterLine presenter={ev.presenter} className="truncate" /></span>
-                        <span className="flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
+                        {/* Presenter gets its own full-width row rather than sharing a grid row with
+                            Registered - "+N more" can grow it to several lines, and a shared row
+                            would otherwise stretch Registered's cell taller and re-centre it each
+                            time it expands/collapses. items-start (not items-center) keeps the icon
+                            level with just the first presenter's line instead of the whole block. */}
+                        <span className="col-span-2 flex items-start gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0 mt-0.5" /><PresenterLine presenter={ev.presenter} className="truncate" /></span>
+                        <span className="col-span-2 flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap mt-2">
                         <StatusBadge status={ev.status} />
@@ -421,8 +426,12 @@ export default function Dashboard({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
                       <span className="flex items-center gap-1 min-w-0"><Clock size={11} className="shrink-0" /><span className="truncate">{fmtTimeRange12h(ev.start, ev.end)}</span></span>
                       <span className="flex items-center gap-1 min-w-0"><MapPin size={11} className="shrink-0" /><span className="truncate">{ev.campus && <strong>{ev.campus}</strong>}{ev.campus && eventLocationSuffix(ev) ? " - " : ""}{eventLocationSuffix(ev)}</span></span>
-                      {ev.presenter && <span className="flex items-center gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0" /><PresenterLine presenter={ev.presenter} className="truncate" /></span>}
-                      <span className="flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
+                      {/* Own full-width row (not sharing one with Registered) - "+N more" can grow
+                          this to several lines, which would otherwise stretch Registered's cell
+                          taller and re-centre it every time it expands/collapses. items-start keeps
+                          the icon level with just the first presenter's line, not the whole block. */}
+                      {ev.presenter && <span className="sm:col-span-2 flex items-start gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0 mt-0.5" /><PresenterLine presenter={ev.presenter} className="truncate" /></span>}
+                      <span className="sm:col-span-2 flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap mt-1">
                       {isLive && ev.meetingUrl && (

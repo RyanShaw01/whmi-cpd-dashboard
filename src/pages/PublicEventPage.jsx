@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Calendar, Clock, MapPin, UserCircle2, Maximize2, X, DollarSign } from "lucide-react";
 import ModeBadge from "../components/ModeBadge";
 import RegistrationSuccessCard from "../components/RegistrationSuccessCard";
-import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl } from "../lib/helpers";
+import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl, splitPeopleList, parsePerson } from "../lib/helpers";
 
 const WH_DOMAIN = "@wh.org.au";
 const NAVY = "#152A4E";
@@ -117,7 +117,20 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
               <div className="flex items-center gap-2"><Calendar size={15} style={{ color: "var(--text-faint)" }} /><span>{fmtDate(event.date)}</span></div>
               <div className="flex items-center gap-2"><Clock size={15} style={{ color: "var(--text-faint)" }} /><span>{fmtTimeRange12h(event.start, event.end)}</span></div>
               <div className="flex items-start gap-2"><MapPin size={15} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" /><span className="break-words">{event.campus && <strong>{event.campus}</strong>}{event.campus && eventLocationSuffix(event) ? " - " : ""}{eventLocationSuffix(event)}</span></div>
-              <div className="flex items-center gap-2"><UserCircle2 size={15} style={{ color: "var(--text-faint)" }} /><span>{event.presenter}</span></div>
+              <div className="flex items-start gap-2"><UserCircle2 size={15} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" />
+                {(() => {
+                  const presenters = splitPeopleList(event.presenter).map(parsePerson);
+                  return presenters.length > 1 ? (
+                    <ul className="break-words" style={{ paddingLeft: 14, listStyleType: "disc" }}>
+                      {presenters.map((p, i) => <li key={i}>{p.name}{p.title && <span style={{ color: "var(--text-faint)" }}> — {p.title}</span>}</li>)}
+                    </ul>
+                  ) : (
+                    <span className="break-words">
+                      {presenters[0]?.name}{presenters[0]?.title && <span style={{ color: "var(--text-faint)" }}> — {presenters[0].title}</span>}
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
 
             {event.status !== "Registration Open" ? (

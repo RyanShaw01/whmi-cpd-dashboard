@@ -714,7 +714,7 @@ export default function Settings({
         </div>
       )}
 
-      {role !== "viewer" && (
+      {role === "admin" && (
         <div className="whmi-card p-4">
           <button onClick={() => setEmailTemplatesExpanded(x => !x)} className="w-full flex items-center justify-between">
             <div className="flex items-center gap-2">
