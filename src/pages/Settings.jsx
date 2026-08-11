@@ -136,18 +136,25 @@ function applyPreviewPlaceholders(html, vars) {
 // Shared by both editor variants below — sends a real sample of this template (using whatever's
 // currently saved, including an unsaved-but-typed edit isn't included, only the saved override)
 // to the admin's own inbox.
-function SendTestEmailButton({ templateKey }) {
+function SendTestEmailButton({ templateKey, defaultTo }) {
+  const [to, setTo] = useState(defaultTo || "");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null); // { ok, sentTo } | { ok: false }
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim());
   const send = async () => {
+    if (!valid) return;
     setSending(true); setResult(null);
-    const res = await sendTestEmail(templateKey);
+    const res = await sendTestEmail(templateKey, to.trim());
     setResult(res);
     setSending(false);
   };
   return (
-    <div className="flex items-center gap-2">
-      <button onClick={send} disabled={sending} className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <input
+        value={to} onChange={e => { setTo(e.target.value); setResult(null); }} placeholder="Send to…"
+        className="whmi-input !py-1.5 !px-2.5 text-[12px]" style={{ width: 170 }}
+      />
+      <button onClick={send} disabled={sending || !valid} className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] flex items-center gap-1.5" style={{ opacity: valid ? 1 : 0.5 }}>
         <Send size={12} />{sending ? "Sending…" : "Send Test Email"}
       </button>
       {result && (
@@ -163,7 +170,7 @@ function SendTestEmailButton({ templateKey }) {
 // edited as raw HTML with {{placeholder}} tokens, giving a full WYSIWYG-ish rewrite instead of
 // only being able to tweak 3 short fields (which, in practice, meant most of what admins actually
 // wanted to change had no override field at all).
-function EmailTemplateHtmlEditor({ def, override, onSave }) {
+function EmailTemplateHtmlEditor({ def, override, onSave, defaultTestTo }) {
   const defaultHtml = EMAIL_TEMPLATE_DEFAULT_HTML[def.key];
   const [subject, setSubject] = useState(override?.subject ?? def.defaultSubject);
   const [html, setHtml] = useState(override?.html ?? defaultHtml);
@@ -214,7 +221,7 @@ function EmailTemplateHtmlEditor({ def, override, onSave }) {
             <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>Placeholders: <code>{def.placeholderHelp}</code></p>
           </div>
           <div className="flex justify-end gap-2 flex-wrap">
-            <SendTestEmailButton templateKey={def.key} />
+            <SendTestEmailButton templateKey={def.key} defaultTo={defaultTestTo} />
             <button onClick={reset} className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] flex items-center gap-1.5"><RotateCcw size={12} />Reset to Default</button>
             <button onClick={save} disabled={!dirty} className="whmi-btn-primary !py-1.5 !px-3 text-[12px] flex items-center gap-1.5" style={{ opacity: dirty ? 1 : 0.5 }}><Save size={12} />Save</button>
           </div>
@@ -226,7 +233,7 @@ function EmailTemplateHtmlEditor({ def, override, onSave }) {
 
 // The 2 remaining templates (reflection_copy, reflections_report) - unchanged subject/heading/
 // intro-only editor.
-function EmailTemplateEditor({ def, override, onSave }) {
+function EmailTemplateEditor({ def, override, onSave, defaultTestTo }) {
   // Pre-filled with the actual wording that'll be sent (the override if one's set, otherwise
   // the default copy) — editing a blank field with the real text only shown as faint placeholder
   // text told you nothing about what you were actually changing.
@@ -290,7 +297,7 @@ function EmailTemplateEditor({ def, override, onSave }) {
             <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>Use <code>{"{title}"}</code> anywhere you want the event's name to appear.</p>
           </div>
           <div className="flex justify-end gap-2 flex-wrap">
-            <SendTestEmailButton templateKey={def.key} />
+            <SendTestEmailButton templateKey={def.key} defaultTo={defaultTestTo} />
             <button
               onClick={() => { setSubject(def.defaultSubject); setHeading(def.defaultHeading); setIntro(def.defaultIntro); setDirty(true); }}
               className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] flex items-center gap-1.5"
@@ -867,8 +874,8 @@ export default function Settings({
               <div className="space-y-2.5">
                 {EMAIL_TEMPLATE_DEFS.map(def => (
                   def.supportsHtml
-                    ? <EmailTemplateHtmlEditor key={def.key} def={def} override={emailTemplateOverrides[def.key]} onSave={onSaveEmailTemplateOverride} />
-                    : <EmailTemplateEditor key={def.key} def={def} override={emailTemplateOverrides[def.key]} onSave={onSaveEmailTemplateOverride} />
+                    ? <EmailTemplateHtmlEditor key={def.key} def={def} override={emailTemplateOverrides[def.key]} onSave={onSaveEmailTemplateOverride} defaultTestTo={session?.email} />
+                    : <EmailTemplateEditor key={def.key} def={def} override={emailTemplateOverrides[def.key]} onSave={onSaveEmailTemplateOverride} defaultTestTo={session?.email} />
                 ))}
               </div>
             </>

@@ -1,7 +1,10 @@
-// Admin/owner-only: sends a sample copy of any of the 6 email templates to the caller's own
-// address, using whatever is CURRENTLY saved in Settings > Email Templates (including a
-// full-HTML override, if one's set) - so an admin can verify their edits actually look right in a
-// real inbox without needing to create a real event, register for it, wait for a cron, etc.
+// Admin/owner-only: sends a sample copy of any of the 6 email templates - defaulting to the
+// caller's own address, but overridable to any address - using whatever is CURRENTLY saved in
+// Settings > Email Templates (including a full-HTML override, if one's set), so an admin can
+// verify their edits actually look right in a real inbox without needing to create a real event,
+// register for it, wait for a cron, etc. Event-detail/reflection links use a real, existing event
+// (whichever's soonest, or most recent if none are upcoming) so "View event details" etc. in the
+// test email actually go somewhere real instead of a dead placeholder URL.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/mailer.ts";
 import {
@@ -20,6 +23,7 @@ const CORS_HEADERS = {
 };
 
 const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+const SITE_URL = Deno.env.get("SITE_URL") || "https://whmi-cpd-dashboard.vercel.app";
 
 const SAMPLE_TITLE = "Ultrasound-Guided Procedures Workshop";
 const SAMPLE_SECTIONS = [
@@ -51,15 +55,30 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "forbidden" }), { status: 403, headers: CORS_HEADERS });
     }
 
-    const { templateKey } = await req.json();
+    const { templateKey, to: requestedTo } = await req.json();
     if (!TEMPLATE_KEYS.includes(templateKey)) {
       return new Response(JSON.stringify({ ok: false, error: "unknown templateKey" }), { status: 400, headers: CORS_HEADERS });
     }
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (requestedTo && !EMAIL_RE.test(requestedTo)) {
+      return new Response(JSON.stringify({ ok: false, error: "invalid email address" }), { status: 400, headers: CORS_HEADERS });
+    }
 
-    const to = callerRow.email;
+    const to = requestedTo || callerRow.email;
     const name = callerRow.name || "there";
     const titleForOverride = templateKey === "reflections_report" ? name : SAMPLE_TITLE;
     const override = await getEmailOverride(supabaseAdmin, templateKey as Parameters<typeof getEmailOverride>[1], titleForOverride);
+
+    // A real event to link to, so "View event details"/"Join online"/reflection links in the test
+    // email go somewhere that actually exists, rather than a dead placeholder URL. Prefers
+    // whatever's soonest upcoming; falls back to the most recent past event if there are none.
+    const { data: upcoming } = await supabaseAdmin.from("events").select("id, meeting_url")
+      .not("status", "in", "(Completed,Archived)").order("date").limit(1).maybeSingle();
+    const { data: fallbackEvent } = upcoming ? { data: null } : await supabaseAdmin.from("events").select("id, meeting_url")
+      .in("status", ["Completed", "Archived"]).order("date", { ascending: false }).limit(1).maybeSingle();
+    const sampleEvent = upcoming || fallbackEvent;
+    const eventUrl = sampleEvent ? `${SITE_URL}/event/${sampleEvent.id}` : SITE_URL;
+    const reflectUrl = sampleEvent ? `${SITE_URL}/event/${sampleEvent.id}/reflect` : `${SITE_URL}`;
 
     let subject = "";
     let html = "";
@@ -71,7 +90,7 @@ Deno.serve(async (req) => {
         html = registrationConfirmationHtml({
           name, title: SAMPLE_TITLE, date: "Thursday 15 August 2026", time: "5:00 PM - 7:00 PM",
           location: "Footscray Hospital - Auditorium", address: "160 Gordon St, Footscray VIC 3011",
-          presenter: "Dr. Jane Smith", eventUrl: "https://whmi-cpd-dashboard.vercel.app", meetingUrl: "https://zoom.us/example",
+          presenter: "Dr. Jane Smith", eventUrl, meetingUrl: sampleEvent?.meeting_url || null,
           override,
         });
         text = `Hi ${firstName(name)},\n\nThis is a test send of the Registration Confirmation email.`;
@@ -79,13 +98,13 @@ Deno.serve(async (req) => {
       }
       case "post_event_thank_you": {
         subject = thankYouEmailSubject(SAMPLE_TITLE, override);
-        html = thankYouEmailHtml(name, SAMPLE_TITLE, "https://whmi-cpd-dashboard.vercel.app/event/sample/reflect", override);
+        html = thankYouEmailHtml(name, SAMPLE_TITLE, reflectUrl, override);
         text = `Hi ${firstName(name)},\n\nThis is a test send of the Post-Event Thank You email.`;
         break;
       }
       case "reflection_reminder": {
         subject = reflectionReminderSubject(SAMPLE_TITLE, override);
-        html = reflectionReminderHtml({ name, title: SAMPLE_TITLE, link: "https://whmi-cpd-dashboard.vercel.app/event/sample/reflect", override });
+        html = reflectionReminderHtml({ name, title: SAMPLE_TITLE, link: reflectUrl, override });
         text = `Hi ${firstName(name)},\n\nThis is a test send of the Reflection Reminder email.`;
         break;
       }
