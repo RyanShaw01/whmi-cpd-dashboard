@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
-import { ClipboardList, MessageSquareText, Lightbulb } from "lucide-react";
+import { ClipboardList, MessageSquareText, Lightbulb, Link2 } from "lucide-react";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
 import HappeningNowSection from "../components/HappeningNowSection";
-import { fmtDate, hasEventEnded } from "../lib/helpers";
+import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
+import { fmtDate, hasEventEnded, daysUntil, formatCountdown, canJoinMeeting, splitFeaturedEvents } from "../lib/helpers";
 
 export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea }) {
   const staff = staffDirectory.find(s => s.id === user.staffId);
@@ -15,12 +16,45 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
   const myReflectedEventIds = new Set((reflections || []).filter(r => r.email?.toLowerCase() === user.email.toLowerCase()).map(r => r.eventId));
   const needsFeedback = events.filter(e => myRegisteredEventIds.has(e.id) && hasEventEnded(e.date, e.end) && !myReflectedEventIds.has(e.id));
 
+  // Same plain-text "due soon" list admins see at the top of their Dashboard - events already
+  // covered by HappeningNowSection (live, or ended within the last 24h) are excluded so they
+  // aren't shown twice.
+  const { featuredIds } = splitFeaturedEvents(events);
+  const dueSoonEvents = events
+    .filter(ev => !featuredIds.has(ev.id) && ev.status === "Registration Open")
+    .map(ev => ({ ...ev, dayOffset: daysUntil(ev.date) }))
+    .filter(ev => ev.dayOffset >= 0 && ev.dayOffset <= 14)
+    .sort((a, b) => new Date(`${a.date}T${a.start}`) - new Date(`${b.date}T${b.start}`));
+
   return (
     <div className="whmi-fade-in p-6 max-w-[1000px] mx-auto space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="disp text-[22px] font-extrabold">My CPD</h1>
           <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Your certificates, past CPD, and upcoming CPD.</p>
+          {dueSoonEvents.length > 0 && (
+            <ul className="mt-2 space-y-1 pl-5" style={{ listStyleType: "disc" }}>
+              {dueSoonEvents.map(ev => {
+                const registered = myRegisteredEventIds.has(ev.id);
+                const joinable = ev.meetingUrl && registered && canJoinMeeting(ev.date, ev.start, ev.end);
+                return (
+                  <li key={ev.id} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[13px]">
+                    <button onClick={() => openEvent(ev)} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--text)" }}>{ev.title}</button>
+                    <span style={{ color: "var(--text-faint)" }}>·</span>
+                    <span className="font-extrabold" style={{ color: "var(--accent-primary)" }}>{formatCountdown(ev.date, ev.start)}</span>
+                    {onOpenRegister && (
+                      <DueSoonRegisterBadge registered={registered} onClick={() => (registered ? openEvent(ev) : onOpenRegister(ev.id))} />
+                    )}
+                    {joinable && (
+                      <a href={ev.meetingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] font-semibold" style={{ color: "var(--accent-secondary)" }}>
+                        <Link2 size={12} />Join meeting here
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
         {onOpenRegister && (
           <button onClick={() => onOpenRegister()} className="whmi-btn-primary flex items-center gap-1.5"><ClipboardList size={15} />Register for a CPD Event</button>

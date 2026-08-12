@@ -2,6 +2,7 @@ import { Video, Link2, Lightbulb } from "lucide-react";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
 import HappeningNowSection from "../components/HappeningNowSection";
+import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting } from "../lib/helpers";
 
 // Landing page for external accounts (non @wh.org.au). Shows events they've registered for
@@ -28,12 +29,16 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
         {dueSoonEvents.length > 0 && (
           <ul className="mt-2 space-y-1 pl-5" style={{ listStyleType: "disc" }}>
             {dueSoonEvents.map(ev => {
-              const joinable = ev.meetingUrl && myRegisteredEventIds.has(ev.id) && canJoinMeeting(ev.date, ev.start, ev.end);
+              const registered = myRegisteredEventIds.has(ev.id);
+              const joinable = ev.meetingUrl && registered && canJoinMeeting(ev.date, ev.start, ev.end);
               return (
                 <li key={ev.id} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[13px]">
                   <button onClick={() => openEvent(ev)} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--text)" }}>{ev.title}</button>
                   <span style={{ color: "var(--text-faint)" }}>·</span>
                   <span className="font-extrabold" style={{ color: "var(--accent-primary)" }}>{formatCountdown(ev.date, ev.start)}</span>
+                  {onOpenRegister && (
+                    <DueSoonRegisterBadge registered={registered} onClick={() => (registered ? openEvent(ev) : onOpenRegister(ev.id))} />
+                  )}
                   {joinable && (
                     <a href={ev.meetingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] font-semibold" style={{ color: "var(--accent-secondary)" }}>
                       <Link2 size={12} />Join meeting here
