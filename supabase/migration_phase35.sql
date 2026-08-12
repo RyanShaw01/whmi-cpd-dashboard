@@ -12,3 +12,9 @@
 -- insert-only. Read/update/delete stay admin/owner-only (existing policies, unchanged).
 drop policy if exists "insert: anyone" on public.staff;
 create policy "insert: anyone" on public.staff for insert with check (true);
+
+-- Also re-asserts external_participants' own "insert: anyone" policy from migration_phase2.sql -
+-- confirmed missing from the live database (an anon insert was rejected by RLS despite that
+-- migration defining it), so re-running it here idempotently, whatever the original cause was.
+drop policy if exists "insert: anyone" on public.external_participants;
+create policy "insert: anyone" on public.external_participants for insert with check (true);
