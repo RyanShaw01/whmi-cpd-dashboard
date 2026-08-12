@@ -378,6 +378,10 @@ export default function App() {
       return needsLink ? { ...u, staffId: autoLinkStaffFor(u).id } : u;
     }));
   };
+  // Same single-field patch Settings' own patchUser does, exposed at the top level so the
+  // staff/external cards (Staff Directory) can flip a linked account's type/verified status
+  // in place too, not just Settings' user-management list.
+  const handlePatchUser = (userId, patch) => handleUsersChange(users.map(u => u.id === userId ? { ...u, ...patch } : u));
   const requestSaveUserContact = (user, patch) => requestConfirm({
     title: "Save contact details?",
     message: `Save the updated email address${"secondaryEmail" in patch ? "es" : ""} for ${user.name}?`,
@@ -1052,6 +1056,33 @@ export default function App() {
   // No-login registration from the public QR landing page: sync to a signed-in session, match
   // an existing account by email, auto-create a viewer account for WH emails, or file the
   // person under External Participants if they're not WH staff.
+  // Files a brand-new registrant (no matching `users` account) into the right directory - `staff`
+  // for @wh.org.au emails (or when the registrant explicitly said they're WH staff despite a
+  // non-WH email, via isWhStaffOverride), `external_participants` otherwise - mirroring the same
+  // domain check create-manual-certificate already uses server-side, so a new registrant actually
+  // shows up in the Staff Directory/quick stats instead of always landing in External
+  // Participants regardless of who they are. Matches an existing staff/external record by name/
+  // email first, so registering more than once doesn't create duplicates.
+  const fileNewRegistrant = (name, email, isWhStaffOverride) => {
+    const isWh = isWhStaffOverride ?? email.toLowerCase().endsWith(WH_DOMAIN);
+    if (isWh) {
+      const existingStaff = staffDirectory.find(s => s.name.trim().toLowerCase() === name.trim().toLowerCase());
+      if (!existingStaff) {
+        const newStaff = { id: "st" + Date.now(), name, certificates: 0 };
+        setStaffDirectory(prev => [...prev, newStaff]);
+        insertStaff(newStaff);
+      }
+      return { isExternal: false };
+    }
+    const existingExternal = externalParticipants.find(p => p.email.toLowerCase() === email.toLowerCase());
+    if (!existingExternal) {
+      const newExternal = { id: "ext" + Date.now(), name, email };
+      setExternalParticipants(prev => [...prev, newExternal]);
+      insertExternalParticipant(newExternal);
+    }
+    return { isExternal: true };
+  };
+
   const handlePublicRegister = ({ eventId, name, email, profession, organisation, campus, attendanceType, dietary, accessibility, comments, isWhStaffAnswer }) => {
     let userId = null;
     let isExternal = false;
@@ -1060,17 +1091,15 @@ export default function App() {
       userId = session.id;
     } else {
       // Anonymous QR/no-login registration; RLS only allows an authenticated caller to
-      // self-provision a `users` row, so an unmatched email (WH or not) is filed as an
-      // external participant. If they later sign in for real via OTP with this same
-      // email, resolveOrCreateProfile creates their proper account at that point.
+      // self-provision a `users` row, so an unmatched email (WH or not) doesn't get a login
+      // account here - but it does get filed into the right directory below. If they later sign
+      // in for real via OTP with this same email, resolveOrCreateProfile creates their proper
+      // account at that point.
       const matched = users.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (matched) {
         userId = matched.id;
       } else {
-        const newExternal = { id: "ext" + Date.now(), name, email };
-        setExternalParticipants(prev => [...prev, newExternal]);
-        insertExternalParticipant(newExternal);
-        isExternal = true;
+        isExternal = fileNewRegistrant(name, email, isWhStaffAnswer).isExternal;
       }
     }
 
@@ -1101,13 +1130,7 @@ export default function App() {
     if (matchedUser) {
       userId = matchedUser.id;
     } else {
-      const existingExternal = externalParticipants.find(p => p.email.toLowerCase() === email.toLowerCase());
-      if (!existingExternal) {
-        const newExternal = { id: "ext" + Date.now(), name, email };
-        setExternalParticipants(prev => [...prev, newExternal]);
-        insertExternalParticipant(newExternal);
-      }
-      isExternal = true;
+      isExternal = fileNewRegistrant(name, email).isExternal;
     }
 
     const reg = {
@@ -1316,7 +1339,14 @@ export default function App() {
               />
             )}
             {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} onRequestDeleteMultiple={requestDeletePreviousEvents} />}
-            {page === "staff" && <StaffDirectory openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage} externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility} onSaveExternalParticipant={handleSaveExternalParticipant} onRequestDeleteExternalParticipant={requestDeleteExternalParticipant} />}
+            {page === "staff" && (
+              <StaffDirectory
+                openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage}
+                externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility}
+                onSaveExternalParticipant={handleSaveExternalParticipant} onRequestDeleteExternalParticipant={requestDeleteExternalParticipant}
+                onPatchUser={handlePatchUser} onSaveUserContact={requestSaveUserContact}
+              />
+            )}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} highlightId={page === "reports" ? highlightId : null} onNavigatePage={changePage} />}
             {page === "certificates" && (
               <Certificates
@@ -1431,6 +1461,7 @@ export default function App() {
           staff={selectedStaff} onClose={() => setSelectedStaff(null)} canEdit={canManage} onSave={handleStaffSave} onCreate={handleStaffCreate} onRequestDelete={requestDeleteStaff}
           linkableUsers={users.filter(u => ["admin", "owner"].includes(u.role) && !u.staffId)}
           fieldVisibility={staffFieldVisibility}
+          allUsers={users} onPatchUser={handlePatchUser} onSaveUserContact={requestSaveUserContact}
         />
         {profileOpen && <ProfileMenu user={session} onClose={() => setProfileOpen(false)} onLogout={handleLogout} onSave={handleProfileSave} showToast={showToast} />}
         {suggestIdeaOpen && (

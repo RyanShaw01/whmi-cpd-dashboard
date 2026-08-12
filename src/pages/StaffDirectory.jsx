@@ -17,7 +17,10 @@ export const blankStaff = () => ({
   qualifiedYear: null, hoursLast3Years: null, eventsThisYear: null, lastAttended: null, attendedEventIds: [],
 });
 
-export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirectory: rawStaffDirectory, canManage, externalParticipants = [], certificates = [], users = [], fieldVisibility = {}, onSaveExternalParticipant, onRequestDeleteExternalParticipant }) {
+export default function StaffDirectory({
+  openStaff, onOpenAdminStaff, staffDirectory: rawStaffDirectory, canManage, externalParticipants = [], certificates = [], users = [], fieldVisibility = {},
+  onSaveExternalParticipant, onRequestDeleteExternalParticipant, onPatchUser, onSaveUserContact,
+}) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [desc, setDesc] = useState(false);
@@ -72,6 +75,24 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
   }, [combined, q, sortBy, desc]);
   const manualCertRecipients = certificates.filter(c => c.isManual);
   const openStaffTile = (s) => s.isUnlinkedAdmin ? onOpenAdminStaff(s.user) : openStaff(s);
+
+  // A manual certificate recipient should already have a matching staff/external_participants
+  // record (create-manual-certificate files one server-side) - click through to whichever one
+  // actually matches. Falls back to doing nothing for older certificates issued before
+  // recipients were reliably filed, rather than opening a modal that can't save anywhere real.
+  const findRecipientRecord = (c) => {
+    const matchExternal = externalParticipants.find(p => p.email?.toLowerCase() === c.recipientEmail?.toLowerCase());
+    if (matchExternal) return { kind: "external", record: matchExternal };
+    const matchStaff = staffDirectory.find(s => s.name.trim().toLowerCase() === c.staff.trim().toLowerCase());
+    if (matchStaff) return { kind: "staff", record: matchStaff };
+    return null;
+  };
+  const openRecipient = (c) => {
+    const found = findRecipientRecord(c);
+    if (!found) return;
+    if (found.kind === "external") setSelectedExternal(found.record);
+    else openStaffTile(found.record);
+  };
   return (
     <div className="whmi-fade-in p-6 max-w-[1400px] mx-auto space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -116,7 +137,14 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
               <BarChart3 size={15} style={{ color: "var(--accent-primary)" }} /><div className="font-semibold text-[13px]">Quick Stats</div>
             </div>
           </button>
-          {statsExpanded && <div className="mt-3"><StaffQuickStats staffDirectory={staffDirectory} onSelectStaff={openStaff} query={q} /></div>}
+          {statsExpanded && (
+            <div className="mt-3">
+              <StaffQuickStats
+                staffDirectory={staffDirectory} onSelectStaff={openStaff} query={q}
+                externalParticipants={externalParticipants} certificates={certificates} onSelectExternal={setSelectedExternal}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -173,18 +201,25 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
             <>
               <p className="text-[11.5px] mt-2 mb-3" style={{ color: "var(--text-faint)" }}>People without an account who've been issued a certificate directly.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {manualCertRecipients.map(c => (
-                  <div key={c.id} className="whmi-card p-4 flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
-                      {c.staff.split(" ").map(n => n[0]).join("")}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-[13.5px] truncate">{c.staff}</div>
-                      <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{c.recipientEmail}</div>
-                      <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{c.event}</div>
-                    </div>
-                  </div>
-                ))}
+                {manualCertRecipients.map(c => {
+                  const clickable = !!findRecipientRecord(c);
+                  const Tag = clickable ? "button" : "div";
+                  return (
+                    <Tag
+                      key={c.id} {...(clickable ? { onClick: () => openRecipient(c) } : {})}
+                      className={`whmi-card p-4 text-left flex items-center gap-3 transition${clickable ? " whmi-row-hover" : ""}`}
+                    >
+                      <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>
+                        {c.staff.split(" ").map(n => n[0]).join("")}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-[13.5px] truncate">{c.staff}</div>
+                        <div className="text-[11.5px] truncate" style={{ color: "var(--text-dim)" }}>{c.recipientEmail}</div>
+                        <div className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>{c.event}</div>
+                      </div>
+                    </Tag>
+                  );
+                })}
               </div>
             </>
           )}
@@ -224,6 +259,7 @@ export default function StaffDirectory({ openStaff, onOpenAdminStaff, staffDirec
         onClose={() => setSelectedExternal(null)}
         onSave={onSaveExternalParticipant}
         onRequestDelete={(p) => { onRequestDeleteExternalParticipant?.(p); setSelectedExternal(null); }}
+        certificates={certificates} canManage={canManage} users={users} onPatchUser={onPatchUser} onSaveUserContact={onSaveUserContact}
       />
     </div>
   );

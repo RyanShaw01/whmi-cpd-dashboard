@@ -38,10 +38,12 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
                 const registered = myRegisteredEventIds.has(ev.id);
                 const joinable = ev.meetingUrl && registered && canJoinMeeting(ev.date, ev.start, ev.end);
                 return (
-                  <li key={ev.id} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[13px]">
-                    <button onClick={() => openEvent(ev)} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--text)" }}>{ev.title}</button>
-                    <span style={{ color: "var(--text-faint)" }}>·</span>
-                    <span className="font-extrabold" style={{ color: "var(--accent-primary)" }}>{formatCountdown(ev.date, ev.start)}</span>
+                  <li key={ev.id} className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
+                    <button onClick={() => openEvent(ev)} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[13px] px-1 py-1 -mx-1 rounded-lg whmi-row-hover transition text-left">
+                      <span className="font-medium" style={{ color: "var(--text)" }}>{ev.title}</span>
+                      <span style={{ color: "var(--text-faint)" }}>·</span>
+                      <span className="font-extrabold" style={{ color: "var(--accent-primary)" }}>{formatCountdown(ev.date, ev.start)}</span>
+                    </button>
                     {onOpenRegister && (
                       <DueSoonRegisterBadge registered={registered} onClick={() => (registered ? openEvent(ev) : onOpenRegister(ev.id))} />
                     )}

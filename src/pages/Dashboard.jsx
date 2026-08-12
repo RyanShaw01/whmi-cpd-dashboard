@@ -14,6 +14,7 @@ import RegisterOrUnregister from "../components/EventRegisterControl";
 import RecentlyCompletedCard from "../components/RecentlyCompletedCard";
 import PresenterLine from "../components/PresenterLine";
 import HappeningNowSection from "../components/HappeningNowSection";
+import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, isRecentlyCompleted, splitFeaturedEvents, getShowDueSoonDefault, getShowDueSoonDatesDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
 
@@ -293,31 +294,33 @@ export default function Dashboard({
         <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Here's what's happening across WHMI CPD today, {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}.</p>
 
         {getShowDueSoonDefault() && dueSoonEvents.length > 0 && (
-          <ul className="mt-2 space-y-0.5 pl-5" style={{ listStyleType: "disc" }}>
+          <ul className="mt-2 space-y-1 pl-5" style={{ listStyleType: "disc" }}>
             {dueSoonEvents.slice(0, 5).map(ev => {
-              const joinable = ev.meetingUrl && canJoinMeeting(ev.date, ev.start, ev.end);
+              const registered = registeredIds?.has(ev.id);
+              const joinable = ev.meetingUrl && registered && canJoinMeeting(ev.date, ev.start, ev.end);
               return (
-                <li key={ev.id} className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1">
-                    <button onClick={() => openEvent(ev)} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[12px] sm:text-[13px] px-1 py-1 -mx-1 rounded-lg whmi-row-hover transition text-left w-full">
-                      <span className="font-medium" style={{ color: "var(--text)" }}>{ev.title}</span>
-                      <span className="flex items-center gap-x-2 whitespace-nowrap shrink-0">
-                        <span style={{ color: "var(--text-faint)" }}>·</span>
-                        <span className="font-extrabold" style={{ color: primaryHex }}>{formatCountdown(ev.date, ev.start)}</span>
-                        {getShowDueSoonDatesDefault() && (
-                          <>
-                            <span style={{ color: "var(--text-faint)" }}>·</span>
-                            <span style={{ color: "var(--text-faint)" }}>({fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)})</span>
-                          </>
-                        )}
-                      </span>
-                    </button>
-                    {joinable && (
-                      <a href={ev.meetingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] font-semibold shrink-0 mt-0.5" style={{ color: secondaryHex }}>
-                        <Link2 size={12} />Join meeting here
-                      </a>
-                    )}
-                  </div>
+                <li key={ev.id} className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
+                  <button onClick={() => openEvent(ev)} className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-[12px] sm:text-[13px] px-1 py-1 -mx-1 rounded-lg whmi-row-hover transition text-left">
+                    <span className="font-medium" style={{ color: "var(--text)" }}>{ev.title}</span>
+                    <span className="flex items-center gap-x-2 whitespace-nowrap shrink-0">
+                      <span style={{ color: "var(--text-faint)" }}>·</span>
+                      <span className="font-extrabold" style={{ color: primaryHex }}>{formatCountdown(ev.date, ev.start)}</span>
+                      {getShowDueSoonDatesDefault() && (
+                        <>
+                          <span style={{ color: "var(--text-faint)" }}>·</span>
+                          <span style={{ color: "var(--text-faint)" }}>({fmtDate(ev.date)} · {fmtTimeRange12h(ev.start, ev.end)})</span>
+                        </>
+                      )}
+                    </span>
+                  </button>
+                  {onOpenRegister && (
+                    <DueSoonRegisterBadge registered={registered} onClick={() => (registered ? openEvent(ev) : onOpenRegister(ev.id))} />
+                  )}
+                  {joinable && (
+                    <a href={ev.meetingUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] font-semibold shrink-0" style={{ color: secondaryHex }}>
+                      <Link2 size={12} />Join meeting here
+                    </a>
+                  )}
                 </li>
               );
             })}

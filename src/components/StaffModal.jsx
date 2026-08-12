@@ -2,12 +2,16 @@ import { useState, useEffect } from "react";
 import { X, Save, Download, Trash2 } from "lucide-react";
 import { CAMPUS_OPTIONS, MODALITY_OPTIONS, GRADE_OPTIONS } from "../data/mockData";
 
-export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, onRequestDelete, linkableUsers = [], fieldVisibility = {} }) {
+export default function StaffModal({
+  staff, onClose, canEdit, onSave, onCreate, onRequestDelete, linkableUsers = [], fieldVisibility = {},
+  allUsers = [], onPatchUser, onSaveUserContact,
+}) {
   const isNew = !!staff?.isNew;
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(staff);
   const [linkedUserId, setLinkedUserId] = useState("");
-  useEffect(() => { setForm(staff); setEditing(isNew); setLinkedUserId(""); }, [staff]);
+  const [emailDraft, setEmailDraft] = useState({ userId: null, email: "", secondaryEmail: "" });
+  useEffect(() => { setForm(staff); setEditing(isNew); setLinkedUserId(""); setEmailDraft({ userId: null, email: "", secondaryEmail: "" }); }, [staff]);
   // `form` is seeded from `staff` at mount time and only resynced by the effect above, which
   // runs AFTER this render commits. Since StaffModal stays mounted with staff=null until the
   // first click, the very first open of any session hits a render where `staff` is already the
@@ -16,6 +20,22 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
   if (!staff || !form) return null;
 
   const show = (id) => fieldVisibility[id] !== false;
+
+  // If this staff record has a real login account attached (any role, not just admin/owner),
+  // surface it here so admins/owners can see their email and move them between staff/external
+  // without a separate trip to Settings. Guarded on !isNew - a brand-new record's id is null,
+  // same as every unlinked user's staffId, which would otherwise "match" the first one found.
+  const linkedUser = !isNew ? allUsers.find(u => u.staffId === staff.id) : null;
+  const contactDraft = linkedUser && emailDraft.userId === linkedUser.id ? emailDraft : { userId: linkedUser?.id, email: linkedUser?.email || "", secondaryEmail: linkedUser?.secondaryEmail || "" };
+  const setContactDraft = (patch) => setEmailDraft({ ...contactDraft, ...patch });
+  const contactDirty = linkedUser && (contactDraft.email !== linkedUser.email || contactDraft.secondaryEmail !== (linkedUser.secondaryEmail || ""));
+  const saveContact = () => {
+    const patch = {};
+    if (contactDraft.email !== linkedUser.email) patch.email = contactDraft.email;
+    if (contactDraft.secondaryEmail !== (linkedUser.secondaryEmail || "")) patch.secondaryEmail = contactDraft.secondaryEmail || null;
+    onSaveUserContact(linkedUser, patch);
+    setEmailDraft({ userId: null, email: "", secondaryEmail: "" });
+  };
 
   const toggleCampus = (code) => setForm(f => ({ ...f, campuses: f.campuses.includes(code) ? f.campuses.filter(c => c !== code) : [...f.campuses, code] }));
 
@@ -64,6 +84,30 @@ export default function StaffModal({ staff, onClose, canEdit, onSave, onCreate, 
             {show("hours") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.hours}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>CPD Hours</div></div>}
             {show("attended") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.attended}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Attended</div></div>}
             {show("certificates") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.certificates}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Certificates</div></div>}
+          </div>
+        )}
+
+        {!isNew && canEdit && linkedUser && onSaveUserContact && (
+          <div className="px-5 pb-5 space-y-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
+            <div className="font-semibold text-[12.5px] flex items-center gap-1.5">Linked Account <span className="whmi-badge" style={{ background: "var(--surface-2)", color: "var(--text-dim)" }}>{linkedUser.role}</span></div>
+            <div>
+              <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Account type</label>
+              <select value={linkedUser.userType || "internal"} onChange={e => onPatchUser(linkedUser.id, { userType: e.target.value })} className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12px]">
+                <option value="internal">Internal (Western Health staff)</option>
+                <option value="external">External</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Primary email</label>
+              <input value={contactDraft.email} onChange={e => setContactDraft({ email: e.target.value })} className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12px]" />
+            </div>
+            <div>
+              <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Secondary email</label>
+              <input value={contactDraft.secondaryEmail} onChange={e => setContactDraft({ secondaryEmail: e.target.value })} placeholder="jane.doe@othermail.com" className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12px]" />
+            </div>
+            {contactDirty && (
+              <button onClick={saveContact} className="whmi-btn-primary w-full flex items-center justify-center gap-1.5 text-[12px]"><Save size={12} />Save Account Email</button>
+            )}
           </div>
         )}
 
