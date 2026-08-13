@@ -32,7 +32,7 @@ function ScaleField({ label: text, lowLabel, highLabel, value, onChange }) {
   );
 }
 
-export default function ReflectionPage({ events, session, onSubmitReflection }) {
+export default function ReflectionPage({ events, session, onSubmitReflection, loading }) {
   const { eventId } = useParams();
   const event = events.find(e => e.id === eventId);
   const [name, setName] = useState(session?.name || "");
@@ -49,6 +49,22 @@ export default function ReflectionPage({ events, session, onSubmitReflection }) 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (!event) {
+    // While the app's initial data load is still in flight, this looks identical to a genuinely
+    // missing event - show the branded loading state instead of flashing "Event not found" at
+    // people opening their reflection link fresh (no app state loaded yet).
+    if (loading) {
+      return (
+        <div className="whmi-root light min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)", color: "var(--text)" }}>
+          <div className="flex items-center justify-center gap-2.5 animate-pulse">
+            <div className="whmi-logo-full shrink-0" style={{ width: 72, height: 37 }} />
+            <div className="text-left leading-tight">
+              <div className="font-extrabold text-[13px]" style={{ color: "var(--text)" }}>Medical Imaging CPD</div>
+              <div className="text-[10px]" style={{ color: "var(--text-faint)" }}>Western Health</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="whmi-root light min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)", color: "var(--text)" }}>
         <div className="text-center">

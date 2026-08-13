@@ -35,7 +35,13 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
     if (loading) {
       return (
         <div className="whmi-root light min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)", color: "var(--text)" }}>
-          <div className="whmi-logo-icon animate-pulse" style={{ width: 48, height: 26, opacity: 0.5 }} />
+          <div className="flex items-center justify-center gap-2.5 animate-pulse">
+            <div className="whmi-logo-full shrink-0" style={{ width: 72, height: 37 }} />
+            <div className="text-left leading-tight">
+              <div className="font-extrabold text-[13px]" style={{ color: "var(--text)" }}>Medical Imaging CPD</div>
+              <div className="text-[10px]" style={{ color: "var(--text-faint)" }}>Western Health</div>
+            </div>
+          </div>
         </div>
       );
     }
