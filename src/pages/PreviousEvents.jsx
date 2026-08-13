@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { Table2, CalendarDays, Plus, Pencil, Trash2, CheckSquare, Square } from "lucide-react";
+import { Table2, CalendarDays, Plus, Pencil, Trash2, CheckSquare, Square, Maximize2, X } from "lucide-react";
 import YearCalendar from "../components/YearCalendar";
-import { fmtDate, fmtTimeRange12h } from "../lib/helpers";
+import PresenterLine from "../components/PresenterLine";
+import { fmtDate, fmtTimeRange12h, eventBannerUrl } from "../lib/helpers";
 
 const SORT_OPTIONS = [
   { id: "date-desc", label: "Date (Newest - Oldest)" },
@@ -10,7 +11,7 @@ const SORT_OPTIONS = [
   { id: "name-desc", label: "Name (Z - A)" },
 ];
 
-export default function PreviousEvents({ previousEvents, onOpenArchive, canManage, onCreatePreviousEvent, onRequestDelete, onRequestDeleteMultiple }) {
+export default function PreviousEvents({ previousEvents, files, onOpenArchive, canManage, onCreatePreviousEvent, onRequestDelete, onRequestDeleteMultiple }) {
   const years = [...new Set(previousEvents.map(ev => new Date(`${ev.date}T00:00:00`).getFullYear()))].sort((a, b) => b - a);
   const currentYear = new Date().getFullYear();
   const [view, setView] = useState("table");
@@ -18,6 +19,7 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
   const [sortBy, setSortBy] = useState("date-desc");
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [expandedPoster, setExpandedPoster] = useState(null); // { url, event } | null
   const calendarYear = year === "all" ? (years.includes(currentYear) ? currentYear : (years[0] || currentYear)) : year;
   const toggleSelected = (id) => setSelectedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const exitSelecting = () => { setSelecting(false); setSelectedIds(new Set()); };
@@ -98,13 +100,15 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
           <table className="w-full text-[13px]">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                {[...(selecting ? [""] : []), "Event", "Date", "Time", "Location", "Presenter", "Attendance", "Feedback", ...(canManage ? [""] : [])].map((h, i) => (
+                {[...(selecting ? [""] : []), "", "Event", "Date", "Time", "Location", "Presenter", "Attendance", "Feedback", ...(canManage ? [""] : [])].map((h, i) => (
                   <th key={h || `col-${i}`} className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filteredEvents.map(ev => (
+              {filteredEvents.map(ev => {
+                const bannerUrl = eventBannerUrl(files, ev.id);
+                return (
                 <tr
                   key={ev.id} className="whmi-row-hover cursor-pointer" style={{ borderBottom: "1px solid var(--border)" }}
                   onClick={() => selecting ? toggleSelected(ev.id) : onOpenArchive(ev)}
@@ -114,11 +118,35 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
                       {selectedIds.has(ev.id) ? <CheckSquare size={16} style={{ color: "var(--accent-primary)" }} /> : <Square size={16} style={{ color: "var(--text-faint)" }} />}
                     </td>
                   )}
+                  <td className="px-4 py-3">
+                    {bannerUrl && (
+                      <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0" style={{ border: "1px solid var(--border)" }}>
+                        <img
+                          src={bannerUrl} alt="" className="w-full h-full object-cover cursor-pointer"
+                          style={{
+                            objectPosition: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%`,
+                            transform: `scale(${ev.bannerZoom ?? 1})`, transformOrigin: `${ev.bannerFocalX ?? 50}% ${ev.bannerFocalY ?? 50}%`,
+                          }}
+                          onClick={e => { e.stopPropagation(); setExpandedPoster({ url: bannerUrl, event: ev }); }}
+                        />
+                        <button
+                          onClick={e => { e.stopPropagation(); setExpandedPoster({ url: bannerUrl, event: ev }); }}
+                          className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-full flex items-center justify-center transition hover:scale-110"
+                          style={{ background: "rgba(0,0,0,.45)" }}
+                          onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,.75)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,0,0,.45)"; }}
+                          title="View full poster" type="button"
+                        >
+                          <Maximize2 size={10} color="white" />
+                        </button>
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-semibold break-words max-w-[260px]">{ev.title}<div className="text-[11px] font-normal mt-0.5" style={{ color: "var(--text-faint)" }}>{ev.topic}</div></td>
                   <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtDate(ev.date)}</td>
                   <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</td>
                   <td className="px-4 py-3 break-words max-w-[180px]" style={{ color: "var(--text-dim)" }}>{ev.location}</td>
-                  <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{ev.presenter}</td>
+                  <td className="px-4 py-3 max-w-[200px]" style={{ color: "var(--text-dim)" }}><PresenterLine presenter={ev.presenter} className="break-words" /></td>
                   <td className="px-4 py-3">{ev.attendance}/{ev.capacity}</td>
                   <td className="px-4 py-3">
                     <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="View feedback">★ {ev.feedback}</button>
@@ -131,7 +159,8 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
                     </td>
                   )}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -141,6 +170,18 @@ export default function PreviousEvents({ previousEvents, onOpenArchive, canManag
         ) : (
           <YearCalendar year={calendarYear} events={previousEvents} onSelectEvent={onOpenArchive} />
         )
+      )}
+
+      {expandedPoster && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,.85)" }}
+          onClick={(e) => { e.stopPropagation(); setExpandedPoster(null); }}
+        >
+          <img src={expandedPoster.url} alt="" className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
+          <button onClick={(e) => { e.stopPropagation(); setExpandedPoster(null); }} className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
+            <X size={18} color="white" />
+          </button>
+        </div>
       )}
     </div>
   );
