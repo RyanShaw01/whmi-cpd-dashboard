@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-import { fmtDate } from "../lib/helpers";
+import { fmtDate, splitPeopleList, parsePerson } from "../lib/helpers";
 import { sendReflectionCertificate } from "../lib/db";
 
 const APPROPRIATENESS_OPTIONS = ["Too basic", "Slightly too basic", "Appropriate", "Slightly too advanced", "Too advanced"];
@@ -107,7 +107,25 @@ export default function ReflectionPage({ events, session, onSubmitReflection }) 
           <div className="whmi-card p-3" style={{ background: "var(--surface-2)" }}>
             <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{fmtDate(event.date)}</span>
             <h2 className="disp text-[16px] font-extrabold break-words">{event.title}</h2>
-            <p className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>Presented by {event.presenter}</p>
+            {(() => {
+              const presenters = splitPeopleList(event.presenter).map(parsePerson);
+              if (presenters.length === 0) return null;
+              if (presenters.length === 1) {
+                return (
+                  <p className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>
+                    Presented by {presenters[0].name}{presenters[0].title && <span style={{ color: "var(--text-faint)" }}> — {presenters[0].title}</span>}
+                  </p>
+                );
+              }
+              return (
+                <div className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>
+                  Presented by:
+                  <ul className="mt-1 break-words" style={{ paddingLeft: 16, listStyleType: "disc" }}>
+                    {presenters.map((p, i) => <li key={i}>{p.name}{p.title && <span style={{ color: "var(--text-faint)" }}> — {p.title}</span>}</li>)}
+                  </ul>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="space-y-2 text-[12.5px]" style={{ color: "var(--text-dim)" }}>
@@ -138,14 +156,15 @@ export default function ReflectionPage({ events, session, onSubmitReflection }) 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={label} style={{ color: errors.name ? "#D9534F" : "var(--text-faint)" }}>1. What is your full name?{required}</label>
+                  <label className={label} style={{ color: errors.name ? "#D9534F" : "var(--text-faint)" }}>1. Full name{required}</label>
                   <input disabled={!!session} value={name} onChange={e => setName(e.target.value)} className={fieldClass("name")} style={fieldStyle("name")} />
                 </div>
                 <div>
-                  <label className={label} style={{ color: errors.email ? "#D9534F" : "var(--text-faint)" }}>2. What is your email address?{required}</label>
+                  <label className={label} style={{ color: errors.email ? "#D9534F" : "var(--text-faint)" }}>2. Email address{required}</label>
                   <input disabled={!!session} type="email" value={email} onChange={e => setEmail(e.target.value)} className={fieldClass("email")} style={fieldStyle("email")} />
                 </div>
               </div>
+              <p className="text-[10.5px] -mt-2.5" style={{ color: "var(--text-faint)" }}>This is so we can send your CPD certificate to the right person with the right information.</p>
 
               <div>
                 <label className={label} style={{ color: errors.content ? "#D9534F" : "var(--text-faint)" }}>3. As required by the MRPBA CPD requirements, please provide a brief reflection on your learning from this activity and how it may influence your professional practice.{required}</label>
