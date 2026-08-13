@@ -37,7 +37,7 @@ import { TOUR_STEPS } from "./data/tourSteps";
 import { loadPersonal, savePersonal } from "./lib/storage";
 import { buildNotificationGroups, buildViewerNotificationGroups } from "./lib/notifications";
 import { eventAttendedCount, eventAvgRating } from "./lib/analytics";
-import { eventBannerFile, eventCpdHours } from "./lib/helpers";
+import { eventBannerFile, eventCpdHours, isRecentlyCompleted } from "./lib/helpers";
 import { supabase, supabaseConfigured } from "./lib/supabaseClient";
 import {
   fetchUsers, fetchStaff, fetchEvents, fetchPreviousEvents, fetchCertificates, fetchRegistrations, fetchExternalParticipants,
@@ -871,6 +871,26 @@ export default function App() {
     feedback: eventAvgRating(ev.id, reflections) ?? ev.feedback,
   })), [previousEvents, registrations, reflections]);
 
+  // An event that's finished stays in Happening Now's "Recently Ended" card for 24h (see
+  // isRecentlyCompleted) before complete-finished-events actually flips its status to Completed -
+  // until that runs, it's still technically "upcoming" as far as the events table is concerned,
+  // so the Previous Events page (which only ever queried status IN (Completed, Archived)) had no
+  // way to find it early. Folds those in for the *browsing list* only, reshaped the same way
+  // previousEventsWithLiveStats already is - not into previousEventsWithLiveStats itself, so
+  // Reports/analytics/MyCpd's "Past CPD" keep counting hours only once an event's data is
+  // actually finalised, and this stays purely a "let me find and open it" convenience.
+  const recentlyEndedAsPrevious = useMemo(() => events
+    .filter(ev => isRecentlyCompleted(ev.date, ev.end))
+    .map(ev => ({
+      ...ev,
+      attendance: eventAttendedCount(ev.id, registrations) || ev.registered || 0,
+      feedback: eventAvgRating(ev.id, reflections) ?? null,
+    })), [events, registrations, reflections]);
+  const previousEventsForBrowsing = useMemo(
+    () => [...recentlyEndedAsPrevious, ...previousEventsWithLiveStats],
+    [recentlyEndedAsPrevious, previousEventsWithLiveStats],
+  );
+
   const requestDeleteRegistration = (reg) => requestDelete(`the registration for "${reg.name}"`, () => {
     setRegistrations(prev => prev.filter(r => r.id !== reg.id));
     deleteRegistration(reg.id);
@@ -1272,7 +1292,7 @@ export default function App() {
     const viewerEvents = canManage ? eventsWithLiveCounts : eventsWithLiveCounts.filter(e => e.openToExternal && e.status === "Registration Open");
     // Internal staff (viewer role, @wh.org.au accounts) see the full previous-events history;
     // external viewers stay scoped to events WH has opted to share externally.
-    const viewerPreviousEvents = (canManage || viewSession.userType === "internal") ? previousEventsWithLiveStats : previousEventsWithLiveStats.filter(e => e.openToExternal);
+    const viewerPreviousEvents = (canManage || viewSession.userType === "internal") ? previousEventsForBrowsing : previousEventsForBrowsing.filter(e => e.openToExternal);
     const badgePages = redDotsEnabled ? {
       upcoming: notificationGroups.some(g => g.id === "event-draft" || g.id === "event-approval"),
       certificates: notificationGroups.some(g => g.id === "cert-approval"),
