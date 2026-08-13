@@ -173,11 +173,11 @@ export default function ReflectionPage({ events, session, onSubmitReflection, lo
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={label} style={{ color: errors.name ? "#D9534F" : "var(--text-faint)" }}>1. Full name{required}</label>
-                  <input disabled={!!session} value={name} onChange={e => setName(e.target.value)} className={fieldClass("name")} style={fieldStyle("name")} />
+                  <input value={name} onChange={e => setName(e.target.value)} className={fieldClass("name")} style={fieldStyle("name")} />
                 </div>
                 <div>
                   <label className={label} style={{ color: errors.email ? "#D9534F" : "var(--text-faint)" }}>2. Email address{required}</label>
-                  <input disabled={!!session} type="email" value={email} onChange={e => setEmail(e.target.value)} className={fieldClass("email")} style={fieldStyle("email")} />
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={fieldClass("email")} style={fieldStyle("email")} />
                 </div>
               </div>
               <p className="text-[10.5px] -mt-2.5" style={{ color: "var(--text-faint)" }}>This is so we can send your CPD certificate to the right person with the right information.</p>
