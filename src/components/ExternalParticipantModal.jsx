@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { X, Trash2, Save, UserCircle2 } from "lucide-react";
+import { X, Trash2, Save, UserCircle2, ArrowLeftRight } from "lucide-react";
 
 export default function ExternalParticipantModal({
-  participant, onClose, onSave, onRequestDelete, certificates = [], canManage, users = [], onPatchUser, onSaveUserContact,
+  participant, onClose, onSave, onRequestDelete, certificates = [], canManage, users = [], onPatchUser, onSaveUserContact, onMoveToStaff,
 }) {
   const [name, setName] = useState(participant?.name || "");
   const [email, setEmail] = useState(participant?.email || "");
@@ -93,6 +93,11 @@ export default function ExternalParticipantModal({
             <button type="submit" className="whmi-btn-primary flex-1 flex items-center justify-center gap-1.5"><Save size={13} />Save</button>
             <button type="button" onClick={() => onRequestDelete(participant)} className="whmi-btn-ghost flex items-center justify-center gap-1.5" style={{ color: "#D9534F" }}><Trash2 size={13} />Delete</button>
           </div>
+          {canManage && onMoveToStaff && (
+            <button type="button" onClick={() => onMoveToStaff(participant)} className="whmi-btn-ghost w-full flex items-center justify-center gap-1.5">
+              <ArrowLeftRight size={13} />Move to Internal Staff
+            </button>
+          )}
         </form>
       </div>
     </div>

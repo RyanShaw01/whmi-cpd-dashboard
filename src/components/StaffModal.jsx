@@ -1,17 +1,21 @@
 import { useState, useEffect } from "react";
-import { X, Save, Download, Trash2 } from "lucide-react";
+import { X, Save, Download, Trash2, ArrowLeftRight } from "lucide-react";
 import { CAMPUS_OPTIONS, MODALITY_OPTIONS, GRADE_OPTIONS } from "../data/mockData";
 
 export default function StaffModal({
   staff, onClose, canEdit, onSave, onCreate, onRequestDelete, linkableUsers = [], fieldVisibility = {},
-  allUsers = [], onPatchUser, onSaveUserContact,
+  allUsers = [], onPatchUser, onSaveUserContact, onMoveToExternal,
 }) {
   const isNew = !!staff?.isNew;
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(staff);
   const [linkedUserId, setLinkedUserId] = useState("");
   const [emailDraft, setEmailDraft] = useState({ userId: null, email: "", secondaryEmail: "" });
-  useEffect(() => { setForm(staff); setEditing(isNew); setLinkedUserId(""); setEmailDraft({ userId: null, email: "", secondaryEmail: "" }); }, [staff]);
+  // Staff records have no email column of their own - moving one to External Participants
+  // (which requires an email) uses the linked account's email if there is one, otherwise the
+  // admin has to type one in here first.
+  const [moveEmail, setMoveEmail] = useState("");
+  useEffect(() => { setForm(staff); setEditing(isNew); setLinkedUserId(""); setEmailDraft({ userId: null, email: "", secondaryEmail: "" }); setMoveEmail(""); }, [staff]);
   // `form` is seeded from `staff` at mount time and only resynced by the effect above, which
   // runs AFTER this render commits. Since StaffModal stays mounted with staff=null until the
   // first click, the very first open of any session hits a render where `staff` is already the
@@ -195,6 +199,29 @@ export default function StaffModal({
             </div>
           )}
         </div>
+
+        {!isNew && canEdit && onMoveToExternal && (
+          <div className="px-5 pb-5 space-y-1.5" style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+            {linkedUser?.email ? (
+              <button onClick={() => onMoveToExternal(staff, linkedUser.email)} className="whmi-btn-ghost w-full flex items-center justify-center gap-1.5">
+                <ArrowLeftRight size={13} />Move to External Participants
+              </button>
+            ) : (
+              <>
+                <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Email (required to move to External)</label>
+                <input value={moveEmail} onChange={e => setMoveEmail(e.target.value)} placeholder="name@example.com" className="whmi-input w-full px-2.5 py-1.5 text-[12px]" />
+                <button
+                  onClick={() => onMoveToExternal(staff, moveEmail.trim())}
+                  disabled={!moveEmail.trim()}
+                  className="whmi-btn-ghost w-full flex items-center justify-center gap-1.5"
+                  style={{ opacity: moveEmail.trim() ? 1 : 0.5 }}
+                >
+                  <ArrowLeftRight size={13} />Move to External Participants
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         {!isNew && (
           <div className="px-5 pb-5">

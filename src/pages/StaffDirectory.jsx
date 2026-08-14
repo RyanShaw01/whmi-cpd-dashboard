@@ -19,7 +19,7 @@ export const blankStaff = () => ({
 
 export default function StaffDirectory({
   openStaff, onOpenAdminStaff, staffDirectory: rawStaffDirectory, canManage, externalParticipants = [], certificates = [], users = [], fieldVisibility = {},
-  onSaveExternalParticipant, onRequestDeleteExternalParticipant, onPatchUser, onSaveUserContact,
+  onSaveExternalParticipant, onRequestDeleteExternalParticipant, onPatchUser, onSaveUserContact, onMoveToStaff,
 }) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("name");
@@ -260,6 +260,7 @@ export default function StaffDirectory({
         onSave={onSaveExternalParticipant}
         onRequestDelete={(p) => { onRequestDeleteExternalParticipant?.(p); setSelectedExternal(null); }}
         certificates={certificates} canManage={canManage} users={users} onPatchUser={onPatchUser} onSaveUserContact={onSaveUserContact}
+        onMoveToStaff={onMoveToStaff ? (p) => { onMoveToStaff(p); setSelectedExternal(null); } : undefined}
       />
     </div>
   );

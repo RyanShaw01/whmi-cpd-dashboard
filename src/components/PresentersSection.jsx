@@ -37,7 +37,7 @@ function PresenterRow({ presenter, emailLog, onSend, onRefresh }) {
                 ? { color: "var(--text-faint)", border: "1px solid var(--border)" }
                 : { color: "white", background: "var(--accent-secondary)" }}
             >
-              {hasSent ? <MailCheck size={11} /> : <Mail size={11} />}Thank You
+              {hasSent ? <MailCheck size={11} /> : <Mail size={11} />}Presenter Thank-You Email
             </button>
             {hasSent && (
               <span className="text-[9.5px]" style={{ color: "var(--text-faint)" }}>
@@ -49,6 +49,11 @@ function PresenterRow({ presenter, emailLog, onSend, onRefresh }) {
       </div>
       {confirming && (
         <div className="mt-1.5 pt-1.5 space-y-1.5" style={{ borderTop: "1px solid var(--border)" }}>
+          {hasSent && (
+            <div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>
+              Already sent{history.length > 1 ? ` ${history.length}x` : ""}, last {relativeTime(history[0].sentAt)} - resend?
+            </div>
+          )}
           <label className="flex items-center gap-1.5 text-[11px] cursor-pointer" style={{ color: "var(--text-dim)" }}>
             <input type="checkbox" checked={includeCert} onChange={e => setIncludeCert(e.target.checked)} />
             Include CPD certificate

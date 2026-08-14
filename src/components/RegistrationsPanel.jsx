@@ -85,7 +85,11 @@ function PostEventEmailButton({ registration, emailLog, onSend, onRefresh }) {
   if (confirming) {
     return (
       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-        <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Send?</span>
+        <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>
+          {hasSent
+            ? `Already sent${history.length > 1 ? ` ${history.length}x` : ""}, last ${relativeTime(history[0].sentAt)} - resend?`
+            : "Send?"}
+        </span>
         <button onClick={confirmSend} disabled={sending} className="whmi-btn-ghost !py-1 !px-2 text-[10.5px]" style={{ color: "var(--accent-secondary)" }}>{sending ? "..." : "Confirm"}</button>
         <button onClick={() => setConfirming(false)} className="whmi-btn-ghost !py-1 !px-2 text-[10.5px]">Cancel</button>
       </div>

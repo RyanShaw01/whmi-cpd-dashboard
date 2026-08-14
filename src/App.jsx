@@ -615,6 +615,53 @@ export default function App() {
     setExternalParticipants(prev => prev.filter(x => x.id !== p.id));
     deleteExternalParticipant(p.id);
   });
+  // Re-categorises a directory record between the two tables (staff has no email column, so
+  // moving staff -> external needs one supplied - either from a linked account, or typed in by
+  // the admin in StaffModal). Any linked login account moves with the record and gets its
+  // userType flipped to match, so the person's account/directory placement never disagrees.
+  const requestMoveStaffToExternal = (staff, email) => requestConfirm({
+    title: "Move to External Participants?",
+    message: `Move "${staff.name}" from Staff to External Participants? Their CPD history stays with them, but staff-only fields (profession, campuses, grade, etc.) will no longer apply.`,
+    confirmLabel: "Move",
+    onConfirm: () => {
+      const newExternal = { id: "ep" + Date.now(), name: staff.name, email, createdAt: new Date().toISOString() };
+      setExternalParticipants(prev => [...prev, newExternal]);
+      insertExternalParticipant(newExternal);
+      const linkedUser = users.find(u => u.staffId === staff.id);
+      if (linkedUser) {
+        setUsers(prev => prev.map(u => u.id === linkedUser.id ? { ...u, staffId: null, userType: "external" } : u));
+        updateUser(linkedUser.id, { staffId: null, userType: "external" });
+      }
+      setStaffDirectory(prev => prev.filter(s => s.id !== staff.id));
+      deleteStaff(staff.id);
+      setSelectedStaff(null);
+      pushAudit({ actorId: session?.id, action: "staff.moved_to_external", entityType: "staff", entityId: staff.id, details: { name: staff.name } });
+      showToast(`${staff.name} moved to External Participants.`);
+    },
+  });
+  const requestMoveExternalToStaff = (participant) => requestConfirm({
+    title: "Move to Internal Staff?",
+    message: `Move "${participant.name}" from External Participants to Staff? Add their profession, campus, etc. afterwards from their new staff record.`,
+    confirmLabel: "Move",
+    onConfirm: () => {
+      const newStaff = {
+        id: "s" + Date.now(), name: participant.name, profession: "", department: null, campuses: [],
+        hours: 0, attended: 0, certificates: 0, modality: null, grade: null,
+        qualifiedYear: null, hoursLast3Years: null, eventsThisYear: null, lastAttended: null, attendedEventIds: [],
+      };
+      setStaffDirectory(prev => [...prev, newStaff]);
+      insertStaff(newStaff);
+      const linkedUser = users.find(u => u.email.toLowerCase() === participant.email.toLowerCase() || u.secondaryEmail?.toLowerCase() === participant.email.toLowerCase());
+      if (linkedUser) {
+        setUsers(prev => prev.map(u => u.id === linkedUser.id ? { ...u, staffId: newStaff.id, userType: "internal" } : u));
+        updateUser(linkedUser.id, { staffId: newStaff.id, userType: "internal" });
+      }
+      setExternalParticipants(prev => prev.filter(p => p.id !== participant.id));
+      deleteExternalParticipant(participant.id);
+      pushAudit({ actorId: session?.id, action: "external.moved_to_staff", entityType: "staff", entityId: newStaff.id, details: { name: newStaff.name } });
+      showToast(`${participant.name} moved to Staff.`);
+    },
+  });
   const requestDeleteEvent = (ev) => requestDelete(`the event "${ev.title}"`, () => {
     setEvents(prev => prev.filter(e => e.id !== ev.id));
     deleteEventRow(ev.id);
@@ -1383,6 +1430,7 @@ export default function App() {
                 externalParticipants={externalParticipants} certificates={certificates} users={users} fieldVisibility={staffFieldVisibility}
                 onSaveExternalParticipant={handleSaveExternalParticipant} onRequestDeleteExternalParticipant={requestDeleteExternalParticipant}
                 onPatchUser={handlePatchUser} onSaveUserContact={requestSaveUserContact}
+                onMoveToStaff={requestMoveExternalToStaff}
               />
             )}
             {page === "reports" && <Reports events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} tags={tags} highlightId={page === "reports" ? highlightId : null} onNavigatePage={changePage} />}
@@ -1503,6 +1551,7 @@ export default function App() {
           linkableUsers={users.filter(u => ["admin", "owner"].includes(u.role) && !u.staffId)}
           fieldVisibility={staffFieldVisibility}
           allUsers={users} onPatchUser={handlePatchUser} onSaveUserContact={requestSaveUserContact}
+          onMoveToExternal={requestMoveStaffToExternal}
         />
         {profileOpen && <ProfileMenu user={session} onClose={() => setProfileOpen(false)} onLogout={handleLogout} onSave={handleProfileSave} showToast={showToast} />}
         {suggestIdeaOpen && (
