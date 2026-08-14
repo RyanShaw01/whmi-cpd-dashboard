@@ -15,8 +15,10 @@ import ReflectionsPanel from "./ReflectionsPanel";
 import EmailLogPanel from "./EmailLogPanel";
 import PresentersSection from "./PresentersSection";
 import RegisterOrUnregister from "./EventRegisterControl";
+import ModalResizeHandle from "./ModalResizeHandle";
 import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix, splitPeopleList, parsePerson } from "../lib/helpers";
 import { previewCertificateTemplate, fetchEmailLogForEvent } from "../lib/db";
+import { useResizableWidth } from "../lib/useResizableWidth";
 
 function exportAttendeesCsv(event, regs) {
   const headers = ["Name", "Email", "Profession", "Campus", "Attendance Type", "Status", "Dietary", "Accessibility", "Comments"];
@@ -95,6 +97,10 @@ export default function EventDetailModal({
   const [meetingUrlDraft, setMeetingUrlDraft] = useState("");
   const [previewingTemplate, setPreviewingTemplate] = useState(false);
   const [posterExpanded, setPosterExpanded] = useState(false);
+  // Drag-to-resize width, persisted per modal "kind" (not per event) so it stays wide next time
+  // any event card is opened. 768 is the floor here (the no-banner default); the banner variant's
+  // actual 1024 floor is applied at render time below, once bannerUrl is known.
+  const { width: resizedWidth, isDesktop: resizeIsDesktop, dragging: resizeDragging, startResize } = useResizableWidth("whmi_modal_width_event", 768);
   // Per-recipient send log for this event - powers the individual send buttons' "last sent"/hover
   // history as well as the Email Log panel. Fetched once here (not per-button) and refreshed
   // after any send so every surface reading it stays in sync.
@@ -159,7 +165,12 @@ export default function EventDetailModal({
     };
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={attemptCloseEdit}>
-        <div className="whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
+        <div
+          className="whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"
+          style={resizedWidth ? { width: resizedWidth, maxWidth: "calc(100vw - 32px)" } : undefined}
+          onClick={e => e.stopPropagation()}
+        >
+          {resizeIsDesktop && <ModalResizeHandle onMouseDown={startResize} dragging={resizeDragging} />}
           <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
             <h2 className="disp text-[16px] font-extrabold">Edit Event</h2>
             <button onClick={attemptCloseEdit} className="whmi-btn-ghost !p-2"><X size={14} /></button>
@@ -494,8 +505,10 @@ export default function EventDetailModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
       <div
         className={bannerUrl ? "whmi-card w-full max-w-5xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative" : "whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"}
+        style={resizedWidth ? { width: Math.max(resizedWidth, bannerUrl ? 1024 : 768), maxWidth: "calc(100vw - 32px)" } : undefined}
         onClick={e => e.stopPropagation()}
       >
+        {resizeIsDesktop && <ModalResizeHandle onMouseDown={startResize} dragging={resizeDragging} />}
         <button onClick={onClose} className="absolute top-3 right-3 z-20 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,.4)" }}>
           <X size={15} color="white" />
         </button>

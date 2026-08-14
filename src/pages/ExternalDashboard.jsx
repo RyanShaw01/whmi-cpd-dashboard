@@ -3,7 +3,7 @@ import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
 import HappeningNowSection from "../components/HappeningNowSection";
 import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting } from "../lib/helpers";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, isViewerVisibleStatus } from "../lib/helpers";
 
 // Landing page for external accounts (non @wh.org.au). Shows events they've registered for
 // (past + upcoming, recordings, certificates) plus a "Browse & Register" section covering
@@ -14,12 +14,16 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
   const myUpcoming = events.filter(e => myRegisteredEventIds.has(e.id));
   const myPast = previousEvents.filter(e => myRegisteredEventIds.has(e.id));
 
+  // Due-soon stays scoped to actually-registerable events (no point nudging "register soon" for
+  // something nobody can register for); Browse & Register is the wider visibility list, so it
+  // also includes Informational events - they just won't get a register button/CTA there, same
+  // as everywhere else that renders a register control off event.status directly.
   const externallyOpenEvents = events.filter(e => e.status === "Registration Open" && e.openToExternal !== false);
   const dueSoonEvents = externallyOpenEvents
     .map(ev => ({ ...ev, dayOffset: daysUntil(ev.date) }))
     .filter(ev => ev.dayOffset >= 0 && ev.dayOffset <= 14)
     .sort((a, b) => new Date(`${a.date}T${a.start}`) - new Date(`${b.date}T${b.start}`));
-  const browsableEvents = externallyOpenEvents.filter(e => !myRegisteredEventIds.has(e.id));
+  const browsableEvents = events.filter(e => isViewerVisibleStatus(e.status) && e.openToExternal !== false && !myRegisteredEventIds.has(e.id));
 
   return (
     <div className="whmi-fade-in p-6 max-w-[1000px] mx-auto space-y-6">

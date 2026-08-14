@@ -37,7 +37,7 @@ import { TOUR_STEPS } from "./data/tourSteps";
 import { loadPersonal, savePersonal } from "./lib/storage";
 import { buildNotificationGroups, buildViewerNotificationGroups } from "./lib/notifications";
 import { eventAttendedCount, eventAvgRating } from "./lib/analytics";
-import { eventBannerFile, eventCpdHours, isRecentlyCompleted } from "./lib/helpers";
+import { eventBannerFile, eventCpdHours, isRecentlyCompleted, isViewerVisibleStatus } from "./lib/helpers";
 import { supabase, supabaseConfigured } from "./lib/supabaseClient";
 import {
   fetchUsers, fetchStaff, fetchEvents, fetchPreviousEvents, fetchCertificates, fetchRegistrations, fetchExternalParticipants,
@@ -1057,7 +1057,7 @@ export default function App() {
   const viewerNotificationGroups = useMemo(() => {
     const vs = previewSession || session;
     if (!vs || vs.role !== "viewer") return [];
-    const visible = eventsWithLiveCounts.filter(e => e.status === "Registration Open" && e.openToExternal);
+    const visible = eventsWithLiveCounts.filter(e => isViewerVisibleStatus(e.status) && e.openToExternal);
     return buildViewerNotificationGroups({
       session: vs, visibleEvents: visible, previousEvents: previousEventsWithLiveStats,
       registrations, reflections, acknowledged,
@@ -1354,7 +1354,7 @@ export default function App() {
     const canManage = viewSession.role === "admin" || viewSession.role === "owner";
     // Internal viewers get read-only access to Upcoming/Previous Events, scoped to events WH
     // has offered externally too — anything WH-internal-only stays admin/owner-visible only.
-    const viewerEvents = canManage ? eventsWithLiveCounts : eventsWithLiveCounts.filter(e => e.openToExternal && e.status === "Registration Open");
+    const viewerEvents = canManage ? eventsWithLiveCounts : eventsWithLiveCounts.filter(e => e.openToExternal && isViewerVisibleStatus(e.status));
     // Internal staff (viewer role, @wh.org.au accounts) see the full previous-events history;
     // external viewers stay scoped to events WH has opted to share externally.
     const viewerPreviousEvents = (canManage || viewSession.userType === "internal") ? previousEventsForBrowsing : previousEventsForBrowsing.filter(e => e.openToExternal);

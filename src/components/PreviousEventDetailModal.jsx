@@ -8,8 +8,10 @@ import RegistrationsPanel from "./RegistrationsPanel";
 import EmailLogPanel from "./EmailLogPanel";
 import PresentersSection from "./PresentersSection";
 import EventForm from "./EventForm";
+import ModalResizeHandle from "./ModalResizeHandle";
 import { fmtDate, eventLocationSuffix, relativeTime, eventBannerUrl, splitPeopleList, parsePerson } from "../lib/helpers";
 import { fetchEmailLogForEvent } from "../lib/db";
+import { useResizableWidth } from "../lib/useResizableWidth";
 
 const TABS = ["overview", "attendance", "files", "recording", "feedback", "reflections", "certificates", "email"];
 
@@ -54,6 +56,10 @@ export default function PreviousEventDetailModal({
   // useState initializer is enough to jump straight into edit mode for a freshly-duplicated event.
   const [editing, setEditing] = useState(!!initialEditing);
   const [formDirty, setFormDirty] = useState(false);
+  // Drag-to-resize width, persisted per modal "kind" (not per event) so it stays wide next time
+  // any past-event card is opened. 672 is the floor here (the view default); the edit form's
+  // actual 768 floor is applied at render time in that branch below.
+  const { width: resizedWidth, isDesktop: resizeIsDesktop, dragging: resizeDragging, startResize } = useResizableWidth("whmi_modal_width_previous_event", 672);
   // Per-recipient send log for this event - see EventDetailModal for the fuller explanation;
   // same pattern here, keyed by event.id since this modal is already re-keyed per event by App.jsx.
   const [emailLog, setEmailLog] = useState(null);
@@ -74,7 +80,12 @@ export default function PreviousEventDetailModal({
     };
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={attemptCloseEdit}>
-        <div className="whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
+        <div
+          className="whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"
+          style={resizedWidth ? { width: Math.max(resizedWidth, 768), maxWidth: "calc(100vw - 32px)" } : undefined}
+          onClick={e => e.stopPropagation()}
+        >
+          {resizeIsDesktop && <ModalResizeHandle onMouseDown={startResize} dragging={resizeDragging} />}
           <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
             <h2 className="disp text-[16px] font-extrabold">Edit Event</h2>
             <div className="flex items-center gap-1.5">
@@ -165,7 +176,12 @@ export default function PreviousEventDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
-      <div className="whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
+      <div
+        className="whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"
+        style={resizedWidth ? { width: resizedWidth, maxWidth: "calc(100vw - 32px)" } : undefined}
+        onClick={e => e.stopPropagation()}
+      >
+        {resizeIsDesktop && <ModalResizeHandle onMouseDown={startResize} dragging={resizeDragging} />}
         {seriesSiblings.length > 1 && (
           <div className="flex gap-1 px-4 pt-3 pb-1 overflow-x-auto whmi-scroll" style={{ borderBottom: "1px solid var(--border)" }}>
             {seriesSiblings.map(sib => (

@@ -24,7 +24,7 @@ export default function UpcomingEvents({
   const [view, setViewState] = useState(getEventCardViewDefault);
   const setView = (v) => { setViewState(v); setEventCardViewDefault(v); };
   const [sortBy, setSortBy] = useState("date-asc");
-  const statuses = ["All", "Registration Open", "Draft", "Awaiting Approval"];
+  const statuses = ["All", "Registration Open", "Informational", "Draft", "Awaiting Approval"];
   // Live events get pulled out into their own "Happening Now" section above everything else,
   // regardless of status filter — a Draft/Awaiting Approval event can't be live, but this keeps
   // the split consistent with Dashboard's Up Next.
@@ -64,7 +64,7 @@ export default function UpcomingEvents({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="disp text-[22px] font-extrabold">Upcoming Events</h1>
-          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Only "Registration Open" events are visible to staff.</p>
+          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Only "Registration Open" and "Informational" events are visible to staff.</p>
         </div>
         <div className="flex gap-2">
           {onOpenRegister && (

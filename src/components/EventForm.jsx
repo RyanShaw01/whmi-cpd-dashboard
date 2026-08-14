@@ -9,7 +9,7 @@ import TimeInput12h from "./TimeInput12h";
 import PeopleListField from "./PeopleListField";
 import { eventBannerUrl, tagIsModality } from "../lib/helpers";
 
-const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Registration Closed", "Completed", "Archived"];
+const STATUS_OPTIONS = ["Draft", "Awaiting Approval", "Registration Open", "Informational", "Registration Closed", "Completed", "Archived"];
 
 const RECURRENCE_FREQUENCIES = [
   { id: "daily", label: "Day(s)" },
@@ -139,7 +139,10 @@ export default function EventForm({ event, onSave, onCancel, uploadedBy, cpdType
       </div>
 
       <div>
-        <label className={field}>Status</label>
+        <div className="flex items-center gap-1.5">
+          <label className={field}>Status</label>
+          <InfoTooltip text={'"Informational" is visible to everyone the same as "Registration Open" - but there\'s no Register button, and no registrations/attendance are collected. Use it for anything you just want to list (e.g. an external conference, a drop-in session).'} />
+        </div>
         <select value={form.status} onChange={e => set("status", e.target.value)} className="whmi-input w-full px-2.5 py-2">
           {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
         </select>

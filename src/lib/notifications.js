@@ -1,4 +1,4 @@
-import { fmtDate } from "./helpers";
+import { fmtDate, isViewerVisibleStatus } from "./helpers";
 
 // Notification groups are derived fresh from live app state every render; nothing is
 // "created"; a group simply stops existing once the underlying condition resolves
@@ -81,7 +81,7 @@ export function buildViewerNotificationGroups({ session, visibleEvents, previous
   }
 
   (visibleEvents || [])
-    .filter(e => e.status === "Registration Open" && !acknowledged.has(`viewer-event-${e.id}`))
+    .filter(e => isViewerVisibleStatus(e.status) && !acknowledged.has(`viewer-event-${e.id}`))
     .forEach(e => {
       groups.push({
         id: `viewer-event-${e.id}`,

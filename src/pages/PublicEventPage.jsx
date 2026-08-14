@@ -142,7 +142,9 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
               </div>
             </div>
 
-            {event.status !== "Registration Open" ? (
+            {event.status === "Informational" ? (
+              <div className="whmi-card p-3 text-[13px]" style={{ color: "var(--text-faint)" }}>No registration needed for this event - just come along.</div>
+            ) : event.status !== "Registration Open" ? (
               <div className="whmi-card p-3 text-[13px]" style={{ color: "var(--text-faint)" }}>Registration isn't open for this event yet; check back soon.</div>
             ) : !showForm ? (
               <div className="space-y-1.5">

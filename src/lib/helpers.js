@@ -142,6 +142,18 @@ export const setShowDueSoonDatesDefault = (value) => {
   try { localStorage.setItem(SHOW_DUE_SOON_DATES_KEY, String(value)); } catch { /* ignore */ }
 };
 
+/* Statuses a non-admin viewer (internal or external) is allowed to see an upcoming event under -
+ * "Registration Open" (the normal case) plus "Informational" (visible to everyone, but nobody
+ * can register - for events WH doesn't collect attendance for, e.g. drop-in sessions, external
+ * conferences just being publicised). Draft/Awaiting Approval/Registration Closed/Completed/
+ * Archived all stay admin/owner-only here (Completed/Archived surface separately, in Previous
+ * Events). Whether a "Register" button/form shows stays its own, stricter, separate check
+ * (status === "Registration Open" only) wherever that's decided - this helper is for visibility,
+ * not registerability. */
+export function isViewerVisibleStatus(status) {
+  return status === "Registration Open" || status === "Informational";
+}
+
 /* Whether an event has finished, independent of its admin-set status;
  * "Leave Feedback" eligibility follows wall-clock time, not manual lifecycle state. */
 export function hasEventEnded(dateStr, endTime) {
