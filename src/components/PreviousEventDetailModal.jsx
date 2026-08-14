@@ -5,6 +5,7 @@ import ModeBadge from "./ModeBadge";
 import EventFilesPanel from "./EventFilesPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
 import RegistrationsPanel from "./RegistrationsPanel";
+import EmailLogPanel from "./EmailLogPanel";
 import EventForm from "./EventForm";
 import { fmtDate, eventLocationSuffix, relativeTime, eventBannerUrl, splitPeopleList, parsePerson } from "../lib/helpers";
 
@@ -153,7 +154,14 @@ export default function PreviousEventDetailModal({
   const eventPresenters = eventRegistrations.filter(r => r.isPresenter);
   const presentersUnsent = eventPresenters.filter(r => !r.reminderSentAt);
   const presentersLastSentAt = eventPresenters.reduce((latest, r) => (r.reminderSentAt && (!latest || r.reminderSentAt > latest)) ? r.reminderSentAt : latest, null);
-  const [includePresenterCert, setIncludePresenterCert] = useState(false);
+  // Which not-yet-thanked presenters should get a CPD certificate attached - decided per
+  // presenter (not one flag for the whole batch), so this holds registration ids.
+  const [presenterCertIds, setPresenterCertIds] = useState(new Set());
+  const togglePresenterCert = (id) => setPresenterCertIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   const PresentersSection = () => (
     canManage && onSendPresenterThankYou && eventPresenters.length > 0 ? (
@@ -164,18 +172,21 @@ export default function PreviousEventDetailModal({
         </div>
         <div className="space-y-1">
           {eventPresenters.map(r => (
-            <div key={r.id} className="flex items-center justify-between text-[12px] px-2 py-1.5 rounded-md" style={{ background: "var(--surface-2)" }}>
+            <div key={r.id} className="flex items-center justify-between gap-2 text-[12px] px-2 py-1.5 rounded-md" style={{ background: "var(--surface-2)" }}>
               <span className="truncate">{r.name}</span>
-              {!r.reminderSentAt && <span className="whmi-badge" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>Not yet thanked</span>}
+              {r.reminderSentAt ? (
+                <span className="whmi-badge shrink-0" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>Already thanked</span>
+              ) : (
+                <label className="flex items-center gap-1.5 text-[11px] shrink-0 cursor-pointer" style={{ color: "var(--text-faint)" }}>
+                  <input type="checkbox" checked={presenterCertIds.has(r.id)} onChange={() => togglePresenterCert(r.id)} />
+                  Certificate
+                </label>
+              )}
             </div>
           ))}
         </div>
-        <label className="flex items-center gap-2 text-[11.5px] cursor-pointer" style={{ color: "var(--text-dim)" }}>
-          <input type="checkbox" checked={includePresenterCert} onChange={e => setIncludePresenterCert(e.target.checked)} />
-          Include CPD certificate
-        </label>
         <button
-          onClick={() => onSendPresenterThankYou(event, presentersUnsent, includePresenterCert)}
+          onClick={() => onSendPresenterThankYou(event, presentersUnsent.map(r => ({ id: r.id, includeCertificate: presenterCertIds.has(r.id) })))}
           disabled={presentersUnsent.length === 0}
           className="whmi-btn-primary w-full !py-1.5 text-[12px] flex items-center justify-center gap-1.5"
           style={{ opacity: presentersUnsent.length === 0 ? 0.5 : 1 }}
@@ -542,6 +553,7 @@ export default function PreviousEventDetailModal({
                   <PresentersSection />
                 </div>
               )}
+              {canManage && <EmailLogPanel eventId={event.id} />}
             </div>
           )}
         </div>

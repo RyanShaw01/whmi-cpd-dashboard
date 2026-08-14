@@ -93,6 +93,9 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
           </div>
         </div>
 
+        {submitted ? (
+          <RegistrationSuccessCard event={event} />
+        ) : (
         <div className="whmi-card overflow-hidden">
           {flyerUrl ? (
             <div className="relative h-40 flex items-center justify-center overflow-hidden" style={{ background: "var(--surface-2)" }}>
@@ -141,8 +144,6 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
 
             {event.status !== "Registration Open" ? (
               <div className="whmi-card p-3 text-[13px]" style={{ color: "var(--text-faint)" }}>Registration isn't open for this event yet; check back soon.</div>
-            ) : submitted ? (
-              <RegistrationSuccessCard event={event} />
             ) : !showForm ? (
               <div className="space-y-1.5">
                 {event.openToExternal !== false && (
@@ -215,6 +216,7 @@ export default function PublicEventPage({ events, session, onPublicRegister, fil
             )}
           </div>
         </div>
+        )}
       </div>
 
       {flyerExpanded && (

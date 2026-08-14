@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
       subject: override.subject || `Your CPD Reflection: ${activityName}`,
       text: bodyLines.filter(l => l !== undefined).join("\n"),
       html,
+      log: { templateKey: "reflection_copy", eventId: null, recipientName: callerRow.name },
     });
     if (!emailResult.ok) {
       return new Response(JSON.stringify({ ok: false, error: emailResult.error || "email failed to send" }), { status: 502, headers: CORS_HEADERS });

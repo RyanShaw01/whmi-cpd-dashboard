@@ -55,6 +55,17 @@ Deno.serve(async (req) => {
     const address = isInPerson ? campusAddress(event.campus) : null;
     const override = await getEmailOverride(supabaseAdmin, "registration_confirmation", event.title);
 
+    // Multiple presenters get one dot-pointed line each, matching the HTML version - a single
+    // presenter just stays a plain "Presenter: Name" line.
+    const presenters = (event.presenter || "").split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean);
+    const presenterLines = presenters.length > 1
+      ? [`Presenter(s):`, ...presenters.map((p: string) => `  - ${p}`)]
+      : presenters.length === 1 ? [`Presenter: ${presenters[0]}`] : [];
+    const isHybrid = event.mode === "Hybrid";
+    const locationLines = isHybrid
+      ? [location ? `Location: ${location}` : "", "OR", "Online (join link below)"]
+      : [location ? `Location: ${location}` : ""];
+
     const bodyLines = [
       `Hi ${firstName(name)},`,
       "",
@@ -62,9 +73,9 @@ Deno.serve(async (req) => {
       "",
       `Date: ${fmtDate(event.date)}`,
       `Time: ${timeRange}`,
-      location ? `Location: ${location}` : "",
+      ...locationLines,
       address ? `Address: ${address}` : "",
-      event.presenter ? `Presenter: ${event.presenter}` : "",
+      ...presenterLines,
       "",
       `View the event: ${eventUrl}`,
       isOnline ? `Join online: ${event.meeting_url} (only active from 20 minutes before the event)` : "",
@@ -76,7 +87,7 @@ Deno.serve(async (req) => {
 
     const html = registrationConfirmationHtml({
       name, title: event.title, date: fmtDate(event.date), time: timeRange, location, address,
-      presenter: event.presenter, eventUrl, meetingUrl: isOnline ? event.meeting_url : null, override,
+      presenter: event.presenter, eventUrl, meetingUrl: isOnline ? event.meeting_url : null, mode: event.mode, override,
     });
 
     const emailResult = await sendEmail({
@@ -84,6 +95,7 @@ Deno.serve(async (req) => {
       subject: registrationConfirmationSubject(event.title, override),
       text: bodyLines.filter(l => l !== undefined).join("\n"),
       html,
+      log: { templateKey: "registration_confirmation", eventId: event.id, recipientName: name },
     });
     if (!emailResult.ok) {
       return new Response(JSON.stringify({ ok: false, error: emailResult.error || "email failed to send" }), { status: 502, headers: CORS_HEADERS });

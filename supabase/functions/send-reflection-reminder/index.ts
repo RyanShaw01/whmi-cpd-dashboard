@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
       subject: reflectionReminderSubject(eventTitle, override),
       text: `Hi ${firstName(name)},\n\n${introText} Submit it here to get your CPD certificate:\n${link}\n\nIf you've already submitted this, you can disregard this reminder.\n\n- WHMI Education Team`,
       html,
+      log: { templateKey: "reflection_reminder", eventId, recipientName: name },
     });
 
     return new Response(JSON.stringify({ ok: emailResult.ok, error: emailResult.error }), { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });

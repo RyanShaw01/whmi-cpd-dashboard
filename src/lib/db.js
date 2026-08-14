@@ -738,13 +738,15 @@ export async function sendThankYouEmail({ eventId }) {
   return { ok: true, ...data };
 }
 
-// Bulk "thanks for presenting" email to every event presenter who hasn't been thanked yet,
-// distinct wording from sendThankYouEmail (no reflection-form ask), optionally attaching a CPD
-// certificate — shares the same `reminder_sent_at` tracking column, scoped by is_presenter so
-// this and sendThankYouEmail never overlap or double-send.
-export async function sendPresenterThankYou({ eventId, includeCertificate }) {
+// Bulk "thanks for presenting" email to specific event presenters, distinct wording from
+// sendThankYouEmail (no reflection-form ask), each optionally attaching their own CPD
+// certificate — `presenters` is [{ id, includeCertificate }], letting certificate-or-not be
+// decided per presenter rather than one flag for the whole batch. Shares the same
+// `reminder_sent_at` tracking column as sendThankYouEmail, scoped by is_presenter so the two
+// never overlap or double-send.
+export async function sendPresenterThankYou({ eventId, presenters }) {
   if (!supabaseConfigured) return { ok: false };
-  const { data, error } = await supabase.functions.invoke("send-presenter-thank-you", { body: { eventId, includeCertificate } });
+  const { data, error } = await supabase.functions.invoke("send-presenter-thank-you", { body: { eventId, presenters } });
   if (error) { console.error("sendPresenterThankYou", error); return { ok: false }; }
   return { ok: true, ...data };
 }
@@ -803,4 +805,18 @@ export async function fetchAuditLog(limit = 50) {
   return data.map(r => ({
     id: r.id, actorId: r.actor_id, action: r.action, entityType: r.entity_type, entityId: r.entity_id, details: r.details, createdAt: r.created_at,
   }));
+}
+
+// Per-recipient email send log for one event (see migration_phase37.sql) - every outbound email
+// an edge function sends writes a row here via _shared/mailer.ts, so this shows exactly who was
+// emailed what, and when, for that event. Admin/owner only (RLS-gated).
+const emailLogFromRow = (r) => ({
+  id: r.id, eventId: r.event_id, recipientEmail: r.recipient_email, recipientName: r.recipient_name,
+  templateKey: r.template_key, status: r.status, error: r.error, sentAt: r.sent_at,
+});
+export async function fetchEmailLogForEvent(eventId) {
+  if (!supabaseConfigured || !eventId) return [];
+  const { data, error } = await supabase.from("email_log").select("*").eq("event_id", eventId).order("sent_at", { ascending: false });
+  if (error) { console.error("fetchEmailLogForEvent", error); return []; }
+  return (data || []).map(emailLogFromRow);
 }

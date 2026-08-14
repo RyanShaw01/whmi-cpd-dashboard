@@ -66,15 +66,33 @@ export function sideBySideButtonsHtml(buttons: { label: string; href: string; co
   return `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:6px 0 4px 0;"><tr><td align="center"><table role="presentation" cellpadding="0" cellspacing="0"><tr>${cells}</tr></table></td></tr></table>`;
 }
 
-export function detailRowsHtml(rows: { label: string; value: string | null | undefined }[]): string {
+// `raw: true` inserts `value` as-is (already-built, trusted HTML - e.g. a bullet list) instead of
+// escaping it as plain text - used for multi-line values like a dot-pointed presenter list.
+export function detailRowsHtml(rows: { label: string; value: string | null | undefined; raw?: boolean }[]): string {
   const visible = rows.filter(r => r.value);
   if (visible.length === 0) return "";
   return `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:14px 0;border:1px solid ${BORDER};border-radius:10px;overflow:hidden;">
     ${visible.map((r, i) => `<tr>
       <td style="padding:9px 14px;background:#f7f9fa;font-size:11.5px;font-weight:600;color:${FAINT};width:110px;vertical-align:top;${i > 0 ? `border-top:1px solid ${BORDER};` : ""}">${escapeHtml(r.label)}</td>
-      <td style="padding:9px 14px;font-size:13px;color:${TEXT};vertical-align:top;${i > 0 ? `border-top:1px solid ${BORDER};` : ""}">${escapeHtml(r.value)}</td>
+      <td style="padding:9px 14px;font-size:13px;color:${TEXT};vertical-align:top;${i > 0 ? `border-top:1px solid ${BORDER};` : ""}">${r.raw ? r.value : escapeHtml(r.value)}</td>
     </tr>`).join("")}
   </table>`;
+}
+
+// Splits a "\n" or ","-separated presenter list the same way the frontend's splitPeopleList
+// does, and renders it as one bullet per presenter (a single presenter just renders as plain
+// text - no point bulleting a list of one). Each entry may carry an optional " — Title" suffix
+// (parsePerson's convention), shown de-emphasised after the name.
+export function presenterListHtml(presenter: string | null | undefined): string {
+  const people = (presenter || "").split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+  const parsed = people.map(entry => {
+    const idx = entry.indexOf(" — ");
+    return idx === -1 ? { name: entry, title: "" } : { name: entry.slice(0, idx).trim(), title: entry.slice(idx + 3).trim() };
+  });
+  const personHtml = (p: { name: string; title: string }) => `${escapeHtml(p.name)}${p.title ? `<span style="color:${FAINT};"> — ${escapeHtml(p.title)}</span>` : ""}`;
+  if (parsed.length === 0) return "";
+  if (parsed.length === 1) return personHtml(parsed[0]);
+  return `<ul style="margin:0;padding-left:16px;">${parsed.map(p => `<li style="margin:0 0 3px 0;">${personHtml(p)}</li>`).join("")}</ul>`;
 }
 
 // A soft highlight box - used for "here's what you wrote" / callout-style content.
@@ -178,17 +196,29 @@ export function registrationConfirmationSubject(eventTitle: string, override?: E
   return override?.subject || `Registration confirmed: ${eventTitle}`;
 }
 
+// For a Hybrid event, splits the Location row into the physical venue and "Online" separated by
+// a centred "OR", rather than only surfacing the online option as the "Join online" button below
+// - so someone skimming just the details table still sees both ways to attend, not only one.
+function locationRowHtml(location: string | null | undefined, isHybrid: boolean): string {
+  const onlineLine = `Online<span style="color:${FAINT};"> (join link below)</span>`;
+  if (!isHybrid) return location ? escapeHtml(location) : "";
+  if (!location) return onlineLine;
+  return `${escapeHtml(location)}<div style="margin:6px 0;font-size:10px;font-weight:700;letter-spacing:.5px;color:${FAINT};">OR</div>${onlineLine}`;
+}
+
 export function registrationConfirmationHtml({
-  name, title, date, time, location, address, presenter, eventUrl, meetingUrl, override,
+  name, title, date, time, location, address, presenter, eventUrl, meetingUrl, mode, override,
 }: {
   name: string; title: string; date: string; time: string;
   location?: string | null; address?: string | null; presenter?: string | null;
-  eventUrl: string; meetingUrl?: string | null; override?: EmailOverride;
+  eventUrl: string; meetingUrl?: string | null; mode?: string | null; override?: EmailOverride;
 }): string {
   const isOnline = !!meetingUrl;
+  const isHybrid = mode === "Hybrid";
+  const locationValue = locationRowHtml(location, isHybrid);
   const detailsTable = detailRowsHtml([
-    { label: "Date", value: date }, { label: "Time", value: time }, { label: "Location", value: location },
-    { label: "Address", value: address }, { label: "Presenter", value: presenter },
+    { label: "Date", value: date }, { label: "Time", value: time }, { label: "Location", value: locationValue, raw: true },
+    { label: "Address", value: address }, { label: "Presenter", value: presenterListHtml(presenter), raw: true },
   ]);
   const buttons = sideBySideButtonsHtml([
     { label: "View event details", href: eventUrl, color: BLUE },
@@ -199,7 +229,7 @@ export function registrationConfirmationHtml({
   if (override?.html) {
     return applyPlaceholders(override.html, {
       name: escapeHtml(firstName(name)), title: escapeHtml(title), date: escapeHtml(date), time: escapeHtml(time),
-      location: escapeHtml(location || ""), address: escapeHtml(address || ""), presenter: escapeHtml(presenter || ""),
+      location: locationValue, address: escapeHtml(address || ""), presenter: presenterListHtml(presenter),
       eventUrl, meetingUrl: meetingUrl || "", detailsTable, buttons, disclaimer,
     });
   }

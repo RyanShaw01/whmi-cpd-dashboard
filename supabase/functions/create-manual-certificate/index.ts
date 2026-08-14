@@ -4,7 +4,7 @@
 // Emails the certificate to the recipient automatically, and if they don't match an existing
 // users row, links them to a staff (internal, @wh.org.au) or external_participants record.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildCertificatePdf, hoursLabel, bytesToBase64 } from "../_shared/certificate.ts";
+import { buildCertificatePdf, hoursLabel, bytesToBase64, certificateFilename } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/mailer.ts";
 import { certificateEmailHtml, certificateEmailSubject, firstName } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
@@ -73,7 +73,8 @@ Deno.serve(async (req) => {
       subject: certificateEmailSubject(sessionName, override),
       text: `Hi ${firstName(name)},\n\n${introText}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
       html: certificateEmailHtml({ name, sessionName, dateLabel: shortDateLabel, override }),
-      attachments: uploadError ? undefined : [{ filename: `${sessionName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
+      attachments: uploadError ? undefined : [{ filename: certificateFilename(name, sessionName), content: base64Pdf }],
+      log: { templateKey: "certificate", eventId: null, recipientName: name },
     });
 
     const { error: certInsertError } = await supabaseAdmin.from("certificates").insert({

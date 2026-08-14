@@ -92,3 +92,11 @@ export function hoursLabel(hours: number) {
   const trimmed = Math.round(hours * 100) / 100;
   return `${trimmed} Hour${trimmed === 1 ? "" : "s"}`;
 }
+
+// Shared attachment filename for every certificate PDF this app emails, so recipients see the
+// same naming convention no matter which flow generated it (reflection, manual, presenter, or a
+// resend). Strips characters that are awkward or illegal in filenames rather than escaping them.
+export function certificateFilename(recipientName: string, eventTitle: string): string {
+  const clean = (s: string) => s.replace(/[\\/:*?"<>|]/g, "").trim();
+  return `CPD Certificate_${clean(recipientName)}_${clean(eventTitle)}.pdf`;
+}

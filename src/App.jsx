@@ -528,25 +528,31 @@ export default function App() {
   });
   // Presenter-only thank-you, separate wording/flow from handleSendThankYouEmail above - shares
   // the same reminder_sent_at column so a presenter can never receive both this and the bulk
-  // attendee thank-you.
-  const handleSendPresenterThankYou = (event, presentersList, includeCertificate) => requestConfirm({
-    title: "Send thank-you to presenters?",
-    message: `Email ${presentersList.length} presenter${presentersList.length === 1 ? "" : "s"} of "${event.title}" a thank-you${includeCertificate ? ", with their CPD certificate attached" : ""}, if they haven't already been sent one?`,
-    confirmLabel: "Send",
-    onConfirm: async () => {
-      const res = await sendPresenterThankYou({ eventId: event.id, includeCertificate });
-      if (res.ok) {
-        pushAudit({ actorId: session?.id, action: "event.presenter_thank_you_sent", entityType: "event", entityId: event.id, details: { sentCount: res.sentCount, includeCertificate } });
-        const sentAt = res.sentAt || new Date().toISOString();
-        setRegistrations(prev => prev.map(r =>
-          r.eventId === event.id && r.isPresenter && !r.reminderSentAt ? { ...r, reminderSentAt: sentAt } : r
-        ));
-        showToast(res.sentCount > 0 ? `Thank-you email sent to ${res.sentCount} presenter${res.sentCount === 1 ? "" : "s"}.` : "Everyone had already been emailed.");
-      } else {
-        showToast("Couldn't send the presenter thank-you email. Please try again.");
-      }
-    },
-  });
+  // attendee thank-you. `presenters` is [{ id, includeCertificate }] - certificate-or-not is
+  // decided per presenter, not one flag for the whole batch.
+  const handleSendPresenterThankYou = (event, presenters) => {
+    if (!presenters || presenters.length === 0) return;
+    const certCount = presenters.filter(p => p.includeCertificate).length;
+    requestConfirm({
+      title: "Send thank-you to presenters?",
+      message: `Email ${presenters.length} presenter${presenters.length === 1 ? "" : "s"} of "${event.title}" a thank-you${certCount > 0 ? ` (${certCount} with their CPD certificate attached)` : ""}?`,
+      confirmLabel: "Send",
+      onConfirm: async () => {
+        const res = await sendPresenterThankYou({ eventId: event.id, presenters });
+        if (res.ok) {
+          pushAudit({ actorId: session?.id, action: "event.presenter_thank_you_sent", entityType: "event", entityId: event.id, details: { sentCount: res.sentCount, certCount } });
+          const sentAt = res.sentAt || new Date().toISOString();
+          const sentIds = new Set(presenters.map(p => p.id));
+          setRegistrations(prev => prev.map(r =>
+            r.eventId === event.id && sentIds.has(r.id) && !r.reminderSentAt ? { ...r, reminderSentAt: sentAt } : r
+          ));
+          showToast(res.sentCount > 0 ? `Thank-you email sent to ${res.sentCount} presenter${res.sentCount === 1 ? "" : "s"}.` : "Everyone had already been emailed.");
+        } else {
+          showToast("Couldn't send the presenter thank-you email. Please try again.");
+        }
+      },
+    });
+  };
   const handleSendReflectionsReport = async ({ email, name, entries }) => {
     const res = await emailReflectionsReport({ toEmail: email, toName: name, entries });
     showToast(res.ok ? "Report emailed." : "Couldn't send the report. Please try again.");

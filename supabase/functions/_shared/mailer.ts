@@ -16,6 +16,19 @@
 // event volume grows a lot.
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.173.0/encoding/base64.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+// Lazily created (not every environment calling this module necessarily has these set, e.g. unit
+// tests) - logging is best-effort and never allowed to block or fail the actual email send.
+// deno-lint-ignore no-explicit-any
+let logClient: any | null | undefined;
+function getLogClient() {
+  if (logClient !== undefined) return logClient;
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  logClient = url && key ? createClient(url, key) : null;
+  return logClient;
+}
 
 // denomailer's default body encoding (used whenever `content`/`html` are passed straight to
 // client.send()) is quoted-printable: trailing spaces become literal "=20", and every line over
@@ -39,17 +52,43 @@ const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
 // rejects sending as an address it doesn't recognise as belonging to the authenticated account.
 const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || `WHMI Education <${GMAIL_USER}>`;
 
+// Best-effort row in email_log (see migration_phase37.sql) so admins can see who was actually
+// emailed what, and when - never throws, since a logging failure must never look like the email
+// itself failed to send.
+async function logEmailSend(to: string, ok: boolean, error: string | undefined, log?: EmailLogMeta) {
+  if (!log) return;
+  const client = getLogClient();
+  if (!client) return;
+  try {
+    await client.from("email_log").insert({
+      id: "el" + crypto.randomUUID(),
+      event_id: log.eventId ?? null,
+      recipient_email: to,
+      recipient_name: log.recipientName ?? null,
+      template_key: log.templateKey,
+      status: ok ? "sent" : "failed",
+      error: ok ? null : (error ?? null),
+    });
+  } catch (err) {
+    console.error("email_log insert failed", err);
+  }
+}
+
+export type EmailLogMeta = { templateKey: string; eventId?: string | null; recipientName?: string | null };
+
 export async function sendEmail({
-  to, subject, text, html, attachments,
+  to, subject, text, html, attachments, log,
 }: {
   to: string;
   subject: string;
   text: string;
   html?: string; // optional branded HTML version; `text` is always sent too as the plain-text fallback
   attachments?: { filename: string; content: string; contentType?: string }[]; // content = base64
+  log?: EmailLogMeta; // when provided, records a row in email_log after the send attempt
 }) {
   if (!GMAIL_APP_PASSWORD) {
     console.error("GMAIL_APP_PASSWORD is not set — skipping email send");
+    await logEmailSend(to, false, "GMAIL_APP_PASSWORD not configured", log);
     return { ok: false, error: "GMAIL_APP_PASSWORD not configured" };
   }
 
@@ -77,9 +116,11 @@ export async function sendEmail({
         contentType: a.contentType || "application/pdf", // every attachment this app sends today is a certificate PDF
       })),
     });
+    await logEmailSend(to, true, undefined, log);
     return { ok: true };
   } catch (err) {
     console.error("Gmail SMTP send failed", err);
+    await logEmailSend(to, false, String(err), log);
     return { ok: false, error: String(err) };
   } finally {
     try { await client.close(); } catch { /* connection never opened, or already closed */ }

@@ -12,6 +12,7 @@ import InfoTooltip from "./InfoTooltip";
 import EventForm from "./EventForm";
 import RegistrationsPanel from "./RegistrationsPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
+import EmailLogPanel from "./EmailLogPanel";
 import RegisterOrUnregister from "./EventRegisterControl";
 import { fmtDate, canJoinMeeting, hasEventEnded, fmtTimeRange12h, eventBannerUrl, eventCpdHours, eventLocationSuffix, splitPeopleList, parsePerson } from "../lib/helpers";
 import { previewCertificateTemplate } from "../lib/db";
@@ -93,7 +94,9 @@ export default function EventDetailModal({
   const [meetingUrlDraft, setMeetingUrlDraft] = useState("");
   const [previewingTemplate, setPreviewingTemplate] = useState(false);
   const [posterExpanded, setPosterExpanded] = useState(false);
-  const [includePresenterCert, setIncludePresenterCert] = useState(false);
+  // Which not-yet-thanked presenters should get a CPD certificate attached - decided per
+  // presenter (not one flag for the whole batch), so this holds registration ids.
+  const [presenterCertIds, setPresenterCertIds] = useState(new Set());
   // The modal stays mounted between opens (no key), so a fresh `initialTab` from a new
   // openEvent(ev, tab) call needs to be applied explicitly rather than relying on useState's
   // one-time initializer. Same for initialEditing — e.g. jumping straight into edit mode for a
@@ -138,24 +141,32 @@ export default function EventDetailModal({
   // column, scoped by is_presenter so the two populations never overlap.
   const eventPresenters = eventRegistrations.filter(r => r.isPresenter);
   const presentersUnsent = eventPresenters.filter(r => !r.reminderSentAt);
+  const togglePresenterCert = (id) => setPresenterCertIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
   const PresentersSection = () => (
     canManage && onSendPresenterThankYou && eventPresenters.length > 0 ? (
       <div className="whmi-card p-3 space-y-2">
         <div className="text-[10.5px] font-bold uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>Presenters ({eventPresenters.length})</div>
         <div className="space-y-1">
           {eventPresenters.map(r => (
-            <div key={r.id} className="flex items-center justify-between text-[12px] px-2 py-1.5 rounded-md" style={{ background: "var(--surface-2)" }}>
+            <div key={r.id} className="flex items-center justify-between gap-2 text-[12px] px-2 py-1.5 rounded-md" style={{ background: "var(--surface-2)" }}>
               <span className="truncate">{r.name}</span>
-              {!r.reminderSentAt && <span className="whmi-badge" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>Not yet thanked</span>}
+              {r.reminderSentAt ? (
+                <span className="whmi-badge shrink-0" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>Already thanked</span>
+              ) : (
+                <label className="flex items-center gap-1.5 text-[11px] shrink-0 cursor-pointer" style={{ color: "var(--text-faint)" }}>
+                  <input type="checkbox" checked={presenterCertIds.has(r.id)} onChange={() => togglePresenterCert(r.id)} />
+                  Certificate
+                </label>
+              )}
             </div>
           ))}
         </div>
-        <label className="flex items-center gap-2 text-[11.5px] cursor-pointer" style={{ color: "var(--text-dim)" }}>
-          <input type="checkbox" checked={includePresenterCert} onChange={e => setIncludePresenterCert(e.target.checked)} />
-          Include CPD certificate
-        </label>
         <button
-          onClick={() => onSendPresenterThankYou(event, presentersUnsent, includePresenterCert)}
+          onClick={() => onSendPresenterThankYou(event, presentersUnsent.map(r => ({ id: r.id, includeCertificate: presenterCertIds.has(r.id) })))}
           disabled={presentersUnsent.length === 0}
           className="whmi-btn-primary w-full !py-1.5 text-[12px] flex items-center justify-center gap-1.5"
           style={{ opacity: presentersUnsent.length === 0 ? 0.5 : 1 }}
@@ -396,6 +407,7 @@ export default function EventDetailModal({
                 users={users} staffDirectory={staffDirectory} onViewStaffProfile={onViewStaffProfile}
               />
               <PresentersSection />
+              {canManage && <EmailLogPanel eventId={event.id} />}
               {canManage && (
                 <button
                   onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/event/${event.id}`); setRegTab("qr"); }}

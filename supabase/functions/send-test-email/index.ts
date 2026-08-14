@@ -90,8 +90,12 @@ Deno.serve(async (req) => {
         html = registrationConfirmationHtml({
           name, title: SAMPLE_TITLE, date: "Thursday 15 August 2026", time: "5:00 PM - 7:00 PM",
           location: "Footscray Hospital - Auditorium", address: "160 Gordon St, Footscray VIC 3011",
-          presenter: "Dr. Jane Smith", eventUrl, meetingUrl: sampleEvent?.meeting_url || null,
-          override,
+          // Two presenters + a Hybrid mode, so the test send actually exercises the dot-pointed
+          // presenter list and the "in-person OR online" location split, not just the single-
+          // presenter/in-person-only fallback paths.
+          presenter: "Dr. Jane Smith — Consultant Radiologist\nDr. John Lee — Senior Sonographer",
+          eventUrl, meetingUrl: sampleEvent?.meeting_url || "https://teams.microsoft.com/l/meetup-join/sample",
+          mode: "Hybrid", override,
         });
         text = `Hi ${firstName(name)},\n\nThis is a test send of the Registration Confirmation email.`;
         break;
@@ -157,7 +161,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    const emailResult = await sendEmail({ to, subject: `[TEST] ${subject}`, text, html });
+    const emailResult = await sendEmail({
+      to, subject: `[TEST] ${subject}`, text, html,
+      log: { templateKey: `test_${templateKey}`, eventId: sampleEvent?.id ?? null, recipientName: name },
+    });
     if (!emailResult.ok) {
       return new Response(JSON.stringify({ ok: false, error: emailResult.error || "email failed to send" }), { status: 502, headers: CORS_HEADERS });
     }

@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
           subject: thankYouEmailSubject(event.title, override),
           text: thankYouEmailText(reg.name, event.title, reflectUrl, override),
           html: thankYouEmailHtml(reg.name, event.title, reflectUrl, override),
+          log: { templateKey: "post_event_thank_you", eventId: event.id, recipientName: reg.name },
         });
         if (result.ok) {
           await supabase.from("registrations").update({ reminder_sent_at: new Date().toISOString() }).eq("id", reg.id);

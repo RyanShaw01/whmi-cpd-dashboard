@@ -2,7 +2,7 @@
 // reflection is inserted. Public/unauthenticated by design — only a reflectionId is trusted
 // from the caller, everything else is re-fetched server-side with the service-role key.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildCertificatePdf, hoursLabel, bytesToBase64 } from "../_shared/certificate.ts";
+import { buildCertificatePdf, hoursLabel, bytesToBase64, certificateFilename } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/mailer.ts";
 import { certificateEmailHtml, certificateEmailSubject, firstName } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
@@ -37,6 +37,15 @@ Deno.serve(async (req) => {
     const { data: event, error: eventError } = await supabase.from("events").select("*").eq("id", reflection.event_id).single();
     if (eventError || !event) return new Response(JSON.stringify({ ok: false, error: "event not found" }), { status: 404, headers: CORS_HEADERS });
 
+    // The event form only lets admins pick a CPD Type (cpd_type_id) these days - asmirt_code is
+    // a leftover manual-entry field with no UI to set it, so it's almost always empty. Resolve
+    // the appellation code through cpd_types instead, same as create-manual-certificate does.
+    let appellationCode: string | null = event.asmirt_code || null;
+    if (!appellationCode && event.cpd_type_id) {
+      const { data: cpdType } = await supabase.from("cpd_types").select("appellation_code").eq("id", event.cpd_type_id).maybeSingle();
+      appellationCode = cpdType?.appellation_code ?? null;
+    }
+
     const cpdHours = cpdHoursFromTimes(event.start_time, event.end_time) ?? 1;
     const eventDate = new Date(`${event.date}T00:00:00`);
     const dateLabel = `on ${eventDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`;
@@ -52,7 +61,7 @@ Deno.serve(async (req) => {
       name: reflection.name,
       sessionName: event.title,
       dateLabel,
-      code: event.asmirt_code || null,
+      code: appellationCode,
       hoursLabel: hoursLabel(cpdHours),
     });
 
@@ -70,7 +79,8 @@ Deno.serve(async (req) => {
       subject: certificateEmailSubject(event.title, override),
       text: `Hi ${firstName(reflection.name)},\n\n${introText}\n\nYour submitted reflection:\n${reflection.content}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
       html: certificateEmailHtml({ name: reflection.name, sessionName: event.title, dateLabel: shortDateLabel, reflectionContent: reflection.content, override }),
-      attachments: [{ filename: `${event.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
+      attachments: [{ filename: certificateFilename(reflection.name, event.title), content: base64Pdf }],
+      log: { templateKey: "certificate", eventId: event.id, recipientName: reflection.name },
     });
 
     const { error: certInsertError } = await supabase.from("certificates").insert({

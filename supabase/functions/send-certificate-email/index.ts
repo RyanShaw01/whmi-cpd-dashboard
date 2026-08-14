@@ -5,7 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/mailer.ts";
 import { certificateEmailHtml, certificateEmailSubject, firstName } from "../_shared/emailTemplate.ts";
 import { getEmailOverride } from "../_shared/emailOverrides.ts";
-import { bytesToBase64 } from "../_shared/certificate.ts";
+import { bytesToBase64, certificateFilename } from "../_shared/certificate.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -67,7 +67,8 @@ Deno.serve(async (req) => {
       subject: certificateEmailSubject(cert.event_title, override),
       text: `Hi ${firstName(cert.staff_name)},\n\n${introText}${reflectionContent ? `\n\nYour submitted reflection:\n${reflectionContent}` : ""}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`,
       html: certificateEmailHtml({ name: cert.staff_name, sessionName: cert.event_title, dateLabel: shortDateLabel, reflectionContent, override }),
-      attachments: [{ filename: `${cert.event_title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: base64Pdf }],
+      attachments: [{ filename: certificateFilename(cert.staff_name, cert.event_title), content: base64Pdf }],
+      log: { templateKey: "certificate", eventId: cert.event_id, recipientName: cert.staff_name },
     });
     if (!emailResult.ok) {
       return new Response(JSON.stringify({ ok: false, error: emailResult.error || "email failed to send" }), { status: 502, headers: CORS_HEADERS });

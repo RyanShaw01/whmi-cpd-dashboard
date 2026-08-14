@@ -6,7 +6,7 @@
 // so they can be thanked here instead - both paths reuse the same `reminder_sent_at` column to
 // track "already thanked", so a presenter can never receive both.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildCertificatePdf, hoursLabel, bytesToBase64 } from "../_shared/certificate.ts";
+import { buildCertificatePdf, hoursLabel, bytesToBase64, certificateFilename } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/mailer.ts";
 import { presenterThankYouText, presenterThankYouHtml, presenterThankYouSubject } from "../_shared/emailTemplate.ts";
 
@@ -44,13 +44,16 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "forbidden" }), { status: 403, headers: CORS_HEADERS });
     }
 
-    const { eventId, includeCertificate } = await req.json();
+    // `presenters` is a per-recipient list: [{ id, includeCertificate }] - lets the admin decide
+    // certificate-or-not individually rather than one blanket flag for the whole batch. Falls
+    // back to "every not-yet-thanked presenter, no certificate" if omitted.
+    const { eventId, presenters: presenterOverrides, includeCertificate: globalIncludeCertificate } = await req.json();
     if (!eventId) return new Response(JSON.stringify({ ok: false, error: "eventId is required" }), { status: 400, headers: CORS_HEADERS });
 
     const { data: event, error: eventError } = await supabaseAdmin.from("events").select("*").eq("id", eventId).maybeSingle();
     if (eventError || !event) return new Response(JSON.stringify({ ok: false, error: "event not found" }), { status: 404, headers: CORS_HEADERS });
 
-    const { data: presenters, error: regError } = await supabaseAdmin
+    const { data: allPresenters, error: regError } = await supabaseAdmin
       .from("registrations")
       .select("id, name, email")
       .eq("event_id", eventId)
@@ -58,10 +61,28 @@ Deno.serve(async (req) => {
       .is("reminder_sent_at", null);
     if (regError) throw regError;
 
+    // Only act on presenters the caller actually asked to email (if a specific list was given),
+    // still re-scoped server-side to is_presenter=true / reminder_sent_at=null above so a stale
+    // or tampered client list can't email someone twice or someone who isn't a presenter.
+    const certById = new Map((presenterOverrides || []).map((p: { id: string; includeCertificate?: boolean }) => [p.id, !!p.includeCertificate]));
+    const targets = presenterOverrides
+      ? (allPresenters || []).filter(p => certById.has(p.id))
+      : (allPresenters || []);
+
+    const anyCertificate = presenterOverrides ? [...certById.values()].some(Boolean) : !!globalIncludeCertificate;
+
     let templateBytes: Uint8Array | null = null;
     let cpdHours = 1;
     let dateLabel = "";
-    if (includeCertificate) {
+    // The event form only lets admins pick a CPD Type (cpd_type_id) these days - asmirt_code is
+    // a leftover manual-entry field with no UI to set it, so it's almost always empty. Resolve
+    // the appellation code through cpd_types instead, same as create-manual-certificate does.
+    let appellationCode: string | null = event.asmirt_code || null;
+    if (anyCertificate) {
+      if (!appellationCode && event.cpd_type_id) {
+        const { data: cpdType } = await supabaseAdmin.from("cpd_types").select("appellation_code").eq("id", event.cpd_type_id).maybeSingle();
+        appellationCode = cpdType?.appellation_code ?? null;
+      }
       const { data: templateFile, error: templateError } = await supabaseAdmin.storage.from("certificates").download("templates/certificate-of-attendance.pdf");
       if (templateError || !templateFile) {
         console.error("template download failed", templateError);
@@ -75,14 +96,15 @@ Deno.serve(async (req) => {
 
     let sentCount = 0;
     const sentAt = new Date().toISOString();
-    for (const reg of presenters || []) {
+    for (const reg of targets) {
+      const includeCertificate = presenterOverrides ? !!certById.get(reg.id) : !!globalIncludeCertificate;
       let attachments: { filename: string; content: string }[] | undefined;
       let certId: string | null = null;
       let pdfPath: string | null = null;
 
       if (includeCertificate && templateBytes) {
         const pdfBytes = await buildCertificatePdf(templateBytes, {
-          name: reg.name, sessionName: event.title, dateLabel, code: event.asmirt_code || null, hoursLabel: hoursLabel(cpdHours),
+          name: reg.name, sessionName: event.title, dateLabel, code: appellationCode, hoursLabel: hoursLabel(cpdHours),
         });
         certId = "c" + crypto.randomUUID();
         pdfPath = `${certId}.pdf`;
@@ -91,7 +113,7 @@ Deno.serve(async (req) => {
           console.error("presenter certificate upload failed", reg.id, uploadError);
           pdfPath = null;
         } else {
-          attachments = [{ filename: `${event.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-certificate.pdf`, content: bytesToBase64(pdfBytes) }];
+          attachments = [{ filename: certificateFilename(reg.name, event.title), content: bytesToBase64(pdfBytes) }];
         }
       }
 
@@ -101,6 +123,7 @@ Deno.serve(async (req) => {
         text: presenterThankYouText(reg.name, event.title, !!attachments),
         html: presenterThankYouHtml(reg.name, event.title, !!attachments),
         attachments,
+        log: { templateKey: "presenter_thank_you", eventId: event.id, recipientName: reg.name },
       });
 
       if (result.ok) {
