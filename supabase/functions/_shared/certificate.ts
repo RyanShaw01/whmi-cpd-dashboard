@@ -82,8 +82,12 @@ export async function buildCertificatePdf(templateBytes: Uint8Array, fields: Cer
   drawCentered(fields.name, 200, 248, 30, bold, BLUE);
   drawCentered(fields.sessionName, 288, 320, 17, bold, BLUE);
   drawCentered(fields.dateLabel, 322, 354, 14, regular, BLACK);
-  drawLeft(fields.code, 487, 420, 444, 11, regular, BLACK, 155);
+  // hoursLabel's erase rectangle (below) overlaps the bottom few points of the code band above it
+  // (the two bands sit only 1pt apart before the +/-3/+6 erase padding is added, so the padded
+  // rectangles bleed into each other) - draw it first so code, drawn last, doesn't get its bottom
+  // edge painted over by hoursLabel's white erase rectangle.
   drawLeft(fields.hoursLabel, 488, 443, 467, 11, regular, BLACK, 155);
+  drawLeft(fields.code, 487, 420, 444, 11, regular, BLACK, 155);
 
   return doc.save();
 }
