@@ -359,7 +359,7 @@ export default function Dashboard({
       </div>
 
       <HappeningNowSection
-        events={events} files={files} registeredIds={registeredIds}
+        events={events} files={files} registeredIds={registeredIds} registrations={registrations}
         onOpenRegister={onOpenRegister} onUnregister={onUnregister} openEvent={openEvent}
       />
 

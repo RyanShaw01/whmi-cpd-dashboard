@@ -133,6 +133,10 @@ export default function EventDetailModal({
     return anyWithBanner ? eventBannerUrl(files, anyWithBanner.id) : null;
   })();
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
+  // Once an event has ended, how many people actually attended is the number worth surfacing
+  // here - not how many merely registered beforehand.
+  const eventEnded = hasEventEnded(event.date, event.end);
+  const attendedCount = eventRegistrations.filter(r => r.attendanceStatus === "Attended").length;
   const eventReflections = (reflections || []).filter(r => r.eventId === event.id);
   const reflectedEmails = new Set(eventReflections.map(r => (r.email || "").toLowerCase()));
   const awaitingReflection = eventRegistrations.filter(r =>
@@ -292,14 +296,22 @@ export default function EventDetailModal({
               {(canManage
                 || (viewerUserType === "external" ? event.showRegCountExternal : event.capacity != null)) && (
                 <div className="whmi-card p-3">
-                  <div className="flex justify-between text-[12px] mb-1.5" style={{ color: "var(--text-dim)" }}>
-                    <span className="flex items-center gap-1"><Users size={12} className="shrink-0" />{event.capacity == null ? `Registered: ${event.registered}` : `Registered ${event.registered}/${event.capacity}`}</span>
-                    {event.waitlist > 0 && <span>{event.waitlist} on waitlist</span>}
-                  </div>
-                  {event.capacity != null && (
-                    <div className="h-2 rounded-full" style={{ background: "var(--surface-2)" }}>
-                      <div className="h-2 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (event.registered / event.capacity) * 100)}%` }} />
+                  {eventEnded ? (
+                    <div className="flex justify-between text-[12px]" style={{ color: "var(--text-dim)" }}>
+                      <span className="flex items-center gap-1"><Users size={12} className="shrink-0" />Attended: {attendedCount} of {event.registered} registered</span>
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-[12px] mb-1.5" style={{ color: "var(--text-dim)" }}>
+                        <span className="flex items-center gap-1"><Users size={12} className="shrink-0" />{event.capacity == null ? `Registered: ${event.registered}` : `Registered ${event.registered}/${event.capacity}`}</span>
+                        {event.waitlist > 0 && <span>{event.waitlist} on waitlist</span>}
+                      </div>
+                      {event.capacity != null && (
+                        <div className="h-2 rounded-full" style={{ background: "var(--surface-2)" }}>
+                          <div className="h-2 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (event.registered / event.capacity) * 100)}%` }} />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}

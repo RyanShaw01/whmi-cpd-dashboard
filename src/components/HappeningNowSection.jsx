@@ -12,7 +12,7 @@ import { eventBannerUrl, eventLocationSuffix, fmtTimeRange12h, splitFeaturedEven
 // depending on whether anything's still actually live. Poster click-to-expand and the "you're
 // leaving the dashboard" join confirmation are self-contained here (only one of each can be open
 // regardless of which card triggered it), so every caller gets the same behaviour for free.
-export default function HappeningNowSection({ events, files, registeredIds, onOpenRegister, onUnregister, openEvent }) {
+export default function HappeningNowSection({ events, files, registeredIds, onOpenRegister, onUnregister, openEvent, registrations }) {
   const [expandedPoster, setExpandedPoster] = useState(null); // { url, event } | null
   const [joinConfirmEvent, setJoinConfirmEvent] = useState(null);
   const { liveEvents, liveIds, featuredEvents } = splitFeaturedEvents(events);
@@ -80,7 +80,16 @@ export default function HappeningNowSection({ events, files, registeredIds, onOp
                         taller and re-centre it every time it expands/collapses. items-start keeps
                         the icon level with just the first presenter's line, not the whole block. */}
                     {ev.presenter && <span className="sm:col-span-2 flex items-start gap-1 min-w-0"><UserCircle2 size={11} className="shrink-0 mt-0.5" /><PresenterLine presenter={ev.presenter} className="truncate" /></span>}
-                    <span className="sm:col-span-2 flex items-center gap-1 font-bold min-w-0"><Users size={11} className="shrink-0" /><span className="truncate">{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}</span></span>
+                    {/* Once an event's actually finished (not just live), attended is the number
+                        worth showing here - not how many merely registered beforehand. */}
+                    <span className="sm:col-span-2 flex items-center gap-1 font-bold min-w-0">
+                      <Users size={11} className="shrink-0" />
+                      <span className="truncate">
+                        {isLive
+                          ? (ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`)
+                          : `Attended: ${(registrations || []).filter(r => r.eventId === ev.id && r.attendanceStatus === "Attended").length} of ${ev.registered} registered`}
+                      </span>
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap mt-1">
                     {isLive && ev.meetingUrl && (

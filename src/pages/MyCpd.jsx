@@ -69,7 +69,7 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
       />
 
       <HappeningNowSection
-        events={events} files={files} registeredIds={myRegisteredEventIds}
+        events={events} files={files} registeredIds={myRegisteredEventIds} registrations={registrations}
         onOpenRegister={onOpenRegister} onUnregister={onUnregister} openEvent={openEvent}
       />
 

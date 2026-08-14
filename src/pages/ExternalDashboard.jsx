@@ -62,7 +62,7 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
           viewers shouldn't see an internal-only event surface here even if it happens to be
           live right now. */}
       <HappeningNowSection
-        events={events.filter(e => e.openToExternal !== false)} files={files} registeredIds={myRegisteredEventIds}
+        events={events.filter(e => e.openToExternal !== false)} files={files} registeredIds={myRegisteredEventIds} registrations={registrations}
         onOpenRegister={onOpenRegister} onUnregister={onUnregister} openEvent={openEvent}
       />
 
