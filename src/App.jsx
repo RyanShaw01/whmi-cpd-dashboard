@@ -1549,7 +1549,7 @@ export default function App() {
         <StaffModal
           staff={selectedStaff} onClose={() => setSelectedStaff(null)} canEdit={canManage} onSave={handleStaffSave} onCreate={handleStaffCreate} onRequestDelete={requestDeleteStaff}
           linkableUsers={users.filter(u => ["admin", "owner"].includes(u.role) && !u.staffId)}
-          fieldVisibility={staffFieldVisibility}
+          fieldVisibility={staffFieldVisibility} certificates={certificates}
           allUsers={users} onPatchUser={handlePatchUser} onSaveUserContact={requestSaveUserContact}
           onMoveToExternal={requestMoveStaffToExternal}
         />

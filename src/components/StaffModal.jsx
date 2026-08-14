@@ -4,7 +4,7 @@ import { CAMPUS_OPTIONS, MODALITY_OPTIONS, GRADE_OPTIONS } from "../data/mockDat
 
 export default function StaffModal({
   staff, onClose, canEdit, onSave, onCreate, onRequestDelete, linkableUsers = [], fieldVisibility = {},
-  allUsers = [], onPatchUser, onSaveUserContact, onMoveToExternal,
+  allUsers = [], onPatchUser, onSaveUserContact, onMoveToExternal, certificates = [],
 }) {
   const isNew = !!staff?.isNew;
   const [editing, setEditing] = useState(false);
@@ -24,6 +24,13 @@ export default function StaffModal({
   if (!staff || !form) return null;
 
   const show = (id) => fieldVisibility[id] !== false;
+
+  // `staff.hours` is a stored column nothing ever increments once an event ends and a
+  // certificate is issued - recompute it live from certificates instead (same name-match
+  // convention as myCertificates()/StaffQuickStats), so it actually moves.
+  const liveHours = !isNew
+    ? Math.round(certificates.filter(c => c.staff === staff.name && c.status === "Sent").reduce((sum, c) => sum + (c.cpdHours || 0), 0) * 10) / 10
+    : 0;
 
   // If this staff record has a real login account attached (any role, not just admin/owner),
   // surface it here so admins/owners can see their email and move them between staff/external
@@ -85,7 +92,7 @@ export default function StaffModal({
 
         {!isNew && (show("hours") || show("attended") || show("certificates")) && (
           <div className="p-5 grid grid-cols-3 gap-3">
-            {show("hours") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.hours}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>CPD Hours</div></div>}
+            {show("hours") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{liveHours}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>CPD Hours</div></div>}
             {show("attended") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.attended}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Attended</div></div>}
             {show("certificates") && <div className="whmi-card p-3 text-center"><div className="disp text-[18px] font-extrabold">{staff.certificates}</div><div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Certificates</div></div>}
           </div>

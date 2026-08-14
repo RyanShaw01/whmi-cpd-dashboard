@@ -25,6 +25,19 @@ function externalStatsRows(externalParticipants, certificates) {
   });
 }
 
+// `staff.hours` is a stored/pre-aggregated column that nothing in the app ever actually
+// increments once an event ends and a certificate is issued - it only reflected whatever it was
+// seeded with, so it never changed. Recompute it live from certificates (same "Sent" certs, same
+// name-match convention myCertificates() uses for a signed-in viewer's own stats), the same way
+// externalStatsRows already does for external participants, so Total CPD Hours actually moves.
+function internalStatsRows(staffDirectory, certificates) {
+  return staffDirectory.map(s => {
+    const mine = certificates.filter(c => c.staff === s.name && c.status === "Sent");
+    const hours = Math.round(mine.reduce((sum, c) => sum + (c.cpdHours || 0), 0) * 10) / 10;
+    return { ...s, hours };
+  });
+}
+
 function StatsTable({ rows, sortBy, setSortBy, desc, setDesc, onSelect, emptyLabel }) {
   const sorted = useMemo(() => {
     const list = [...rows];
@@ -85,10 +98,10 @@ export default function StaffQuickStats({ staffDirectory, onSelectStaff, query =
   const [extDesc, setExtDesc] = useState(false);
 
   const q = query.trim().toLowerCase();
-  const internalRows = useMemo(
-    () => (q ? staffDirectory.filter(s => s.name.toLowerCase().includes(q)) : staffDirectory),
-    [staffDirectory, q],
-  );
+  const internalRows = useMemo(() => {
+    const rows = internalStatsRows(staffDirectory, certificates || []);
+    return q ? rows.filter(s => s.name.toLowerCase().includes(q)) : rows;
+  }, [staffDirectory, certificates, q]);
   // Kept separate from internalRows by default (own heading, own table, own sort state) rather
   // than merged into one ranked list - internal staff and external participants aren't really
   // comparable on the same "CPD hours" scale, and mixing them made it easy to mistake one for
