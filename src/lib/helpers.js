@@ -246,6 +246,25 @@ export function relativeTime(iso) {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
+/* Every past send of a given email template to a given recipient, newest first - powers the
+ * per-registrant "sent N times, last X ago" label + hover tooltip on individual send buttons.
+ * `emailLog` is whatever fetchEmailLogForEvent() returned (already scoped to one event). */
+export function sendHistoryFor(emailLog, email, templateKey) {
+  const target = (email || "").trim().toLowerCase();
+  if (!target) return [];
+  return (emailLog || [])
+    .filter(e => e.templateKey === templateKey && e.status === "sent" && (e.recipientEmail || "").trim().toLowerCase() === target)
+    .sort((a, b) => (b.sentAt || "").localeCompare(a.sentAt || ""));
+}
+
+export function fmtDateTime(iso) {
+  try {
+    return new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+  } catch {
+    return iso;
+  }
+}
+
 /* Cert-based CPD hour totals for a user (works for both internal viewers and externals,
  * neither of which necessarily have a linked `staff` record with a pre-aggregated total). */
 export function myCpdTotals(certificates, user, { year = new Date().getFullYear() } = {}) {

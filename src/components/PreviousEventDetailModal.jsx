@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Calendar, UserCircle2, Star, Video, Save, Download, Info, Pencil, Copy, Mail, Award, Trash2, Lock, MailCheck, Maximize2 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
@@ -6,8 +6,10 @@ import EventFilesPanel from "./EventFilesPanel";
 import ReflectionsPanel from "./ReflectionsPanel";
 import RegistrationsPanel from "./RegistrationsPanel";
 import EmailLogPanel from "./EmailLogPanel";
+import PresentersSection from "./PresentersSection";
 import EventForm from "./EventForm";
 import { fmtDate, eventLocationSuffix, relativeTime, eventBannerUrl, splitPeopleList, parsePerson } from "../lib/helpers";
+import { fetchEmailLogForEvent } from "../lib/db";
 
 const TABS = ["overview", "attendance", "files", "recording", "feedback", "reflections", "certificates", "email"];
 
@@ -41,7 +43,7 @@ export default function PreviousEventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner,
-  onCreateCertificateFor, onSendReflectionReminder, onSendAllReflectionReminders, onSendThankYouEmail, onSendPresenterThankYou, initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
+  onCreateCertificateFor, onSendReflectionReminder, onSendAllReflectionReminders, onSendPostEventEmail, onSendPresenterThankYou, initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
 }) {
   const [tab, setTab] = useState(initialTab || "overview");
   const [certSortBy, setCertSortBy] = useState("date-desc");
@@ -52,6 +54,11 @@ export default function PreviousEventDetailModal({
   // useState initializer is enough to jump straight into edit mode for a freshly-duplicated event.
   const [editing, setEditing] = useState(!!initialEditing);
   const [formDirty, setFormDirty] = useState(false);
+  // Per-recipient send log for this event - see EventDetailModal for the fuller explanation;
+  // same pattern here, keyed by event.id since this modal is already re-keyed per event by App.jsx.
+  const [emailLog, setEmailLog] = useState(null);
+  const refreshEmailLog = () => event?.id ? fetchEmailLogForEvent(event.id).then(setEmailLog) : Promise.resolve();
+  useEffect(() => { if (canManage) refreshEmailLog(); }, [event?.id, canManage]);
   if (!event) return null;
 
   // Recurring series that opted to stay grouped once occurrences move to Previous Events.
@@ -124,79 +131,10 @@ export default function PreviousEventDetailModal({
     !reflectedEmails.has((r.email || "").toLowerCase())
   );
 
-  // Thank-you email eligibility: same population the automated post-event cron and the manual
-  // send both target (Registered/Attended), so "everyone already emailed" here matches exactly
-  // what would grey the button out whether it was sent automatically or by hand.
-  const thankYouEligible = eventRegistrations.filter(r => ["Registered", "Attended"].includes(r.attendanceStatus || "Registered") && !r.isPresenter);
-  const thankYouUnsent = thankYouEligible.filter(r => !r.reminderSentAt);
-  const thankYouLastSentAt = thankYouEligible.reduce((latest, r) => (r.reminderSentAt && (!latest || r.reminderSentAt > latest)) ? r.reminderSentAt : latest, null);
-
-  const SendThankYouControl = () => (
-    canManage && onSendThankYouEmail ? (
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => onSendThankYouEmail(event)}
-          disabled={thankYouEligible.length === 0 || thankYouUnsent.length === 0}
-          className="whmi-btn-ghost !py-1.5 !px-2.5 text-[11.5px] flex items-center gap-1.5"
-          style={{ opacity: (thankYouEligible.length === 0 || thankYouUnsent.length === 0) ? 0.5 : 1 }}
-          title={thankYouUnsent.length === 0 ? "Everyone's already been emailed" : "Email everyone who attended a thank-you and reflection request"}
-        >
-          <Mail size={13} />Send Thank-You Email
-        </button>
-        {thankYouLastSentAt && <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Sent {relativeTime(thankYouLastSentAt)}</span>}
-      </div>
-    ) : null
-  );
-
   // Presenters get their own thank-you flow (distinct wording, optional CPD certificate),
-  // entirely separate from the attendee-facing thank-you above - same reminder_sent_at column,
-  // but scoped by is_presenter so the two populations never overlap.
+  // entirely separate from the attendee-facing thank-you - same reminder_sent_at column, but
+  // scoped by is_presenter so the two populations never overlap. See PresentersSection.
   const eventPresenters = eventRegistrations.filter(r => r.isPresenter);
-  const presentersUnsent = eventPresenters.filter(r => !r.reminderSentAt);
-  const presentersLastSentAt = eventPresenters.reduce((latest, r) => (r.reminderSentAt && (!latest || r.reminderSentAt > latest)) ? r.reminderSentAt : latest, null);
-  // Which not-yet-thanked presenters should get a CPD certificate attached - decided per
-  // presenter (not one flag for the whole batch), so this holds registration ids.
-  const [presenterCertIds, setPresenterCertIds] = useState(new Set());
-  const togglePresenterCert = (id) => setPresenterCertIds(prev => {
-    const next = new Set(prev);
-    next.has(id) ? next.delete(id) : next.add(id);
-    return next;
-  });
-
-  const PresentersSection = () => (
-    canManage && onSendPresenterThankYou && eventPresenters.length > 0 ? (
-      <div className="whmi-card p-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="text-[10.5px] font-bold uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>Presenters ({eventPresenters.length})</div>
-          {presentersLastSentAt && <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Sent {relativeTime(presentersLastSentAt)}</span>}
-        </div>
-        <div className="space-y-1">
-          {eventPresenters.map(r => (
-            <div key={r.id} className="flex items-center justify-between gap-2 text-[12px] px-2 py-1.5 rounded-md" style={{ background: "var(--surface-2)" }}>
-              <span className="truncate">{r.name}</span>
-              {r.reminderSentAt ? (
-                <span className="whmi-badge shrink-0" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>Already thanked</span>
-              ) : (
-                <label className="flex items-center gap-1.5 text-[11px] shrink-0 cursor-pointer" style={{ color: "var(--text-faint)" }}>
-                  <input type="checkbox" checked={presenterCertIds.has(r.id)} onChange={() => togglePresenterCert(r.id)} />
-                  Certificate
-                </label>
-              )}
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={() => onSendPresenterThankYou(event, presentersUnsent.map(r => ({ id: r.id, includeCertificate: presenterCertIds.has(r.id) })))}
-          disabled={presentersUnsent.length === 0}
-          className="whmi-btn-primary w-full !py-1.5 text-[12px] flex items-center justify-center gap-1.5"
-          style={{ opacity: presentersUnsent.length === 0 ? 0.5 : 1 }}
-          title={presentersUnsent.length === 0 ? "Everyone's already been thanked" : "Email presenters a thank-you"}
-        >
-          <Award size={13} />Send Thank-You to Presenters ({presentersUnsent.length})
-        </button>
-      </div>
-    ) : null
-  );
 
   const avgQuality = avg(eventReflections.map(r => r.rating));
   const avgRelevance = avg(eventReflections.map(r => r.relevanceRating));
@@ -352,9 +290,16 @@ export default function PreviousEventDetailModal({
                 event={event} registrations={eventRegistrations} canManage
                 onDelete={onDeleteRegistration} onUpdate={onUpdateRegistration} onUpdateAttendanceStatus={onUpdateAttendanceStatus}
                 dismissedPairs={dismissedRegistrationPairs} onMerge={onMergeRegistrations} onDismissPair={onDismissRegistrationPair}
+                emailLog={emailLog}
+                onSendPostEventEmail={onSendPostEventEmail ? (ids) => onSendPostEventEmail(event, ids) : undefined}
+                onRefreshEmailLog={refreshEmailLog}
               />
-              <SendThankYouControl />
-              <PresentersSection />
+              <PresentersSection
+                event={event} presenters={eventPresenters} canManage={canManage} emailLog={emailLog}
+                onSendPresenterThankYou={onSendPresenterThankYou ? (presenters) => onSendPresenterThankYou(event, presenters) : undefined}
+                onRefreshEmailLog={refreshEmailLog}
+              />
+              {canManage && <EmailLogPanel log={emailLog} />}
             </div>
           )}
 
@@ -418,7 +363,6 @@ export default function PreviousEventDetailModal({
                   </div>
                 </div>
               )}
-              <SendThankYouControl />
             </div>
           )}
 
@@ -429,7 +373,6 @@ export default function PreviousEventDetailModal({
                 dismissedPairs={dismissedReflectionPairs} onDelete={onDeleteReflection}
                 onMerge={onMergeReflections} onDismissPair={onDismissReflectionPair}
               />
-              <SendThankYouControl />
 
               <div>
                 <div className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-faint)" }}>Awaiting Reflection ({awaitingReflection.length})</div>
@@ -475,8 +418,7 @@ export default function PreviousEventDetailModal({
 
           {tab === "certificates" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <SendThankYouControl />
+              <div className="flex items-center justify-end gap-2 flex-wrap">
                 <select value={certSortBy} onChange={e => setCertSortBy(e.target.value)} className="whmi-input px-2 py-1.5 text-[11.5px]">
                   {CERT_SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                 </select>
@@ -521,13 +463,6 @@ export default function PreviousEventDetailModal({
           {tab === "email" && (
             <div className="space-y-3">
               <div className="whmi-card p-3.5">
-                <div className="font-semibold text-[13px] mb-0.5">Thank-you &amp; feedback request</div>
-                <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>
-                  Sent to everyone who attended (or is still marked Registered), asking for their CPD reflection. Skips anyone already emailed — automatically 25-40 minutes after the event ends, or manually here.
-                </p>
-                <SendThankYouControl />
-              </div>
-              <div className="whmi-card p-3.5">
                 <div className="font-semibold text-[13px] mb-0.5">Reflection follow-up</div>
                 <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>
                   A second nudge to anyone with an outstanding reflection — the same email as the "Follow Up" button on the Certificates tab, just sent to everyone at once.
@@ -544,16 +479,9 @@ export default function PreviousEventDetailModal({
                   </button>
                 </div>
               </div>
-              {eventPresenters.length > 0 && (
-                <div>
-                  <div className="font-semibold text-[13px] mb-0.5">Presenter thank-you</div>
-                  <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>
-                    A separate thank-you for presenters, not the attendee copy above - they don't get asked to reflect, but you can attach a CPD certificate for presenting.
-                  </p>
-                  <PresentersSection />
-                </div>
-              )}
-              {canManage && <EmailLogPanel eventId={event.id} />}
+              <p className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>
+                Post-event thank-you and presenter thank-you emails have moved to the Attendance tab, alongside the Email Log.
+              </p>
             </div>
           )}
         </div>

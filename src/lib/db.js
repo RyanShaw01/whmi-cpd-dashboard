@@ -728,12 +728,14 @@ export async function sendReflectionReminder({ name, email, eventId, eventTitle 
   return { ok: true, ...data };
 }
 
-// Bulk "thanks for attending, please reflect" email to every eligible attendee of an event who
-// hasn't received it yet — same copy/column (`reminder_sent_at`) as the automated post-event
-// cron, so a manual send here and the cron never double up.
-export async function sendThankYouEmail({ eventId }) {
+// "Thanks for attending, please reflect" email - same copy/column (`reminder_sent_at`) as the
+// automated post-event cron, so a manual send here and the cron never double up. `registrationIds`
+// (when given) is authoritative: sends to exactly those registrations, resend included - used for
+// both the individual per-attendee button and the bulk "send to all + opted-in presenters" button.
+// Omitted, falls back to auto-detecting every eligible not-yet-thanked attendee.
+export async function sendThankYouEmail({ eventId, registrationIds }) {
   if (!supabaseConfigured) return { ok: false };
-  const { data, error } = await supabase.functions.invoke("send-thank-you-email", { body: { eventId } });
+  const { data, error } = await supabase.functions.invoke("send-thank-you-email", { body: { eventId, registrationIds } });
   if (error) { console.error("sendThankYouEmail", error); return { ok: false }; }
   return { ok: true, ...data };
 }

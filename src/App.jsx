@@ -503,55 +503,44 @@ export default function App() {
       },
     });
   };
-  // Bulk "thanks for attending" send for every eligible attendee of a past event who hasn't
-  // received it yet (from either this manual action or the automated post-event cron — both
-  // paths write the same reminder_sent_at column, so this can't double-send).
-  const handleSendThankYouEmail = (event) => requestConfirm({
-    title: "Send thank-you email?",
-    message: `Email everyone who attended "${event.title}" a thank-you and reflection request, if they haven't already been sent one?`,
-    confirmLabel: "Send",
-    onConfirm: async () => {
-      const res = await sendThankYouEmail({ eventId: event.id });
-      if (res.ok) {
-        pushAudit({ actorId: session?.id, action: "event.thank_you_sent", entityType: "event", entityId: event.id, details: { sentCount: res.sentCount } });
-        const sentAt = res.sentAt || new Date().toISOString();
-        setRegistrations(prev => prev.map(r =>
-          r.eventId === event.id && !r.reminderSentAt && ["Registered", "Attended"].includes(r.attendanceStatus || "Registered")
-            ? { ...r, reminderSentAt: sentAt }
-            : r
-        ));
-        showToast(res.sentCount > 0 ? `Thank-you email sent to ${res.sentCount} attendee${res.sentCount === 1 ? "" : "s"}.` : "Everyone had already been emailed.");
-      } else {
-        showToast("Couldn't send the thank-you email. Please try again.");
-      }
-    },
-  });
-  // Presenter-only thank-you, separate wording/flow from handleSendThankYouEmail above - shares
+  // "Thanks for attending" send - individual (one id) or bulk (many, plus any opted-in
+  // presenters), confirmed inline by the caller (RegistrationsPanel) rather than via the generic
+  // confirm modal, since the bulk case needs its own interactive presenter-picker UI. Shares the
+  // same reminder_sent_at column as the automated post-event cron, so this can't double-send with
+  // that; resends are explicitly allowed since the caller already confirmed.
+  const handleSendPostEventEmail = async (event, registrationIds) => {
+    if (!registrationIds || registrationIds.length === 0) return { ok: false };
+    const res = await sendThankYouEmail({ eventId: event.id, registrationIds });
+    if (res.ok) {
+      pushAudit({ actorId: session?.id, action: "event.thank_you_sent", entityType: "event", entityId: event.id, details: { sentCount: res.sentCount } });
+      const sentAt = res.sentAt || new Date().toISOString();
+      const sentIds = new Set(registrationIds);
+      setRegistrations(prev => prev.map(r => (r.eventId === event.id && sentIds.has(r.id)) ? { ...r, reminderSentAt: sentAt } : r));
+      showToast(res.sentCount > 0 ? `Post-event email sent to ${res.sentCount} recipient${res.sentCount === 1 ? "" : "s"}.` : "Couldn't send - everyone may have already been emailed.");
+    } else {
+      showToast("Couldn't send the post-event email. Please try again.");
+    }
+    return res;
+  };
+  // Presenter-only thank-you, separate wording/flow from handleSendPostEventEmail above - shares
   // the same reminder_sent_at column so a presenter can never receive both this and the bulk
   // attendee thank-you. `presenters` is [{ id, includeCertificate }] - certificate-or-not is
-  // decided per presenter, not one flag for the whole batch.
-  const handleSendPresenterThankYou = (event, presenters) => {
-    if (!presenters || presenters.length === 0) return;
+  // decided per presenter, not one flag for the whole batch. Confirmed inline by the caller
+  // (PresentersSection), same reasoning as handleSendPostEventEmail above.
+  const handleSendPresenterThankYou = async (event, presenters) => {
+    if (!presenters || presenters.length === 0) return { ok: false };
     const certCount = presenters.filter(p => p.includeCertificate).length;
-    requestConfirm({
-      title: "Send thank-you to presenters?",
-      message: `Email ${presenters.length} presenter${presenters.length === 1 ? "" : "s"} of "${event.title}" a thank-you${certCount > 0 ? ` (${certCount} with their CPD certificate attached)` : ""}?`,
-      confirmLabel: "Send",
-      onConfirm: async () => {
-        const res = await sendPresenterThankYou({ eventId: event.id, presenters });
-        if (res.ok) {
-          pushAudit({ actorId: session?.id, action: "event.presenter_thank_you_sent", entityType: "event", entityId: event.id, details: { sentCount: res.sentCount, certCount } });
-          const sentAt = res.sentAt || new Date().toISOString();
-          const sentIds = new Set(presenters.map(p => p.id));
-          setRegistrations(prev => prev.map(r =>
-            r.eventId === event.id && sentIds.has(r.id) && !r.reminderSentAt ? { ...r, reminderSentAt: sentAt } : r
-          ));
-          showToast(res.sentCount > 0 ? `Thank-you email sent to ${res.sentCount} presenter${res.sentCount === 1 ? "" : "s"}.` : "Everyone had already been emailed.");
-        } else {
-          showToast("Couldn't send the presenter thank-you email. Please try again.");
-        }
-      },
-    });
+    const res = await sendPresenterThankYou({ eventId: event.id, presenters });
+    if (res.ok) {
+      pushAudit({ actorId: session?.id, action: "event.presenter_thank_you_sent", entityType: "event", entityId: event.id, details: { sentCount: res.sentCount, certCount } });
+      const sentAt = res.sentAt || new Date().toISOString();
+      const sentIds = new Set(presenters.map(p => p.id));
+      setRegistrations(prev => prev.map(r => (r.eventId === event.id && sentIds.has(r.id)) ? { ...r, reminderSentAt: sentAt } : r));
+      showToast(res.sentCount > 0 ? `Thank-you email sent to ${res.sentCount} presenter${res.sentCount === 1 ? "" : "s"}.` : "Couldn't send - everyone may have already been emailed.");
+    } else {
+      showToast("Couldn't send the presenter thank-you email. Please try again.");
+    }
+    return res;
   };
   const handleSendReflectionsReport = async ({ email, name, entries }) => {
     const res = await emailReflectionsReport({ toEmail: email, toName: name, entries });
@@ -1471,6 +1460,7 @@ export default function App() {
           onUpdateBannerCrop={handleUpdateBannerCrop} onRemoveBanner={handleRemoveBanner}
           onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf}
           onSendAllReflectionReminders={handleSendAllReflectionReminders}
+          onSendPostEventEmail={handleSendPostEventEmail}
           onSendPresenterThankYou={handleSendPresenterThankYou}
           onAddRegistration={handleAdminAddRegistration} users={users} staffDirectory={staffDirectory} onViewStaffProfile={openStaff}
         />
@@ -1490,7 +1480,7 @@ export default function App() {
           onUpdateBannerCrop={handleUpdateBannerCrop} onRemoveBanner={handleRemoveBanner}
           onCreateCertificateFor={handleCreateCertificateForRegistrant} onSendReflectionReminder={handleSendReflectionReminder}
           onSendAllReflectionReminders={handleSendAllReflectionReminders}
-          onSendThankYouEmail={handleSendThankYouEmail}
+          onSendPostEventEmail={handleSendPostEventEmail}
           onSendPresenterThankYou={handleSendPresenterThankYou}
         />
         <EventFormModal

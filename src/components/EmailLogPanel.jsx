@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Mail, ChevronDown, AlertCircle } from "lucide-react";
-import { fetchEmailLogForEvent } from "../lib/db";
 import { relativeTime } from "../lib/helpers";
 
 const TEMPLATE_LABELS = {
@@ -17,18 +16,11 @@ function templateLabel(key) {
   return TEMPLATE_LABELS[key] || key;
 }
 
-// Per-recipient send log for one event - who was emailed what, and when. Fetched on demand
-// (rather than folded into the main app data load) since most events will never need it opened.
-export default function EmailLogPanel({ eventId }) {
+// Per-recipient send log for one event - who was emailed what, and when. `log` is fetched once by
+// the parent modal (see EventDetailModal/PreviousEventDetailModal) and shared with the individual
+// send buttons on each row, rather than this panel fetching its own separate copy.
+export default function EmailLogPanel({ log }) {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [log, setLog] = useState(null);
-
-  useEffect(() => {
-    if (!open || log !== null) return;
-    setLoading(true);
-    fetchEmailLogForEvent(eventId).then(rows => { setLog(rows); setLoading(false); });
-  }, [open, eventId, log]);
 
   return (
     <div className="whmi-card overflow-hidden">
@@ -43,9 +35,9 @@ export default function EmailLogPanel({ eventId }) {
       </button>
       {open && (
         <div className="px-3 pb-3 space-y-1.5">
-          {loading && <div className="text-[12px] py-1" style={{ color: "var(--text-faint)" }}>Loading...</div>}
-          {!loading && log?.length === 0 && <div className="text-[12px] py-1" style={{ color: "var(--text-faint)" }}>No emails sent for this event yet.</div>}
-          {!loading && log?.map(entry => (
+          {log == null && <div className="text-[12px] py-1" style={{ color: "var(--text-faint)" }}>Loading...</div>}
+          {log?.length === 0 && <div className="text-[12px] py-1" style={{ color: "var(--text-faint)" }}>No emails sent for this event yet.</div>}
+          {log?.map(entry => (
             <div key={entry.id} className="flex items-center justify-between gap-2 text-[11.5px] px-2 py-1.5 rounded-md" style={{ background: "var(--surface-2)" }}>
               <div className="min-w-0">
                 <div className="font-semibold truncate">{entry.recipientName || entry.recipientEmail}</div>

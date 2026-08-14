@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
-import { Search, Check, X, Ban, Pencil, UserPlus, Mic } from "lucide-react";
+import { Search, Check, X, Ban, Pencil, UserPlus, Mic, Mail, MailCheck } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import DuplicateWarnings from "./DuplicateWarnings";
 import RegistrationFormModal from "./RegistrationFormModal";
 import { findDuplicates } from "../lib/duplicates";
+import { sendHistoryFor, relativeTime, fmtDateTime } from "../lib/helpers";
 
 // Manually-settable outcomes — "Registered"/"Waitlisted" stay automatic states driven by
 // registration/capacity, shown read-only via StatusBadge when none of these three apply.
@@ -61,10 +62,60 @@ function AttendanceControl({ registration, onUpdateAttendanceStatus }) {
   );
 }
 
+// Individual "send this one attendee the post-event thank-you/feedback email" button - only
+// shown for non-presenter registrants marked Attended. Greys out once sent but stays clickable
+// (with its own inline confirm) so a resend is always possible; hovering shows every past send.
+function PostEventEmailButton({ registration, emailLog, onSend, onRefresh }) {
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
+  const history = sendHistoryFor(emailLog, registration.email, "post_event_thank_you");
+  const hasSent = history.length > 0;
+  const tooltip = hasSent
+    ? `Sent ${history.length} time${history.length === 1 ? "" : "s"}:\n${history.map(h => fmtDateTime(h.sentAt)).join("\n")}`
+    : "Send Post-Event (Thank-you/Feedback) Email";
+
+  const confirmSend = async () => {
+    setSending(true);
+    await onSend([registration.id]);
+    await onRefresh();
+    setSending(false);
+    setConfirming(false);
+  };
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+        <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Send?</span>
+        <button onClick={confirmSend} disabled={sending} className="whmi-btn-ghost !py-1 !px-2 text-[10.5px]" style={{ color: "var(--accent-secondary)" }}>{sending ? "..." : "Confirm"}</button>
+        <button onClick={() => setConfirming(false)} className="whmi-btn-ghost !py-1 !px-2 text-[10.5px]">Cancel</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-0.5" onClick={e => e.stopPropagation()} title={tooltip}>
+      <button
+        onClick={() => setConfirming(true)}
+        className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold transition hover:brightness-110"
+        style={hasSent
+          ? { color: "var(--text-faint)", border: "1px solid var(--border)" }
+          : { color: "white", background: "var(--accent-secondary)" }}
+      >
+        {hasSent ? <MailCheck size={11} /> : <Mail size={11} />}Post-Event Email
+      </button>
+      {hasSent && (
+        <span className="text-[9.5px]" style={{ color: "var(--text-faint)" }}>
+          {history.length > 1 ? `Sent ${history.length}x, last ` : "Sent "}{relativeTime(history[0].sentAt)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // One row, shared by both the Presenters group and the regular Attendees group below - kept as
 // its own component (rather than inlined in a .map()) purely so it can be reused for both groups
 // without duplicating the markup.
-function RegistrationRow({ r, event, canManage, onUpdate, onUpdateAttendanceStatus, highlightIds, onEdit }) {
+function RegistrationRow({ r, event, canManage, onUpdate, onUpdateAttendanceStatus, highlightIds, onEdit, emailLog, onSendPostEventEmail, onRefreshEmailLog }) {
   // Not a real <button> - the row already contains several (attendance ticks, the attending-type
   // toggle, the edit control), and a <button> can't nest another <button> without the browser
   // silently mis-parsing it. role="button" + keyboard handling keeps it accessible without that
@@ -93,6 +144,9 @@ function RegistrationRow({ r, event, canManage, onUpdate, onUpdateAttendanceStat
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {r.isExternal && <span className="whmi-badge" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>External</span>}
+          {canManage && !r.isPresenter && r.attendanceStatus === "Attended" && onSendPostEventEmail && (
+            <PostEventEmailButton registration={r} emailLog={emailLog} onSend={onSendPostEventEmail} onRefresh={onRefreshEmailLog} />
+          )}
           {canManage && onUpdateAttendanceStatus ? (
             <div onClick={e => e.stopPropagation()}>
               <AttendanceControl registration={r} onUpdateAttendanceStatus={onUpdateAttendanceStatus} />
@@ -137,6 +191,64 @@ function RegistrationRow({ r, event, canManage, onUpdate, onUpdateAttendanceStat
   );
 }
 
+// Bulk "send everyone marked Attended the post-event thank-you/feedback email" button, with an
+// inline confirm that also offers to include any presenters (unchecked by default) in the same
+// attendee-facing copy - separate from PresentersSection's own presenter-specific thank-you.
+function PostEventEmailAllSection({ attendees, presenters, onSend, onRefresh }) {
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [selectedPresenterIds, setSelectedPresenterIds] = useState(new Set());
+
+  if (attendees.length === 0) return null;
+
+  const togglePresenter = (id) => setSelectedPresenterIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const confirmSend = async () => {
+    setSending(true);
+    await onSend([...attendees.map(a => a.id), ...selectedPresenterIds]);
+    await onRefresh();
+    setSending(false);
+    setConfirming(false);
+    setSelectedPresenterIds(new Set());
+  };
+
+  if (confirming) {
+    return (
+      <div className="whmi-card p-3 space-y-2">
+        <div className="text-[12.5px] font-semibold">Send to {attendees.length} attendee{attendees.length === 1 ? "" : "s"} marked Attended?</div>
+        {presenters.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Also include presenters?</div>
+            {presenters.map(p => (
+              <label key={p.id} className="flex items-center gap-2 text-[12px] cursor-pointer">
+                <input type="checkbox" checked={selectedPresenterIds.has(p.id)} onChange={() => togglePresenter(p.id)} />
+                {p.name}
+              </label>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center justify-end gap-1.5">
+          <button onClick={() => setConfirming(false)} className="whmi-btn-ghost !py-1.5 text-[11.5px]">Cancel</button>
+          <button onClick={confirmSend} disabled={sending} className="whmi-btn-primary !py-1.5 text-[11.5px]">{sending ? "Sending..." : "Confirm & Send"}</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="whmi-btn-ghost w-full flex items-center justify-center gap-1.5 transition hover:brightness-95"
+    >
+      <Mail size={14} />Send Post-Event (Thank-you/Feedback) Email to all attendees
+    </button>
+  );
+}
+
 // Best-effort link from a registrant to a staff directory record: prefer the reliable
 // registration.userId -> users.staffId chain (set whenever the registrant was signed in when
 // they registered), falling back to a same-name match for admin-added/anonymous registrants.
@@ -153,6 +265,7 @@ function findMatchedStaff(reg, users, staffDirectory) {
 export default function RegistrationsPanel({
   event, registrations, canManage, dismissedPairs, onDelete, onUpdate, onUpdateAttendanceStatus, onMerge, onDismissPair, highlightIds,
   onAdd, users, staffDirectory, onViewStaffProfile,
+  emailLog, onSendPostEventEmail, onRefreshEmailLog,
 }) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("date-desc");
@@ -231,7 +344,10 @@ export default function RegistrationsPanel({
             <Mic size={11} />Presenters ({presenters.length})
           </div>
           {presenters.map(r => (
-            <RegistrationRow key={r.id} r={r} event={event} canManage={canManage} onUpdate={onUpdate} onUpdateAttendanceStatus={onUpdateAttendanceStatus} highlightIds={highlightIds} onEdit={setEditingReg} />
+            <RegistrationRow
+              key={r.id} r={r} event={event} canManage={canManage} onUpdate={onUpdate} onUpdateAttendanceStatus={onUpdateAttendanceStatus} highlightIds={highlightIds} onEdit={setEditingReg}
+              emailLog={emailLog} onSendPostEventEmail={onSendPostEventEmail} onRefreshEmailLog={onRefreshEmailLog}
+            />
           ))}
         </div>
       )}
@@ -242,9 +358,21 @@ export default function RegistrationsPanel({
             <div className="text-[10.5px] font-bold uppercase tracking-wide px-0.5 pt-1" style={{ color: "var(--text-faint)" }}>Attendees ({attendees.length})</div>
           )}
           {attendees.map(r => (
-            <RegistrationRow key={r.id} r={r} event={event} canManage={canManage} onUpdate={onUpdate} onUpdateAttendanceStatus={onUpdateAttendanceStatus} highlightIds={highlightIds} onEdit={setEditingReg} />
+            <RegistrationRow
+              key={r.id} r={r} event={event} canManage={canManage} onUpdate={onUpdate} onUpdateAttendanceStatus={onUpdateAttendanceStatus} highlightIds={highlightIds} onEdit={setEditingReg}
+              emailLog={emailLog} onSendPostEventEmail={onSendPostEventEmail} onRefreshEmailLog={onRefreshEmailLog}
+            />
           ))}
         </div>
+      )}
+
+      {canManage && onSendPostEventEmail && (
+        <PostEventEmailAllSection
+          attendees={attendees.filter(a => a.attendanceStatus === "Attended")}
+          presenters={presenters}
+          onSend={onSendPostEventEmail}
+          onRefresh={onRefreshEmailLog}
+        />
       )}
 
       {editingReg && (

@@ -1,9 +1,13 @@
-// Admin/owner-only: manually sends the "thanks for attending, please reflect" email to every
-// eligible registrant of a past event who hasn't received it yet - the same copy the automated
-// post-event cron (send-event-reminders) sends 25-40 minutes after an event ends, so admins have
-// a way to (re)trigger it on demand without waiting on the cron window, and without ever double-
-// sending: both paths write the same `reminder_sent_at` column, so whichever one fires first is
-// the one that "counts" for greying the button out.
+// Admin/owner-only: manually sends the "thanks for attending, please reflect" email - the same
+// copy the automated post-event cron (send-event-reminders) sends 25-40 minutes after an event
+// ends, so admins have a way to (re)trigger it on demand without waiting on the cron window.
+//
+// `registrationIds`, when given, is authoritative: sends to exactly those registrations
+// (event-scoped for safety), regardless of current attendance_status/is_presenter/reminder_sent_at
+// - this is how both the individual per-attendee "resend" button and the bulk "send to all
+// attendees (+ opted-in presenters)" button work, since an explicit admin pick should always be
+// honoured, including a deliberate resend. Omitting it falls back to the original
+// auto-detect-eligible behaviour (every Registered/Attended non-presenter not yet thanked).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/mailer.ts";
 import { thankYouEmailText, thankYouEmailHtml, thankYouEmailSubject } from "../_shared/emailTemplate.ts";
@@ -34,19 +38,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "forbidden" }), { status: 403, headers: CORS_HEADERS });
     }
 
-    const { eventId } = await req.json();
+    const { eventId, registrationIds } = await req.json();
     if (!eventId) return new Response(JSON.stringify({ ok: false, error: "eventId is required" }), { status: 400, headers: CORS_HEADERS });
 
     const { data: event, error: eventError } = await supabaseAdmin.from("events").select("id, title").eq("id", eventId).maybeSingle();
     if (eventError || !event) return new Response(JSON.stringify({ ok: false, error: "event not found" }), { status: 404, headers: CORS_HEADERS });
 
-    const { data: registrations, error: regError } = await supabaseAdmin
-      .from("registrations")
-      .select("id, name, email")
-      .eq("event_id", eventId)
-      .in("attendance_status", ["Registered", "Attended"])
-      .eq("is_presenter", false)
-      .is("reminder_sent_at", null);
+    let query = supabaseAdmin.from("registrations").select("id, name, email").eq("event_id", eventId);
+    query = Array.isArray(registrationIds) && registrationIds.length > 0
+      ? query.in("id", registrationIds)
+      : query.in("attendance_status", ["Registered", "Attended"]).eq("is_presenter", false).is("reminder_sent_at", null);
+    const { data: registrations, error: regError } = await query;
     if (regError) throw regError;
 
     let sentCount = 0;
