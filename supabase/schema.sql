@@ -67,7 +67,7 @@ create table if not exists public.events (
   registered int not null default 0,
   capacity int,
   waitlist int not null default 0,
-  status text not null check (status in ('Draft','Awaiting Approval','Registration Open','Informational','Registration Closed','Completed','Archived')),
+  status text not null check (status in ('Draft','Awaiting Approval','Registration Open','Open (No Registration Needed)','Registration Closed','Completed','Archived')),
   meeting_url text,
   attendance int,
   feedback numeric,

@@ -16,7 +16,7 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
 
   // Due-soon stays scoped to actually-registerable events (no point nudging "register soon" for
   // something nobody can register for); Browse & Register is the wider visibility list, so it
-  // also includes Informational events - they just won't get a register button/CTA there, same
+  // also includes "Open (No Registration Needed)" events - they just won't get a register button/CTA there, same
   // as everywhere else that renders a register control off event.status directly.
   const externallyOpenEvents = events.filter(e => e.status === "Registration Open" && e.openToExternal !== false);
   const dueSoonEvents = externallyOpenEvents
