@@ -53,21 +53,18 @@ Deno.serve(async (req) => {
     const { data: event, error: eventError } = await supabaseAdmin.from("events").select("*").eq("id", eventId).maybeSingle();
     if (eventError || !event) return new Response(JSON.stringify({ ok: false, error: "event not found" }), { status: 404, headers: CORS_HEADERS });
 
-    const { data: allPresenters, error: regError } = await supabaseAdmin
-      .from("registrations")
-      .select("id, name, email")
-      .eq("event_id", eventId)
-      .eq("is_presenter", true)
-      .is("reminder_sent_at", null);
-    if (regError) throw regError;
-
-    // Only act on presenters the caller actually asked to email (if a specific list was given),
-    // still re-scoped server-side to is_presenter=true / reminder_sent_at=null above so a stale
-    // or tampered client list can't email someone twice or someone who isn't a presenter.
+    // `presenterOverrides`, when given, is authoritative: sends to exactly those presenter ids
+    // (still re-scoped to event_id/is_presenter=true below so a stale or tampered client list
+    // can't email someone who isn't a presenter of this event), regardless of reminder_sent_at -
+    // an explicit resend must always be honoured, since the client already confirmed it with the
+    // admin. Only falls back to "every not-yet-thanked presenter" when no explicit list is given.
     const certById = new Map((presenterOverrides || []).map((p: { id: string; includeCertificate?: boolean }) => [p.id, !!p.includeCertificate]));
-    const targets = presenterOverrides
-      ? (allPresenters || []).filter(p => certById.has(p.id))
-      : (allPresenters || []);
+    let presentersQuery = supabaseAdmin.from("registrations").select("id, name, email").eq("event_id", eventId).eq("is_presenter", true);
+    presentersQuery = presenterOverrides && presenterOverrides.length > 0
+      ? presentersQuery.in("id", [...certById.keys()])
+      : presentersQuery.is("reminder_sent_at", null);
+    const { data: targets, error: regError } = await presentersQuery;
+    if (regError) throw regError;
 
     const anyCertificate = presenterOverrides ? [...certById.values()].some(Boolean) : !!globalIncludeCertificate;
 
@@ -96,7 +93,7 @@ Deno.serve(async (req) => {
 
     let sentCount = 0;
     const sentAt = new Date().toISOString();
-    for (const reg of targets) {
+    for (const reg of targets || []) {
       const includeCertificate = presenterOverrides ? !!certById.get(reg.id) : !!globalIncludeCertificate;
       let attachments: { filename: string; content: string }[] | undefined;
       let certId: string | null = null;
