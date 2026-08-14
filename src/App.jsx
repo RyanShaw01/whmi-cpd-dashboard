@@ -1159,7 +1159,7 @@ export default function App() {
   // so the person still shows up properly linked to an existing staff/external record, but skips
   // the anonymous-vs-signed-in branching since the caller here is always an admin acting on
   // someone else's behalf, never their own session.
-  const handleAdminAddRegistration = (eventId, { name, email, profession, organisation, attendanceType, dietary, accessibility, comments }) => {
+  const handleAdminAddRegistration = (eventId, { name, email, profession, organisation, attendanceType, dietary, accessibility, comments, isPresenter, sendConfirmationEmail }) => {
     let userId = null;
     let isExternal = false;
     const matchedUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -1170,14 +1170,16 @@ export default function App() {
     }
 
     const reg = {
-      id: "r" + Date.now(), eventId, name, email, profession, organisation, attendanceType, dietary, accessibility, comments,
+      id: "r" + Date.now(), eventId, name, email, profession, organisation, attendanceType, dietary, accessibility, comments, isPresenter,
       userId, isExternal, attendanceStatus: nextAttendanceStatus(eventId), createdAt: new Date().toISOString(),
     };
     setRegistrations(prev => [...prev, reg]);
     insertRegistration(reg);
     pushAudit({ actorId: session?.id, action: "registration.created", entityType: "event", entityId: eventId, details: { name: reg.name, eventTitle: events.find(e => e.id === eventId)?.title } });
-    sendRegistrationConfirmation({ eventId, name, email });
-    showToast("Registration added.");
+    // Off by default (RegistrationFormModal) - a manually-recorded registration (phone/in-person)
+    // shouldn't silently email someone unless the admin explicitly opts in.
+    if (sendConfirmationEmail) sendRegistrationConfirmation({ eventId, name, email });
+    showToast(sendConfirmationEmail ? "Registration added and confirmation email sent." : "Registration added.");
   };
 
   const primaryHex = BRAND_HEX[colorPrefs.primary] || BRAND_HEX.blue;
