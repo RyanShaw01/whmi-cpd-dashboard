@@ -428,7 +428,7 @@ export function presenterThankYouText(name: string, eventTitle: string, certific
   const certLine = certificateAttached
     ? "\n\nYour CPD certificate for presenting is attached to this email."
     : "";
-  return `Hi ${firstName(name)},\n\nThank you for presenting at ${eventTitle}. Your time and expertise made a real difference to everyone who attended.${certLine}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`;
+  return `Hi ${firstName(name)},\n\nThank you for the time and effort you put into presenting at ${eventTitle}. We really appreciate you sharing your knowledge and insights with the group - sessions like yours are what make this CPD program valuable, and everyone who attended is better off for it.${certLine}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`;
 }
 
 export function presenterThankYouHtml(name: string, eventTitle: string, certificateAttached: boolean): string {
@@ -441,7 +441,7 @@ export function presenterThankYouHtml(name: string, eventTitle: string, certific
     bodyHtml: `
       <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thank you for presenting</h1>
       <p style="margin:0 0 14px 0;">Hi ${escapeHtml(firstName(name))},</p>
-      <p style="margin:0 0 14px 0;">Thank you for presenting at ${boldHtml(eventTitle)}. Your time and expertise made a real difference to everyone who attended.</p>
+      <p style="margin:0 0 14px 0;">Thank you for the time and effort you put into presenting at ${boldHtml(eventTitle)}. We really appreciate you sharing your knowledge and insights with the group - sessions like yours are what make this CPD program valuable, and everyone who attended is better off for it.</p>
       ${certLine}
     `,
   });
