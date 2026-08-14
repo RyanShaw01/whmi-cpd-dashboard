@@ -40,7 +40,7 @@ export default function PreviousEventDetailModal({
   onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner,
-  onCreateCertificateFor, onSendReflectionReminder, onSendAllReflectionReminders, onSendThankYouEmail, initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
+  onCreateCertificateFor, onSendReflectionReminder, onSendAllReflectionReminders, onSendThankYouEmail, onSendPresenterThankYou, initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
 }) {
   const [tab, setTab] = useState(initialTab || "overview");
   const [certSortBy, setCertSortBy] = useState("date-desc");
@@ -119,13 +119,14 @@ export default function PreviousEventDetailModal({
   const reflectedEmails = new Set(eventReflections.map(r => (r.email || "").toLowerCase()));
   const awaitingReflection = eventRegistrations.filter(r =>
     (r.attendanceStatus === "Registered" || r.attendanceStatus === "Attended") &&
+    !r.isPresenter &&
     !reflectedEmails.has((r.email || "").toLowerCase())
   );
 
   // Thank-you email eligibility: same population the automated post-event cron and the manual
   // send both target (Registered/Attended), so "everyone already emailed" here matches exactly
   // what would grey the button out whether it was sent automatically or by hand.
-  const thankYouEligible = eventRegistrations.filter(r => ["Registered", "Attended"].includes(r.attendanceStatus || "Registered"));
+  const thankYouEligible = eventRegistrations.filter(r => ["Registered", "Attended"].includes(r.attendanceStatus || "Registered") && !r.isPresenter);
   const thankYouUnsent = thankYouEligible.filter(r => !r.reminderSentAt);
   const thankYouLastSentAt = thankYouEligible.reduce((latest, r) => (r.reminderSentAt && (!latest || r.reminderSentAt > latest)) ? r.reminderSentAt : latest, null);
 
@@ -142,6 +143,46 @@ export default function PreviousEventDetailModal({
           <Mail size={13} />Send Thank-You Email
         </button>
         {thankYouLastSentAt && <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Sent {relativeTime(thankYouLastSentAt)}</span>}
+      </div>
+    ) : null
+  );
+
+  // Presenters get their own thank-you flow (distinct wording, optional CPD certificate),
+  // entirely separate from the attendee-facing thank-you above - same reminder_sent_at column,
+  // but scoped by is_presenter so the two populations never overlap.
+  const eventPresenters = eventRegistrations.filter(r => r.isPresenter);
+  const presentersUnsent = eventPresenters.filter(r => !r.reminderSentAt);
+  const presentersLastSentAt = eventPresenters.reduce((latest, r) => (r.reminderSentAt && (!latest || r.reminderSentAt > latest)) ? r.reminderSentAt : latest, null);
+  const [includePresenterCert, setIncludePresenterCert] = useState(false);
+
+  const PresentersSection = () => (
+    canManage && onSendPresenterThankYou && eventPresenters.length > 0 ? (
+      <div className="whmi-card p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="text-[10.5px] font-bold uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>Presenters ({eventPresenters.length})</div>
+          {presentersLastSentAt && <span className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>Sent {relativeTime(presentersLastSentAt)}</span>}
+        </div>
+        <div className="space-y-1">
+          {eventPresenters.map(r => (
+            <div key={r.id} className="flex items-center justify-between text-[12px] px-2 py-1.5 rounded-md" style={{ background: "var(--surface-2)" }}>
+              <span className="truncate">{r.name}</span>
+              {!r.reminderSentAt && <span className="whmi-badge" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>Not yet thanked</span>}
+            </div>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-[11.5px] cursor-pointer" style={{ color: "var(--text-dim)" }}>
+          <input type="checkbox" checked={includePresenterCert} onChange={e => setIncludePresenterCert(e.target.checked)} />
+          Include CPD certificate
+        </label>
+        <button
+          onClick={() => onSendPresenterThankYou(event, presentersUnsent, includePresenterCert)}
+          disabled={presentersUnsent.length === 0}
+          className="whmi-btn-primary w-full !py-1.5 text-[12px] flex items-center justify-center gap-1.5"
+          style={{ opacity: presentersUnsent.length === 0 ? 0.5 : 1 }}
+          title={presentersUnsent.length === 0 ? "Everyone's already been thanked" : "Email presenters a thank-you"}
+        >
+          <Award size={13} />Send Thank-You to Presenters ({presentersUnsent.length})
+        </button>
       </div>
     ) : null
   );
@@ -302,6 +343,7 @@ export default function PreviousEventDetailModal({
                 dismissedPairs={dismissedRegistrationPairs} onMerge={onMergeRegistrations} onDismissPair={onDismissRegistrationPair}
               />
               <SendThankYouControl />
+              <PresentersSection />
             </div>
           )}
 
@@ -491,6 +533,15 @@ export default function PreviousEventDetailModal({
                   </button>
                 </div>
               </div>
+              {eventPresenters.length > 0 && (
+                <div>
+                  <div className="font-semibold text-[13px] mb-0.5">Presenter thank-you</div>
+                  <p className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>
+                    A separate thank-you for presenters, not the attendee copy above - they don't get asked to reflect, but you can attach a CPD certificate for presenting.
+                  </p>
+                  <PresentersSection />
+                </div>
+              )}
             </div>
           )}
         </div>

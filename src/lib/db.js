@@ -117,6 +117,7 @@ const registrationFromRow = (r) => ({
   accessibility: r.accessibility, comments: r.comments, organisation: r.organisation,
   reflectionEmailSentAt: r.reflection_email_sent_at || null,
   reminderSentAt: r.reminder_sent_at || null,
+  isPresenter: r.is_presenter || false,
 });
 const registrationToRow = (r) => ({
   id: r.id, event_id: r.eventId, user_id: r.userId ?? null, external_participant_id: r.externalParticipantId ?? null,
@@ -124,6 +125,7 @@ const registrationToRow = (r) => ({
   attendance_status: r.attendanceStatus || "Registered",
   profession: r.profession ?? null, campus: r.campus ?? null, attendance_type: r.attendanceType ?? null,
   accessibility: r.accessibility ?? null, comments: r.comments ?? null, organisation: r.organisation ?? null,
+  is_presenter: r.isPresenter ?? false,
 });
 
 const externalFromRow = (r) => ({ id: r.id, name: r.name, email: r.email, createdAt: r.created_at });
@@ -518,6 +520,8 @@ export async function updateRegistration(id, patch) {
   if ("comments" in patch) row.comments = patch.comments;
   if ("organisation" in patch) row.organisation = patch.organisation;
   if ("reflectionEmailSentAt" in patch) row.reflection_email_sent_at = patch.reflectionEmailSentAt;
+  if ("reminderSentAt" in patch) row.reminder_sent_at = patch.reminderSentAt;
+  if ("isPresenter" in patch) row.is_presenter = patch.isPresenter;
   const { error } = await supabase.from("registrations").update(row).eq("id", id);
   if (error) console.error("updateRegistration", error);
 }
@@ -731,6 +735,17 @@ export async function sendThankYouEmail({ eventId }) {
   if (!supabaseConfigured) return { ok: false };
   const { data, error } = await supabase.functions.invoke("send-thank-you-email", { body: { eventId } });
   if (error) { console.error("sendThankYouEmail", error); return { ok: false }; }
+  return { ok: true, ...data };
+}
+
+// Bulk "thanks for presenting" email to every event presenter who hasn't been thanked yet,
+// distinct wording from sendThankYouEmail (no reflection-form ask), optionally attaching a CPD
+// certificate — shares the same `reminder_sent_at` tracking column, scoped by is_presenter so
+// this and sendThankYouEmail never overlap or double-send.
+export async function sendPresenterThankYou({ eventId, includeCertificate }) {
+  if (!supabaseConfigured) return { ok: false };
+  const { data, error } = await supabase.functions.invoke("send-presenter-thank-you", { body: { eventId, includeCertificate } });
+  if (error) { console.error("sendPresenterThankYou", error); return { ok: false }; }
   return { ok: true, ...data };
 }
 

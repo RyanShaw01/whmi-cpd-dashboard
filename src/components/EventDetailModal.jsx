@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import {
   X, Calendar, Clock, MapPin, UserCircle2, ArrowUpRight, Download,
-  Eye, Send, AlertCircle, Link2, Trash2, Pencil, Copy, MessageSquareText, ChevronDown, ClipboardList, Maximize2, Users,
+  Eye, Send, AlertCircle, Link2, Trash2, Pencil, Copy, MessageSquareText, ChevronDown, ClipboardList, Maximize2, Users, Award,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import ModeBadge from "./ModeBadge";
@@ -83,7 +83,7 @@ export default function EventDetailModal({
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair,
   reflections, onDeleteReflection, dismissedReflectionPairs, onMergeReflections, onDismissReflectionPair,
   initialTab, initialEditing, highlightMissing, seriesEvents = [], onSwitchEvent, onDuplicate,
-  onOpenRegister, onUnregister, onSendAllReflectionReminders,
+  onOpenRegister, onUnregister, onSendAllReflectionReminders, onSendPresenterThankYou,
   onAddRegistration, users, staffDirectory, onViewStaffProfile,
 }) {
   const [regTab, setRegTab] = useState(initialTab || "overview");
@@ -93,6 +93,7 @@ export default function EventDetailModal({
   const [meetingUrlDraft, setMeetingUrlDraft] = useState("");
   const [previewingTemplate, setPreviewingTemplate] = useState(false);
   const [posterExpanded, setPosterExpanded] = useState(false);
+  const [includePresenterCert, setIncludePresenterCert] = useState(false);
   // The modal stays mounted between opens (no key), so a fresh `initialTab` from a new
   // openEvent(ev, tab) call needs to be applied explicitly rather than relying on useState's
   // one-time initializer. Same for initialEditing — e.g. jumping straight into edit mode for a
@@ -129,7 +130,41 @@ export default function EventDetailModal({
   const reflectedEmails = new Set(eventReflections.map(r => (r.email || "").toLowerCase()));
   const awaitingReflection = eventRegistrations.filter(r =>
     (r.attendanceStatus === "Registered" || r.attendanceStatus === "Attended") &&
+    !r.isPresenter &&
     !reflectedEmails.has((r.email || "").toLowerCase())
+  );
+  // Presenters get their own thank-you flow (distinct wording, optional CPD certificate),
+  // separate from the attendee reflection-request flow above - same reminder_sent_at tracking
+  // column, scoped by is_presenter so the two populations never overlap.
+  const eventPresenters = eventRegistrations.filter(r => r.isPresenter);
+  const presentersUnsent = eventPresenters.filter(r => !r.reminderSentAt);
+  const PresentersSection = () => (
+    canManage && onSendPresenterThankYou && eventPresenters.length > 0 ? (
+      <div className="whmi-card p-3 space-y-2">
+        <div className="text-[10.5px] font-bold uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>Presenters ({eventPresenters.length})</div>
+        <div className="space-y-1">
+          {eventPresenters.map(r => (
+            <div key={r.id} className="flex items-center justify-between text-[12px] px-2 py-1.5 rounded-md" style={{ background: "var(--surface-2)" }}>
+              <span className="truncate">{r.name}</span>
+              {!r.reminderSentAt && <span className="whmi-badge" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>Not yet thanked</span>}
+            </div>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-[11.5px] cursor-pointer" style={{ color: "var(--text-dim)" }}>
+          <input type="checkbox" checked={includePresenterCert} onChange={e => setIncludePresenterCert(e.target.checked)} />
+          Include CPD certificate
+        </label>
+        <button
+          onClick={() => onSendPresenterThankYou(event, presentersUnsent, includePresenterCert)}
+          disabled={presentersUnsent.length === 0}
+          className="whmi-btn-primary w-full !py-1.5 text-[12px] flex items-center justify-center gap-1.5"
+          style={{ opacity: presentersUnsent.length === 0 ? 0.5 : 1 }}
+          title={presentersUnsent.length === 0 ? "Everyone's already been thanked" : "Email presenters a thank-you"}
+        >
+          <Award size={13} />Send Thank-You to Presenters ({presentersUnsent.length})
+        </button>
+      </div>
+    ) : null
   );
   const myReflection = session ? eventReflections.find(r => r.email?.toLowerCase() === session.email.toLowerCase()) : null;
   const iRegistered = session ? eventRegistrations.some(r => r.userId === session.id) : false;
@@ -360,6 +395,7 @@ export default function EventDetailModal({
                 onAdd={onAddRegistration ? (patch) => onAddRegistration(event.id, patch) : undefined}
                 users={users} staffDirectory={staffDirectory} onViewStaffProfile={onViewStaffProfile}
               />
+              <PresentersSection />
               {canManage && (
                 <button
                   onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/event/${event.id}`); setRegTab("qr"); }}

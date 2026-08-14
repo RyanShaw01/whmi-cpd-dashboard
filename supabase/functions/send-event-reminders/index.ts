@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
         .select("id, name, email")
         .eq("event_id", event.id)
         .in("attendance_status", ["Registered", "Attended"])
+        .eq("is_presenter", false)
         .is("reminder_sent_at", null);
       if (regError) { console.error("fetch registrations failed", event.id, regError); continue; }
 

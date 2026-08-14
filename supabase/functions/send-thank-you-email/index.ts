@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
       .select("id, name, email")
       .eq("event_id", eventId)
       .in("attendance_status", ["Registered", "Attended"])
+      .eq("is_presenter", false)
       .is("reminder_sent_at", null);
     if (regError) throw regError;
 

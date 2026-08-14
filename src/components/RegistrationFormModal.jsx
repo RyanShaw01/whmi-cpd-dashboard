@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Trash2, UserCircle2 } from "lucide-react";
+import { X, Trash2, UserCircle2, Mic } from "lucide-react";
 
 const ATTENDANCE_STATUSES = ["Registered", "Waitlisted", "Attended", "No Show", "Cancelled"];
 
@@ -19,6 +19,7 @@ export default function RegistrationFormModal({
   const [dietary, setDietary] = useState(registration?.dietary || "");
   const [accessibility, setAccessibility] = useState(registration?.accessibility || "");
   const [comments, setComments] = useState(registration?.comments || "");
+  const [isPresenter, setIsPresenter] = useState(registration?.isPresenter || false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const valid = name.trim() && email.trim();
@@ -29,6 +30,7 @@ export default function RegistrationFormModal({
     onSave({
       name: name.trim(), email: email.trim(), profession: profession.trim(), organisation: organisation.trim(),
       attendanceType, attendanceStatus, dietary: dietary.trim(), accessibility: accessibility.trim(), comments: comments.trim(),
+      isPresenter,
     });
   };
 
@@ -90,6 +92,17 @@ export default function RegistrationFormModal({
             </div>
           )}
         </div>
+        <label
+          className="flex items-center gap-2 p-2.5 rounded-lg cursor-pointer whmi-row-hover transition"
+          style={{ border: "1px solid var(--border)" }}
+        >
+          <input type="checkbox" checked={isPresenter} onChange={e => setIsPresenter(e.target.checked)} className="shrink-0" />
+          <Mic size={14} style={{ color: "var(--accent-secondary)" }} className="shrink-0" />
+          <span className="text-[12px]">
+            <span className="font-semibold">Presenter</span>
+            <span style={{ color: "var(--text-faint)" }}> - still counts toward registrations, but excluded from bulk attendee emails (thanked separately)</span>
+          </span>
+        </label>
         <div>
           <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Dietary requirements</label>
           <input value={dietary} onChange={e => setDietary(e.target.value)} className="whmi-input w-full px-2.5 py-2 mt-1" />

@@ -133,6 +133,7 @@ export default function RegistrationsPanel({
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
+                {r.isPresenter && <span className="whmi-badge" style={{ background: "var(--accent-secondary)22", color: "var(--accent-secondary)" }}>Presenter</span>}
                 {r.isExternal && <span className="whmi-badge" style={{ background: "var(--surface)", color: "var(--text-dim)" }}>External</span>}
                 {canManage && onUpdateAttendanceStatus ? (
                   <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>

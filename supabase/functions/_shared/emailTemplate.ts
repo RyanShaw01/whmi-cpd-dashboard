@@ -385,3 +385,34 @@ export function thankYouEmailDefaultTemplate(): string {
     `,
   });
 }
+
+// Separate, presenter-facing "thanks for presenting" copy - deliberately distinct from
+// thankYouEmail* above (no reflection-form ask, since presenters aren't being asked to reflect
+// on someone else's session) and not override-configurable, unlike the attendee templates,
+// to keep this addition scoped to what was actually asked for.
+export function presenterThankYouSubject(eventTitle: string): string {
+  return `Thank you for presenting ${eventTitle}`;
+}
+
+export function presenterThankYouText(name: string, eventTitle: string, certificateAttached: boolean): string {
+  const certLine = certificateAttached
+    ? "\n\nYour CPD certificate for presenting is attached to this email."
+    : "";
+  return `Hi ${firstName(name)},\n\nThank you for presenting at ${eventTitle}. Your time and expertise made a real difference to everyone who attended.${certLine}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`;
+}
+
+export function presenterThankYouHtml(name: string, eventTitle: string, certificateAttached: boolean): string {
+  const certLine = certificateAttached
+    ? `<p style="margin:0 0 14px 0;">Your CPD certificate for presenting is attached to this email.</p>`
+    : "";
+  return wrapEmailHtml({
+    preheader: `Thank you for presenting ${eventTitle}`,
+    title: `Thank you for presenting ${eventTitle}`,
+    bodyHtml: `
+      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thank you for presenting</h1>
+      <p style="margin:0 0 14px 0;">Hi ${escapeHtml(firstName(name))},</p>
+      <p style="margin:0 0 14px 0;">Thank you for presenting at ${boldHtml(eventTitle)}. Your time and expertise made a real difference to everyone who attended.</p>
+      ${certLine}
+    `,
+  });
+}

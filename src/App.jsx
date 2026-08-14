@@ -46,7 +46,7 @@ import {
   fetchReflections, insertReflection, deleteReflection, fetchDismissedPairs, insertDismissedPair,
   fetchAllFiles, deleteEventFile, duplicateEventFile, logAudit, fetchLoginEmail, insertLoginEmail, fetchUserById, fetchUserByEmail, revokeUserSession,
   fetchCpdTypes, insertCpdType, updateCpdType, deleteCpdType, sendCertificateEmail,
-  fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog, sendReflectionReminder, sendThankYouEmail,
+  fetchTags, insertTag, updateTag, deleteTag, fetchAuditLog, sendReflectionReminder, sendThankYouEmail, sendPresenterThankYou,
   fetchAvatarIcons, insertAvatarIcon, updateAvatarIcon, deleteAvatarIcon, uploadAvatarIconImage,
   fetchAvatarColors, insertAvatarColor, updateAvatarColor, deleteAvatarColor,
   fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea, updateBrainstormIdea,
@@ -523,6 +523,27 @@ export default function App() {
         showToast(res.sentCount > 0 ? `Thank-you email sent to ${res.sentCount} attendee${res.sentCount === 1 ? "" : "s"}.` : "Everyone had already been emailed.");
       } else {
         showToast("Couldn't send the thank-you email. Please try again.");
+      }
+    },
+  });
+  // Presenter-only thank-you, separate wording/flow from handleSendThankYouEmail above - shares
+  // the same reminder_sent_at column so a presenter can never receive both this and the bulk
+  // attendee thank-you.
+  const handleSendPresenterThankYou = (event, presentersList, includeCertificate) => requestConfirm({
+    title: "Send thank-you to presenters?",
+    message: `Email ${presentersList.length} presenter${presentersList.length === 1 ? "" : "s"} of "${event.title}" a thank-you${includeCertificate ? ", with their CPD certificate attached" : ""}, if they haven't already been sent one?`,
+    confirmLabel: "Send",
+    onConfirm: async () => {
+      const res = await sendPresenterThankYou({ eventId: event.id, includeCertificate });
+      if (res.ok) {
+        pushAudit({ actorId: session?.id, action: "event.presenter_thank_you_sent", entityType: "event", entityId: event.id, details: { sentCount: res.sentCount, includeCertificate } });
+        const sentAt = res.sentAt || new Date().toISOString();
+        setRegistrations(prev => prev.map(r =>
+          r.eventId === event.id && r.isPresenter && !r.reminderSentAt ? { ...r, reminderSentAt: sentAt } : r
+        ));
+        showToast(res.sentCount > 0 ? `Thank-you email sent to ${res.sentCount} presenter${res.sentCount === 1 ? "" : "s"}.` : "Everyone had already been emailed.");
+      } else {
+        showToast("Couldn't send the presenter thank-you email. Please try again.");
       }
     },
   });
@@ -1444,6 +1465,7 @@ export default function App() {
           onUpdateBannerCrop={handleUpdateBannerCrop} onRemoveBanner={handleRemoveBanner}
           onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf}
           onSendAllReflectionReminders={handleSendAllReflectionReminders}
+          onSendPresenterThankYou={handleSendPresenterThankYou}
           onAddRegistration={handleAdminAddRegistration} users={users} staffDirectory={staffDirectory} onViewStaffProfile={openStaff}
         />
         <PreviousEventDetailModal
@@ -1463,6 +1485,7 @@ export default function App() {
           onCreateCertificateFor={handleCreateCertificateForRegistrant} onSendReflectionReminder={handleSendReflectionReminder}
           onSendAllReflectionReminders={handleSendAllReflectionReminders}
           onSendThankYouEmail={handleSendThankYouEmail}
+          onSendPresenterThankYou={handleSendPresenterThankYou}
         />
         <EventFormModal
           open={createEventOpen} onClose={() => setCreateEventOpen(false)} event={null}
