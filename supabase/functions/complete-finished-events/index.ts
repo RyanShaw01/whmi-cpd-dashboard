@@ -1,9 +1,12 @@
-// Invoked on a schedule by pg_cron/pg_net (see supabase/migration_phase28.sql), never by a user
+// Invoked on a schedule by pg_cron/pg_net (see supabase/migration_phase33.sql), never by a user
 // - protected by a shared secret instead of a user session, same pattern as
-// send-event-reminders. Moves events from "Registration Open"/"Registration Closed" to
-// "Completed" 24 hours after they end - this is the only thing that moves an event out of
-// Up Next/Upcoming Events and into Previous Events; before that 24h mark, a finished event
-// deliberately keeps showing in Upcoming as a grace period.
+// send-event-reminders. Moves events from "Registration Open"/"Registration Closed"/
+// "Open (No Registration Needed)" to "Completed" 24 hours after they end - this is the only
+// thing that moves an event out of Up Next/Upcoming Events and into Previous Events for good;
+// before that 24h mark, a finished event deliberately keeps showing in Upcoming as a grace
+// period (via isRecentlyCompleted on the client, which is purely time-based and doesn't check
+// status at all). Any status not listed here never gets completed by this job - keep this in
+// sync with every status EventForm lets an admin publish an event under.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
@@ -25,7 +28,7 @@ Deno.serve(async (req) => {
       .from("events")
       .select("id, date, end_time, status")
       .gte("date", windowStart)
-      .in("status", ["Registration Open", "Registration Closed"])
+      .in("status", ["Registration Open", "Registration Closed", "Open (No Registration Needed)"])
       .not("end_time", "is", null);
     if (eventsError) throw eventsError;
 
