@@ -320,7 +320,7 @@ export function reflectionReminderDefaultTemplate(): string {
   });
 }
 
-export function wrapEmailHtml({ preheader = "", title, bodyHtml, footerNote }: { preheader?: string; title: string; bodyHtml: string; footerNote?: string }): string {
+export function wrapEmailHtml({ preheader = "", title, bodyHtml, footerNote, signOff = "- WHMI Education Team" }: { preheader?: string; title: string; bodyHtml: string; footerNote?: string; signOff?: string }): string {
   return `<!doctype html>
 <html>
   <head>
@@ -343,7 +343,7 @@ export function wrapEmailHtml({ preheader = "", title, bodyHtml, footerNote }: {
             <tr>
               <td style="padding:28px 28px 6px 28px;color:${TEXT};font-size:14px;line-height:1.6;">
                 ${bodyHtml}
-                <p style="margin:18px 0 0 0;">- WHMI Education Team</p>
+                <p style="margin:18px 0 0 0;">${signOff}</p>
               </td>
             </tr>
             <tr>
@@ -425,23 +425,23 @@ export function presenterThankYouSubject(eventTitle: string): string {
 }
 
 export function presenterThankYouText(name: string, eventTitle: string, certificateAttached: boolean): string {
-  const certLine = certificateAttached
-    ? "\n\nYour CPD certificate for presenting is attached to this email."
-    : "";
-  return `Hi ${firstName(name)},\n\nThank you for the time and effort you put into presenting at ${eventTitle}. We really appreciate you sharing your knowledge and insights with the group - sessions like yours are what make this CPD program valuable, and everyone who attended is better off for it.${certLine}\n\nAny issues or concerns, email whmieducation@wh.org.au\n\n- WHMI Education Team`;
+  const certLine = certificateAttached ? "\n\nYour CPD certificate for presenting is attached." : "";
+  return `Hi ${firstName(name)},\n\nThank you for taking the time to present at ${eventTitle}.\n\nWe appreciate the time and expertise you put into the session and your contribution to ongoing learning across Western Health and the Medical Imaging department.${certLine}\n\nKind regards,\n\nWHMI Education Team`;
 }
 
 export function presenterThankYouHtml(name: string, eventTitle: string, certificateAttached: boolean): string {
   const certLine = certificateAttached
-    ? `<p style="margin:0 0 14px 0;">Your CPD certificate for presenting is attached to this email.</p>`
+    ? `<p style="margin:0 0 14px 0;">Your CPD certificate for presenting is attached.</p>`
     : "";
   return wrapEmailHtml({
     preheader: `Thank you for presenting ${eventTitle}`,
     title: `Thank you for presenting ${eventTitle}`,
+    signOff: "Kind regards,<br/><br/>WHMI Education Team",
     bodyHtml: `
       <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thank you for presenting</h1>
       <p style="margin:0 0 14px 0;">Hi ${escapeHtml(firstName(name))},</p>
-      <p style="margin:0 0 14px 0;">Thank you for the time and effort you put into presenting at ${boldHtml(eventTitle)}. We really appreciate you sharing your knowledge and insights with the group - sessions like yours are what make this CPD program valuable, and everyone who attended is better off for it.</p>
+      <p style="margin:0 0 14px 0;">Thank you for taking the time to present at ${boldHtml(eventTitle)}.</p>
+      <p style="margin:0 0 14px 0;">We appreciate the time and expertise you put into the session and your contribution to ongoing learning across Western Health and the Medical Imaging department.</p>
       ${certLine}
     `,
   });
