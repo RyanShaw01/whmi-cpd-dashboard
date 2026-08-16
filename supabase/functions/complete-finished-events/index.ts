@@ -1,12 +1,18 @@
 // Invoked on a schedule by pg_cron/pg_net (see supabase/migration_phase33.sql), never by a user
 // - protected by a shared secret instead of a user session, same pattern as
-// send-event-reminders. Moves events from "Registration Open"/"Registration Closed"/
-// "Open (No Registration Needed)" to "Completed" 24 hours after they end - this is the only
-// thing that moves an event out of Up Next/Upcoming Events and into Previous Events for good;
-// before that 24h mark, a finished event deliberately keeps showing in Upcoming as a grace
-// period (via isRecentlyCompleted on the client, which is purely time-based and doesn't check
-// status at all). Any status not listed here never gets completed by this job - keep this in
-// sync with every status EventForm lets an admin publish an event under.
+// send-event-reminders. Moves any event still short of a terminal state to "Completed" 24 hours
+// after it ends - this is the only thing that moves an event out of Up Next/Upcoming Events and
+// into Previous Events for good; before that 24h mark, a finished event deliberately keeps
+// showing in Upcoming as a grace period (via isRecentlyCompleted on the client, which is purely
+// time-based and doesn't check status at all - so an event past its end time can appear there
+// even while still Draft/Awaiting Approval, if nobody moved it out of that status in time).
+//
+// Deliberately an EXCLUDE list (only "Completed" and "Archived" are skipped), not an allowlist of
+// specific pre-completion statuses - an allowlist has to be kept in sync by hand every time a new
+// status is added to EventForm, and missing one here means events under it silently never
+// complete (this happened once already, with "Open (No Registration Needed)"). Once something's
+// past its end time, the only two states that should legitimately survive this job are the ones
+// an admin deliberately chose as an end state.
 //
 // IMPORTANT: must always be deployed with `--no-verify-jwt` (supabase functions deploy
 // complete-finished-events --no-verify-jwt). pg_cron authenticates with CRON_SECRET, not a real
@@ -35,7 +41,7 @@ Deno.serve(async (req) => {
       .from("events")
       .select("id, date, end_time, status")
       .gte("date", windowStart)
-      .in("status", ["Registration Open", "Registration Closed", "Open (No Registration Needed)"])
+      .not("status", "in", "(Completed,Archived)")
       .not("end_time", "is", null);
     if (eventsError) throw eventsError;
 
