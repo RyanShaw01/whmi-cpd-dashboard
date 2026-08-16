@@ -1,6 +1,11 @@
 // Invoked on a schedule by pg_cron/pg_net (see supabase/migration_phase8.sql), never by a
 // user - protected by a shared secret instead of a user session. Finds events that ended
 // 25-40 minutes ago and emails a reminder to every registrant who hasn't been reminded yet.
+//
+// IMPORTANT: must always be deployed with `--no-verify-jwt` - pg_cron authenticates with
+// CRON_SECRET, not a real Supabase-issued JWT. Leaving the platform's own JWT check on (the
+// default on a plain deploy) makes every cron invocation get rejected with 401 before this
+// file's code ever runs. See complete-finished-events/index.ts, which regressed exactly this way.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/mailer.ts";
 import { thankYouEmailText, thankYouEmailHtml, thankYouEmailSubject } from "../_shared/emailTemplate.ts";

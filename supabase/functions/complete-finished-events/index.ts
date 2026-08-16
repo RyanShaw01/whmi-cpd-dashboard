@@ -7,6 +7,13 @@
 // period (via isRecentlyCompleted on the client, which is purely time-based and doesn't check
 // status at all). Any status not listed here never gets completed by this job - keep this in
 // sync with every status EventForm lets an admin publish an event under.
+//
+// IMPORTANT: must always be deployed with `--no-verify-jwt` (supabase functions deploy
+// complete-finished-events --no-verify-jwt). pg_cron authenticates with CRON_SECRET, not a real
+// Supabase-issued JWT - if the platform's own JWT check is left on (the default on a plain
+// deploy), every cron invocation gets rejected with 401 before this file's code ever runs, and
+// events silently stop completing with no visible error anywhere. This exact regression happened
+// once already - a plain redeploy re-enabled it.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
