@@ -32,9 +32,12 @@ function ScaleField({ label: text, lowLabel, highLabel, value, onChange }) {
   );
 }
 
-export default function ReflectionPage({ events, session, onSubmitReflection, loading }) {
+export default function ReflectionPage({ events, previousEvents, session, onSubmitReflection, loading }) {
   const { eventId } = useParams();
-  const event = events.find(e => e.id === eventId);
+  // The reflection link is meant to be used AFTER an event ends - by then the event has very
+  // likely already completed and moved out of `events` (upcoming-only) into `previousEvents`, so
+  // it has to be searched for in both, not just the upcoming list.
+  const event = events.find(e => e.id === eventId) || (previousEvents || []).find(e => e.id === eventId);
   const [name, setName] = useState(session?.name || "");
   const [email, setEmail] = useState(session?.email || "");
   const [quality, setQuality] = useState(5);

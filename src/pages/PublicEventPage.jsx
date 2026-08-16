@@ -8,9 +8,12 @@ import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl, splitPeo
 const WH_DOMAIN = "@wh.org.au";
 const NAVY = "#152A4E";
 
-export default function PublicEventPage({ events, session, onPublicRegister, files, loading }) {
+export default function PublicEventPage({ events, previousEvents, session, onPublicRegister, files, loading }) {
   const { eventId } = useParams();
-  const event = events.find(e => e.id === eventId);
+  // "View event details" links in post-event emails point here too, by which time the event has
+  // very likely already completed and moved out of `events` (upcoming-only) into
+  // `previousEvents`, so it has to be searched for in both, not just the upcoming list.
+  const event = events.find(e => e.id === eventId) || (previousEvents || []).find(e => e.id === eventId);
   const [showForm, setShowForm] = useState(false);
   const [sessionNameParts] = useState(() => {
     const parts = (session?.name || "").trim().split(/\s+/);
