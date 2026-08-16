@@ -421,7 +421,7 @@ export function thankYouEmailDefaultTemplate(): string {
 // on someone else's session) and not override-configurable, unlike the attendee templates,
 // to keep this addition scoped to what was actually asked for.
 export function presenterThankYouSubject(eventTitle: string): string {
-  return `Thank you for presenting ${eventTitle}`;
+  return `Thank you for presenting at ${eventTitle}`;
 }
 
 export function presenterThankYouText(name: string, eventTitle: string, certificateAttached: boolean): string {
@@ -434,8 +434,8 @@ export function presenterThankYouHtml(name: string, eventTitle: string, certific
     ? `<p style="margin:0 0 14px 0;">Your CPD certificate for presenting is attached.</p>`
     : "";
   return wrapEmailHtml({
-    preheader: `Thank you for presenting ${eventTitle}`,
-    title: `Thank you for presenting ${eventTitle}`,
+    preheader: `Thank you for presenting at ${eventTitle}`,
+    title: `Thank you for presenting at ${eventTitle}`,
     signOff: "Kind regards,<br/><br/>WHMI Education Team",
     bodyHtml: `
       <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thank you for presenting</h1>
