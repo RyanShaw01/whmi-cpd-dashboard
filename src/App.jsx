@@ -255,13 +255,18 @@ export default function App() {
       } else {
         setSession(null);
         clearAppData();
-        // `events` (fully) and `files` (flyer-kind rows only, see migration_phase34.sql) are the
-        // two tables that stay publicly readable under RLS - the public QR/email-link
-        // registration flow depends on both. Fetch them even with no session, or
-        // /event/:id and /event/:id/reflect permanently show "Event not found" (and never show
-        // a promotional flyer even once that's fixed) for anyone who isn't already logged in,
-        // since mainContent's routes render off this same state regardless of which URL matched.
+        // `events` (both fetchEvents' upcoming-only and fetchPreviousEvents' Completed/Archived
+        // slice of the same table) and `files` (flyer-kind rows only, see migration_phase34.sql)
+        // are what stay publicly readable under RLS (see migration_phase39.sql for the
+        // Completed/Archived/"Open (No Registration Needed)" part) - the public QR/email-link
+        // registration and reflection flows depend on all of it. Fetch them even with no session,
+        // or /event/:id and /event/:id/reflect show "Event not found" (and never show a
+        // promotional flyer even once that's fixed) for anyone who isn't already logged in - most
+        // pointedly, anyone clicking a reflection link after the event they attended has already
+        // completed, since mainContent's routes render off this same state regardless of which
+        // URL matched.
         setEvents(await fetchEvents());
+        setPreviousEvents(await fetchPreviousEvents());
         setFiles(await fetchAllFiles());
       }
       setReady(true);
