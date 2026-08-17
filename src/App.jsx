@@ -1273,10 +1273,6 @@ export default function App() {
     const firstAwaiting = certificates.find(c => c.status === "Awaiting Approval");
     setHighlightId(firstAwaiting?.id ?? null);
   };
-  const openCurrentRegistrations = () => {
-    changePage("upcoming");
-    setHighlightId("registrations-section");
-  };
   const openReportsFeedback = () => {
     changePage("reports");
     setHighlightId("feedback-section");
@@ -1399,7 +1395,6 @@ export default function App() {
                 onOpenRegister={() => handleOpenRegister()}
                 onActivityClick={navigateToEntity}
                 onOpenReports={() => changePage("reports")}
-                onOpenCurrentRegistrations={openCurrentRegistrations}
                 onOpenCertificatesAwaiting={openCertificatesAwaiting}
                 onOpenReportsFeedback={openReportsFeedback}
                 onOpenOutstandingReflections={openOutstandingReflections}

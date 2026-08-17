@@ -54,7 +54,7 @@ function groupActivity(auditLog, users) {
 
 export default function Dashboard({
   events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onOpenRegister, onActivityClick,
-  onOpenReports, onOpenCurrentRegistrations, onOpenCertificatesAwaiting, onOpenReportsFeedback, onOpenOutstandingReflections, onOpenEventsCurrentlyOpen,
+  onOpenReports, onOpenCertificatesAwaiting, onOpenReportsFeedback, onOpenOutstandingReflections, onOpenEventsCurrentlyOpen,
   registeredIds, onUnregister,
 }) {
   // Up Next's own big-card/compact-list choice, independent of the Upcoming Events page's.
@@ -80,8 +80,6 @@ export default function Dashboard({
     .sort((a, b) => new Date(`${a.date}T${a.start}`) - new Date(`${b.date}T${b.start}`));
 
   const openEvents = events.filter(ev => ev.status === "Registration Open");
-  const openEventIds = new Set(openEvents.map(ev => ev.id));
-  const currentRegistrations = registrations.filter(r => openEventIds.has(r.eventId) && r.attendanceStatus !== "Cancelled").length;
   const awaitingCerts = certificates.filter(c => c.status === "Awaiting Approval");
   const oldestCertDays = awaitingCerts.length > 0
     ? Math.max(0, Math.round((Date.now() - Math.min(...awaitingCerts.map(c => new Date(`${c.date}T00:00:00`).getTime()))) / 86400000))
@@ -92,11 +90,18 @@ export default function Dashboard({
   const hoursData = monthlyHours(previousEvents, 12);
   const modeData = modeSplit(previousEvents);
 
+  // "Held" means actually completed (i.e. it's in previousEvents) - an event still upcoming
+  // hasn't been held yet, even if some attendance happens to already be marked on it.
+  const currentYear = new Date().getFullYear();
+  const previousEventsThisYear = previousEvents.filter(ev => new Date(`${ev.date}T00:00:00`).getFullYear() === currentYear);
+  const ytdEventIds = new Set(previousEventsThisYear.map(ev => ev.id));
+  const ytdAttendees = registrations.filter(r => ytdEventIds.has(r.eventId) && r.attendanceStatus === "Attended").length;
+
   const sections = {
     stats: (
       <div key="stats" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard label="CPD Hours Delivered (YTD)" value={hoursYtd} sub={`${previousEvents.length} events this year`} icon={Clock} accent={primaryHex} onClick={onOpenReports} />
-        <StatCard label="Current Registrations" value={currentRegistrations} sub={`across ${openEvents.length} open events`} icon={ClipboardList} accent={successHex} onClick={onOpenCurrentRegistrations} />
+        <StatCard label="CPD Hours Delivered (YTD)" value={hoursYtd} sub={`across ${previousEventsThisYear.length} events`} icon={Clock} accent={primaryHex} onClick={onOpenReports} />
+        <StatCard label="YTD Attendees" value={ytdAttendees} sub={`across ${previousEventsThisYear.length} events`} icon={ClipboardList} accent={successHex} onClick={onOpenReports} />
         <StatCard label="Events Currently Open" value={openEvents.length} sub="accepting registrations" icon={CalendarCheck2} accent={successHex} onClick={onOpenEventsCurrentlyOpen} />
         <StatCard label="Certificates Awaiting Approval" value={awaitingCerts.length} sub={oldestCertDays != null ? `oldest: ${oldestCertDays} days` : undefined} icon={Award} accent={secondaryHex} onClick={onOpenCertificatesAwaiting} />
         <StatCard label="Outstanding Reflections" value={outstanding.count} sub={`across ${outstanding.eventCount} events`} icon={MessageSquareText} accent={secondaryHex} onClick={onOpenOutstandingReflections} />
