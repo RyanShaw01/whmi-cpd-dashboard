@@ -767,6 +767,21 @@ export async function sendRegistrationConfirmation({ eventId, name, email }) {
   return { ok: true };
 }
 
+// Fallback lookup for a single event by id, for anonymous visitors following a registration/
+// reflection link whose event isn't in whatever `events`/`previousEvents` were already fetched
+// at app load (most commonly: the event has since completed, and the anon-read RLS policy on
+// events doesn't cover that yet). Goes through get-public-event (service-role, bypasses RLS)
+// rather than a direct table read, so this works regardless of that policy's current state.
+export async function fetchPublicEvent(eventId) {
+  if (!supabaseConfigured || !eventId) return null;
+  const { data, error } = await supabase.functions.invoke("get-public-event", { body: { eventId } });
+  if (error || !data?.ok || !data.event) {
+    if (error) console.error("fetchPublicEvent", error);
+    return null;
+  }
+  return eventFromRow(data.event);
+}
+
 export async function sendCertificateEmail(certificateId, isResend = false) {
   if (!supabaseConfigured) return { ok: false };
   const { data, error } = await supabase.functions.invoke("send-certificate-email", { body: { certificateId, isResend } });

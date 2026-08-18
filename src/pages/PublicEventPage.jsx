@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Calendar, Clock, MapPin, UserCircle2, Maximize2, X, DollarSign } from "lucide-react";
 import ModeBadge from "../components/ModeBadge";
 import RegistrationSuccessCard from "../components/RegistrationSuccessCard";
 import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl, splitPeopleList, parsePerson } from "../lib/helpers";
+import { fetchPublicEvent } from "../lib/db";
 
 const WH_DOMAIN = "@wh.org.au";
 const NAVY = "#152A4E";
@@ -13,7 +14,23 @@ export default function PublicEventPage({ events, previousEvents, session, onPub
   // "View event details" links in post-event emails point here too, by which time the event has
   // very likely already completed and moved out of `events` (upcoming-only) into
   // `previousEvents`, so it has to be searched for in both, not just the upcoming list.
-  const event = events.find(e => e.id === eventId) || (previousEvents || []).find(e => e.id === eventId);
+  const listedEvent = events.find(e => e.id === eventId) || (previousEvents || []).find(e => e.id === eventId);
+  // Falls back to a direct, RLS-bypassing lookup when the id isn't in either list - covers an
+  // anonymous visitor whose session never fetched previousEvents at all, and any gap in the
+  // anon-read RLS policy for whatever status this event is currently under.
+  const [fallbackEvent, setFallbackEvent] = useState(null);
+  const [fallbackStarted, setFallbackStarted] = useState(false);
+  const [fallbackLoading, setFallbackLoading] = useState(false);
+  useEffect(() => {
+    if (loading || listedEvent || fallbackStarted) return;
+    setFallbackStarted(true);
+    setFallbackLoading(true);
+    fetchPublicEvent(eventId).then(result => {
+      setFallbackEvent(result);
+      setFallbackLoading(false);
+    });
+  }, [loading, listedEvent, fallbackStarted, eventId]);
+  const event = listedEvent || fallbackEvent;
   const [showForm, setShowForm] = useState(false);
   const [sessionNameParts] = useState(() => {
     const parts = (session?.name || "").trim().split(/\s+/);
@@ -32,10 +49,10 @@ export default function PublicEventPage({ events, previousEvents, session, onPub
   const [flyerExpanded, setFlyerExpanded] = useState(false);
 
   if (!event) {
-    // While the app's initial data load is still in flight, this looks identical to a genuinely
-    // missing event — show a spinner instead of flashing "Event not found" at people testing
-    // their own share link while already signed in.
-    if (loading) {
+    // While the app's initial data load (or the id-specific fallback lookup) is still in flight,
+    // this looks identical to a genuinely missing event — show a spinner instead of flashing
+    // "Event not found" at people testing their own share link while already signed in.
+    if (loading || fallbackLoading || !fallbackStarted) {
       return (
         <div className="whmi-root light min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)", color: "var(--text)" }}>
           <div className="flex items-center justify-center gap-2.5 animate-pulse">

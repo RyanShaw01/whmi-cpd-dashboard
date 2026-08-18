@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { fmtDate, splitPeopleList, parsePerson } from "../lib/helpers";
-import { sendReflectionCertificate } from "../lib/db";
+import { sendReflectionCertificate, fetchPublicEvent } from "../lib/db";
 
 const APPROPRIATENESS_OPTIONS = ["Too basic", "Slightly too basic", "Appropriate", "Slightly too advanced", "Too advanced"];
 
@@ -37,7 +37,23 @@ export default function ReflectionPage({ events, previousEvents, session, onSubm
   // The reflection link is meant to be used AFTER an event ends - by then the event has very
   // likely already completed and moved out of `events` (upcoming-only) into `previousEvents`, so
   // it has to be searched for in both, not just the upcoming list.
-  const event = events.find(e => e.id === eventId) || (previousEvents || []).find(e => e.id === eventId);
+  const listedEvent = events.find(e => e.id === eventId) || (previousEvents || []).find(e => e.id === eventId);
+  // Falls back to a direct, RLS-bypassing lookup when the id isn't in either list - covers an
+  // anonymous visitor whose session never fetched previousEvents at all, and any gap in the
+  // anon-read RLS policy for whatever status this event is currently under.
+  const [fallbackEvent, setFallbackEvent] = useState(null);
+  const [fallbackStarted, setFallbackStarted] = useState(false);
+  const [fallbackLoading, setFallbackLoading] = useState(false);
+  useEffect(() => {
+    if (loading || listedEvent || fallbackStarted) return;
+    setFallbackStarted(true);
+    setFallbackLoading(true);
+    fetchPublicEvent(eventId).then(result => {
+      setFallbackEvent(result);
+      setFallbackLoading(false);
+    });
+  }, [loading, listedEvent, fallbackStarted, eventId]);
+  const event = listedEvent || fallbackEvent;
   const [name, setName] = useState(session?.name || "");
   const [email, setEmail] = useState(session?.email || "");
   const [quality, setQuality] = useState(5);
@@ -52,10 +68,11 @@ export default function ReflectionPage({ events, previousEvents, session, onSubm
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (!event) {
-    // While the app's initial data load is still in flight, this looks identical to a genuinely
-    // missing event - show the branded loading state instead of flashing "Event not found" at
-    // people opening their reflection link fresh (no app state loaded yet).
-    if (loading) {
+    // While the app's initial data load (or the id-specific fallback lookup) is still in flight,
+    // this looks identical to a genuinely missing event - show the branded loading state instead
+    // of flashing "Event not found" at people opening their reflection link fresh (no app state
+    // loaded yet, or still waiting on the fallback fetch).
+    if (loading || fallbackLoading || !fallbackStarted) {
       return (
         <div className="whmi-root light min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)", color: "var(--text)" }}>
           <div className="flex items-center justify-center gap-2.5 animate-pulse">
