@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BookOpen, ChevronRight, Search, Info, ImageOff } from "lucide-react";
 import { HELP_CATEGORIES, HELP_ARTICLES } from "../data/helpContent";
+import MailtoLink from "../components/MailtoLink";
 
 // Lightweight **bold** markup, no markdown library needed — just wraps matched
 // segments in <strong> so key terms/actions stand out in dense step lists.
@@ -63,12 +64,21 @@ export default function HelpCentre({ role }) {
 
   const visibleArticles = role === "viewer" ? HELP_ARTICLES.filter(a => !a.adminOnly) : HELP_ARTICLES;
   const filtered = visibleArticles.filter(a => matchesQuery(a) && (q || category === "all" || a.category === category));
+  // Most categories are entirely admin-only, so a viewer was being offered filter chips that
+  // could only ever resolve to an empty list. Only offer a category someone can actually open.
+  const visibleCategories = HELP_CATEGORIES.filter(c => visibleArticles.some(a => a.category === c.id));
 
   return (
     <div className="whmi-fade-in p-6 max-w-[800px] mx-auto space-y-5">
       <div>
         <h1 className="disp text-[22px] font-extrabold">Help Centre</h1>
-        <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Guides and answers for the WHMI Education Team.</p>
+        {/* Viewers (WH staff and external participants alike) see this page too - telling them
+            it's "for the Education Team" reads as though they're in the wrong place. */}
+        <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>
+          {role === "viewer"
+            ? "Guides and answers for registering, reflections and your CPD certificates."
+            : "Guides and answers for the WHMI Education Team."}
+        </p>
       </div>
 
       <div className="whmi-input flex items-center gap-2 px-3 py-2.5">
@@ -79,7 +89,7 @@ export default function HelpCentre({ role }) {
       {!q && (
         <div className="flex gap-1.5 flex-wrap">
           <button onClick={() => setCategory("all")} className="whmi-badge" style={{ background: category === "all" ? "var(--accent-primary)" : "var(--surface-2)", color: category === "all" ? "white" : "var(--text-dim)" }}>All</button>
-          {HELP_CATEGORIES.map(c => (
+          {visibleCategories.map(c => (
             <button key={c.id} onClick={() => setCategory(c.id)} className="whmi-badge" style={{ background: category === c.id ? "var(--accent-primary)" : "var(--surface-2)", color: category === c.id ? "white" : "var(--text-dim)" }}>
               {c.label}
             </button>
@@ -87,8 +97,12 @@ export default function HelpCentre({ role }) {
         </div>
       )}
 
+      {/* Guard on `q` - this used to render an empty pair of quotes whenever a category simply
+          had nothing in it for this role. */}
       {filtered.length === 0 && (
-        <div className="whmi-card p-6 text-center text-[12.5px]" style={{ color: "var(--text-faint)" }}>No articles match "{query}".</div>
+        <div className="whmi-card p-6 text-center text-[12.5px]" style={{ color: "var(--text-faint)" }}>
+          {q ? `No articles match "${query}".` : "Nothing in this section yet."}
+        </div>
       )}
 
       {q ? (
@@ -98,7 +112,7 @@ export default function HelpCentre({ role }) {
           ))}
         </div>
       ) : (
-        HELP_CATEGORIES.filter(c => category === "all" || category === c.id).map(cat => {
+        visibleCategories.filter(c => category === "all" || category === c.id).map(cat => {
           const catArticles = filtered.filter(a => a.category === cat.id);
           if (catArticles.length === 0) return null;
           return (
@@ -113,6 +127,13 @@ export default function HelpCentre({ role }) {
           );
         })
       )}
+
+      {/* Escape hatch: without this, someone who can't find their answer here has nowhere
+          obvious to go next - the contact address only appeared on the login screen. */}
+      <div className="whmi-card p-4 text-center text-[12.5px]" style={{ color: "var(--text-dim)" }}>
+        Can't find what you need? Email the Education Team at{" "}
+        <MailtoLink email="whmieducation@wh.org.au" style={{ color: "var(--accent-secondary)", fontWeight: 600 }} />
+      </div>
     </div>
   );
 }

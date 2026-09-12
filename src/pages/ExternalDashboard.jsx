@@ -1,9 +1,10 @@
-import { Video, Link2, Lightbulb } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Video, Link2, Lightbulb, MessageSquareText } from "lucide-react";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
 import HappeningNowSection from "../components/HappeningNowSection";
 import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
-import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, isViewerVisibleStatus } from "../lib/helpers";
+import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, isViewerVisibleStatus, hasEventEnded } from "../lib/helpers";
 
 // Landing page for external accounts (non @wh.org.au). Shows events they've registered for
 // (past + upcoming, recordings, certificates) plus a "Browse & Register" section covering
@@ -13,6 +14,9 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
   const myRegisteredEventIds = new Set((registrations || []).filter(r => r.userId === user.id).map(r => r.eventId));
   const myUpcoming = events.filter(e => myRegisteredEventIds.has(e.id));
   const myPast = previousEvents.filter(e => myRegisteredEventIds.has(e.id));
+
+  const myReflectedEventIds = new Set((reflections || []).filter(r => r.email?.toLowerCase() === user.email.toLowerCase()).map(r => r.eventId));
+  const needsFeedback = events.filter(e => myRegisteredEventIds.has(e.id) && hasEventEnded(e.date, e.end) && !myReflectedEventIds.has(e.id));
 
   // Due-soon stays scoped to actually-registerable events (no point nudging "register soon" for
   // something nobody can register for); Browse & Register is the wider visibility list, so it
@@ -69,6 +73,28 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
         events={events.filter(e => e.openToExternal !== false)} files={files} registeredIds={myRegisteredEventIds} registrations={registrations}
         onOpenRegister={onOpenRegister} onUnregister={onUnregister} openEvent={openEvent}
       />
+
+      {/* External attendees earn certificates exactly the same way internal staff do - via the
+          reflection form - but this prompt only existed on the internal My CPD page, so an
+          external participant had no in-app route to the one thing that issues their
+          certificate. Mirrors the MyCpd block. */}
+      {needsFeedback.length > 0 && (
+        <div className="whmi-card p-5" style={{ borderColor: "var(--accent-secondary)" }}>
+          <h2 className="disp text-[15px] font-bold mb-1 flex items-center gap-1.5"><MessageSquareText size={16} style={{ color: "var(--accent-secondary)" }} />Needs Your Feedback</h2>
+          <p className="text-[12px] mb-3" style={{ color: "var(--text-dim)" }}>These events have finished; leave your reflection to get your CPD certificate emailed to you.</p>
+          <div className="space-y-2">
+            {needsFeedback.map(ev => (
+              <div key={ev.id} className="flex items-center justify-between gap-3 p-3 rounded-xl" style={{ border: "1px solid var(--border)" }}>
+                <div className="min-w-0">
+                  <div className="font-semibold text-[13px] break-words">{ev.title}</div>
+                  <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>{fmtDate(ev.date)}</div>
+                </div>
+                <Link to={`/event/${ev.id}/reflect`} className="whmi-btn-primary !py-1.5 !px-3 text-[12px] shrink-0">Leave Feedback →</Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <UpcomingEventsCards
         title="Upcoming" events={myUpcoming} files={files} openEvent={openEvent}

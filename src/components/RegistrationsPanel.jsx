@@ -158,8 +158,11 @@ function RegistrationRow({ r, event, canManage, onUpdate, onUpdateAttendanceStat
           ) : (
             <StatusBadge status={r.attendanceStatus || "Registered"} />
           )}
+          {/* A <span> here was unreachable by keyboard and announced as nothing; the row is a
+              role="button" div (not a real <button>), so a real button nests fine - the same
+              way the attendance controls beside it already do. */}
           {canManage && onUpdate && (
-            <span onClick={e => { e.stopPropagation(); onEdit(r); }} className="whmi-btn-ghost !p-1.5" title="Edit registration"><Pencil size={13} /></span>
+            <button type="button" onClick={e => { e.stopPropagation(); onEdit(r); }} className="whmi-btn-ghost !p-1.5" title="Edit registration" aria-label={`Edit registration for ${r.name}`}><Pencil size={13} /></button>
           )}
         </div>
       </div>

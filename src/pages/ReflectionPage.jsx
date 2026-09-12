@@ -14,8 +14,11 @@ function ScaleField({ label: text, lowLabel, highLabel, value, onChange }) {
   return (
     <div>
       <label className={label} style={{ color: "var(--text-faint)" }}>{text}{required}</label>
+      {/* The end labels sit beside the track on desktop, but on a phone two 68px labels left only
+          ~125px of actual slider for an 11-point scale - far too fiddly to land on a given
+          number by thumb. Below `sm` they move underneath so the track gets the full width. */}
       <div className="flex items-center gap-2 mt-4">
-        <span className="text-[10px] text-right shrink-0 leading-tight" style={{ color: "var(--text-faint)", width: 68 }}>0<br />{lowLabel}</span>
+        <span className="hidden sm:block text-[10px] text-right shrink-0 leading-tight" style={{ color: "var(--text-faint)", width: 68 }}>0<br />{lowLabel}</span>
         <div className="relative flex-1">
           <div
             className="absolute flex items-center justify-center rounded-full text-white text-[10px] font-bold"
@@ -26,7 +29,12 @@ function ScaleField({ label: text, lowLabel, highLabel, value, onChange }) {
           <input type="range" min={0} max={10} step={1} value={value} onChange={e => onChange(Number(e.target.value))} className="w-full block" />
           <span className="absolute text-[9px]" style={{ color: "var(--text-faint)", top: 14, left: "50%", transform: "translateX(-50%)" }}>5</span>
         </div>
-        <span className="text-[10px] shrink-0 leading-tight" style={{ color: "var(--text-faint)", width: 68 }}>10<br />{highLabel}</span>
+        <span className="hidden sm:block text-[10px] shrink-0 leading-tight" style={{ color: "var(--text-faint)", width: 68 }}>10<br />{highLabel}</span>
+      </div>
+      {/* mt-4 clears the absolutely-positioned "5" midpoint marker that hangs below the track. */}
+      <div className="flex sm:hidden items-start justify-between gap-3 mt-4 text-[10px]" style={{ color: "var(--text-faint)" }}>
+        <span className="leading-tight">0 — {lowLabel}</span>
+        <span className="leading-tight text-right">10 — {highLabel}</span>
       </div>
     </div>
   );
@@ -190,7 +198,7 @@ export default function ReflectionPage({ events, previousEvents, session, onSubm
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={label} style={{ color: errors.name ? "#D9534F" : "var(--text-faint)" }}>1. Full name{required}</label>
                   <input value={name} onChange={e => setName(e.target.value)} className={fieldClass("name")} style={fieldStyle("name")} />
@@ -249,11 +257,15 @@ export default function ReflectionPage({ events, previousEvents, session, onSubm
                   />
                 </div>
                 <div className="flex justify-between px-2 mt-1 text-[9.5px] leading-tight text-center">
+                  {/* Proportional rather than fixed px: the old 60/50/50/50/60 added up to 270px
+                      inside a ~261px container on a 375px phone, so the middle three labels ran
+                      into each other. 20% each always fits, whatever the viewport. */}
                   {APPROPRIATENESS_OPTIONS.map((opt, i) => (
                     <span
                       key={opt}
                       style={{
-                        width: i === 0 || i === APPROPRIATENESS_OPTIONS.length - 1 ? 60 : 50,
+                        width: "20%",
+                        textAlign: i === 0 ? "left" : i === APPROPRIATENESS_OPTIONS.length - 1 ? "right" : "center",
                         color: opt === appropriateness ? "var(--accent-primary)" : "var(--text-faint)",
                         fontWeight: opt === appropriateness ? 700 : 400,
                       }}

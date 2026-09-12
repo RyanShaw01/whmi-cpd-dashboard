@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Calendar, Clock, MapPin, UserCircle2, Maximize2, X, DollarSign } from "lucide-react";
 import ModeBadge from "../components/ModeBadge";
 import RegistrationSuccessCard from "../components/RegistrationSuccessCard";
-import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl, splitPeopleList, parsePerson } from "../lib/helpers";
+import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl, splitPeopleList, parsePerson, hasEventEnded } from "../lib/helpers";
 import { fetchPublicEvent } from "../lib/db";
 
 const WH_DOMAIN = "@wh.org.au";
@@ -75,6 +75,10 @@ export default function PublicEventPage({ events, previousEvents, session, onPub
     );
   }
 
+  // Status and clock are both consulted: the status flips to Completed only once the
+  // complete-finished-events cron runs (up to 24h after the fact), so during that window the
+  // end time is the only thing that knows the event is over.
+  const eventIsOver = event.status === "Completed" || event.status === "Archived" || hasEventEnded(event.date, event.end);
   const isWhEmail = email.trim().toLowerCase().endsWith(WH_DOMAIN);
   const isExternalRegistrant = !!session ? session.userType === "external" : (askWhStaff || (email.trim() && !isWhEmail));
   const flyerUrl = eventBannerUrl(files, event.id);
@@ -145,7 +149,12 @@ export default function PublicEventPage({ events, previousEvents, session, onPub
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[13.5px]">
               <div className="flex items-center gap-2"><Calendar size={15} style={{ color: "var(--text-faint)" }} /><span>{fmtDate(event.date)}</span></div>
               <div className="flex items-center gap-2"><Clock size={15} style={{ color: "var(--text-faint)" }} /><span>{fmtTimeRange12h(event.start, event.end)}</span></div>
-              <div className="flex items-start gap-2"><MapPin size={15} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" /><span className="break-words">{event.campus && <strong>{event.campus}</strong>}{event.campus && eventLocationSuffix(event) ? " - " : ""}{eventLocationSuffix(event)}</span></div>
+              {/* Only render the location row when there's actually a location to show - an
+                  online-only event has neither campus nor location, and a lone map pin with
+                  blank text next to it just reads as something failing to load. */}
+              {(event.campus || eventLocationSuffix(event)) && (
+                <div className="flex items-start gap-2"><MapPin size={15} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" /><span className="break-words">{event.campus && <strong>{event.campus}</strong>}{event.campus && eventLocationSuffix(event) ? " - " : ""}{eventLocationSuffix(event)}</span></div>
+              )}
               <div className="flex items-start gap-2"><UserCircle2 size={15} style={{ color: "var(--text-faint)" }} className="shrink-0 mt-0.5" />
                 {(() => {
                   const presenters = splitPeopleList(event.presenter).map(parsePerson);
@@ -164,6 +173,24 @@ export default function PublicEventPage({ events, previousEvents, session, onPub
 
             {event.status === "Open (No Registration Needed)" ? (
               <div className="whmi-card p-3 text-[13px]" style={{ color: "var(--text-faint)" }}>No registration needed for this event - just come along.</div>
+            ) : eventIsOver ? (
+              // An event that's already been held must never be told to "check back soon" - the
+              // person reading this most likely attended it and is looking for their certificate,
+              // so point them at the reflection form (the only way one gets issued) instead.
+              <div className="whmi-card p-3 space-y-2" style={{ background: "var(--surface-2)" }}>
+                <div className="text-[13px] font-semibold">This event has already been held.</div>
+                <p className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>
+                  If you attended, complete the short reflection form to have your CPD certificate emailed to you.
+                </p>
+                <Link to={`/event/${event.id}/reflect`} className="block w-full text-center py-2.5 rounded-xl font-semibold text-[13.5px]" style={{ background: NAVY, color: "#fff" }}>
+                  Complete Reflection &amp; Get Certificate
+                </Link>
+                {event.recordingUrl && (
+                  <a href={event.recordingUrl} target="_blank" rel="noreferrer" className="block w-full text-center py-2 rounded-xl font-semibold text-[12.5px]" style={{ border: "1px solid var(--border)", color: "var(--text-dim)" }}>
+                    Watch the Recording
+                  </a>
+                )}
+              </div>
             ) : event.status !== "Registration Open" ? (
               <div className="whmi-card p-3 text-[13px]" style={{ color: "var(--text-faint)" }}>Registration isn't open for this event yet; check back soon.</div>
             ) : !showForm ? (

@@ -205,8 +205,11 @@ export default function Reflection({
     const sections = entry.kind === "personal" ? personalToDisplaySections(entry.raw) : whToDisplaySections(entry.raw);
     return (
       <div key={entry.id} className="whmi-card p-3">
-        <button onClick={() => setExpandedId(isOpen ? null : entry.id)} className="w-full flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
+        {/* The expand toggle used to be a <button> wrapping the Email/Delete <button>s - nested
+            buttons are invalid HTML, and the inner ones weren't reliably reachable by keyboard.
+            The toggle is now its own sibling button and the actions sit outside it. */}
+        <div className="w-full flex items-center justify-between gap-2">
+          <button onClick={() => setExpandedId(isOpen ? null : entry.id)} className="flex items-center gap-2 min-w-0 flex-1 text-left">
             {isOpen ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} className="shrink-0" />}
             <div className="min-w-0 text-left">
               <div className="font-semibold text-[13px] truncate flex items-center gap-1.5">
@@ -215,14 +218,18 @@ export default function Reflection({
               </div>
               <div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>{entry.date ? fmtDate(entry.date) : "—"}</div>
             </div>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-            <button onClick={() => emailCopy(entry)} disabled={emailingId === entry.id} className="whmi-btn-ghost !p-1.5" title="Email me a copy"><Mail size={13} /></button>
+          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={() => emailCopy(entry)} disabled={emailingId === entry.id} className="whmi-btn-ghost !py-1.5 !px-2 text-[11.5px] flex items-center gap-1.5">
+              <Mail size={13} /><span className="hidden sm:inline">Email me a copy</span>
+            </button>
             {entry.kind === "personal" && onDeletePersonalReflection && (
-              <button onClick={() => onDeletePersonalReflection(entry.raw)} className="whmi-btn-ghost !p-1.5" style={{ color: "#D9534F" }} title="Delete"><Trash2 size={13} /></button>
+              <button onClick={() => onDeletePersonalReflection(entry.raw)} className="whmi-btn-ghost !py-1.5 !px-2 text-[11.5px] flex items-center gap-1.5" style={{ color: "#D9534F" }}>
+                <Trash2 size={13} /><span className="hidden sm:inline">Delete</span>
+              </button>
             )}
           </div>
-        </button>
+        </div>
         {isOpen && (
           <div className="mt-3 space-y-3 text-[12.5px]">
             {sections.length === 0 && <p style={{ color: "var(--text-faint)" }}>No details recorded.</p>}

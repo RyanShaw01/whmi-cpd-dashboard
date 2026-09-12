@@ -8,11 +8,12 @@ import { fmtDate, hasEventEnded, daysUntil, formatCountdown, canJoinMeeting, spl
 
 export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea }) {
   const staff = staffDirectory.find(s => s.id === user.staffId);
-  const myPastEvents = staff?.attendedEventIds
-    ? previousEvents.filter(ev => staff.attendedEventIds.includes(ev.id))
-    : previousEvents;
-
   const myRegisteredEventIds = new Set((registrations || []).filter(r => r.userId === user.id).map(r => r.eventId));
+  // Falling back to the whole previousEvents list meant anyone without a linked staff record saw
+  // every event WH has ever run listed under "Past CPD" as if they'd attended it. Attendance is
+  // whatever's marked on the staff record, plus anything they actually registered for.
+  const attendedIds = new Set([...(staff?.attendedEventIds || []), ...myRegisteredEventIds]);
+  const myPastEvents = previousEvents.filter(ev => attendedIds.has(ev.id));
   const myReflectedEventIds = new Set((reflections || []).filter(r => r.email?.toLowerCase() === user.email.toLowerCase()).map(r => r.eventId));
   const needsFeedback = events.filter(e => myRegisteredEventIds.has(e.id) && hasEventEnded(e.date, e.end) && !myReflectedEventIds.has(e.id));
 
@@ -113,7 +114,14 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
                 <div className="font-semibold text-[13px] break-words">{ev.title}</div>
                 <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>{fmtDate(ev.date)}</div>
               </div>
-              <span className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>★ {ev.feedback}</span>
+              {/* This is the event's average score across all attendees, not the reader's own
+                  rating - unlabelled and without the scale it read as a personal one, and a null
+                  rendered as a lone star with nothing after it. */}
+              {ev.feedback != null && (
+                <span className="whmi-badge shrink-0" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="Average rating from everyone who attended">
+                  ★ {ev.feedback}/10 avg
+                </span>
+              )}
             </div>
           ))}
           {myPastEvents.length === 0 && <div className="text-[12.5px]" style={{ color: "var(--text-faint)" }}>No past CPD recorded yet.</div>}

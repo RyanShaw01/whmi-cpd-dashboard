@@ -15,9 +15,12 @@ export default function PersonalStatsRow({ user, certificates, events, registrat
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <StatCard label="Total CPD Hours" value={total} icon={Clock} accent="var(--accent-primary)" />
       <StatCard label="CPD Hours This Year" value={thisYear} icon={CalendarClock} accent="var(--accent-success)" />
+      {/* These two cards navigate, but wrapping StatCard from the outside meant it never got
+          `onClick` and so rendered with no hover affordance at all - identical to the two inert
+          cards beside them. `hoverable` restores the cue without changing the click target. */}
       {onNavigateCertificates ? (
         <button onClick={onNavigateCertificates} className="text-left">
-          <StatCard label="Certificates" value={certCount} icon={Award} accent="var(--accent-secondary)" />
+          <StatCard label="Certificates" value={certCount} icon={Award} accent="var(--accent-secondary)" hoverable />
         </button>
       ) : (
         <StatCard label="Certificates" value={certCount} icon={Award} accent="var(--accent-secondary)" />
@@ -26,10 +29,13 @@ export default function PersonalStatsRow({ user, certificates, events, registrat
         {outstanding.length > 0 ? (
           <Link to={`/event/${outstanding[0].id}/reflect`} className="block relative">
             <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full z-10" style={{ background: "#D9534F" }} title={`${outstanding.length} outstanding reflection${outstanding.length === 1 ? "" : "s"}`} />
-            <StatCard label="Outstanding Reflections" value={outstanding.length} icon={MessageSquareText} accent="#D9534F" />
+            <StatCard
+              label="Outstanding Reflections" value={outstanding.length} icon={MessageSquareText} accent="#D9534F" hoverable
+              sub="Tap to complete and get your certificate"
+            />
           </Link>
         ) : (
-          <StatCard label="Outstanding Reflections" value={0} icon={MessageSquareText} accent="var(--accent-primary)" />
+          <StatCard label="Outstanding Reflections" value={0} icon={MessageSquareText} accent="var(--accent-primary)" sub="You're all up to date" />
         )}
       </div>
     </div>

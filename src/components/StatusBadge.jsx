@@ -1,4 +1,4 @@
-import { CheckCircle2, FileText, AlertCircle, X, Info } from "lucide-react";
+import { CheckCircle2, FileText, AlertCircle, X, Info, Archive } from "lucide-react";
 
 export default function StatusBadge({ status }) {
   const map = {
@@ -8,6 +8,9 @@ export default function StatusBadge({ status }) {
     "Registration Closed": { bg: "rgba(123,63,228,.15)", fg: "#7B3FE4", icon: <X size={12} /> },
     "Open (No Registration Needed)": { bg: "rgba(53,168,221,.15)", fg: "#35A8DD", icon: <Info size={12} /> },
     "Completed": { bg: "rgba(156,203,59,.15)", fg: "#7CA82F", icon: <CheckCircle2 size={12} /> },
+    // Archived was missing, so it fell through to the Draft entry and rendered a grey
+    // "document" icon next to the word "Archived".
+    "Archived": { bg: "rgba(107,114,128,.15)", fg: "#8A8F98", icon: <Archive size={12} /> },
     "Sent": { bg: "rgba(156,203,59,.15)", fg: "#7CA82F", icon: <CheckCircle2 size={12} /> },
   };
   const s = map[status] || map["Draft"];
