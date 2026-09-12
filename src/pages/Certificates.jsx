@@ -130,7 +130,7 @@ export default function Certificates({
         <StatusBadge status={c.status} />
         <button onClick={() => onApprove?.(c)} className="whmi-btn-primary flex items-center gap-1.5"><CheckCircle2 size={13} />Approve</button>
         {canManage && onRequestDelete && (
-          <button onClick={() => onRequestDelete(c)} className="whmi-btn-ghost !p-2" title="Delete" style={{ color: "#D9534F" }}><Trash2 size={14} /></button>
+          <button onClick={() => onRequestDelete(c)} className="whmi-btn-ghost !py-1.5 !px-2.5 text-[12px] flex items-center gap-1.5" style={{ color: "#D9534F" }}><Trash2 size={14} />Delete</button>
         )}
       </div>
     </div>

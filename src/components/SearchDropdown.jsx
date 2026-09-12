@@ -91,7 +91,7 @@ export default function SearchDropdown({
 
   return (
     <div className="relative" ref={rootRef}>
-      <button onClick={() => setOpen(o => !o)} className="whmi-btn-ghost !p-2" title="Search">
+      <button onClick={() => setOpen(o => !o)} className="whmi-btn-ghost !p-2" title="Search" aria-label="Search" aria-haspopup="true" aria-expanded={open}>
         <Search size={15} />
       </button>
       {open && (

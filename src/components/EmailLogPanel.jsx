@@ -44,7 +44,11 @@ export default function EmailLogPanel({ log }) {
                 <div className="truncate" style={{ color: "var(--text-faint)" }}>{entry.recipientEmail} · {templateLabel(entry.templateKey)}</div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                {entry.status === "failed" && <AlertCircle size={12} style={{ color: "#D9534F" }} title="Failed to send" />}
+                {entry.status === "failed" && (
+                  <span className="flex items-center gap-1 font-semibold" style={{ color: "#D9534F" }}>
+                    <AlertCircle size={12} />Failed
+                  </span>
+                )}
                 <span style={{ color: entry.status === "failed" ? "#D9534F" : "var(--text-faint)" }}>{relativeTime(entry.sentAt)}</span>
               </div>
             </div>

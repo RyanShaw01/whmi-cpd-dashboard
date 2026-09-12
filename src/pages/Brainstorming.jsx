@@ -90,7 +90,7 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea, o
                       <div className="flex flex-wrap gap-2">
                         {catIdeas.map(idea => (
                           <div key={idea.id} className="group relative rounded-2xl max-w-[280px]" style={{ border: "1px solid var(--border)" }}>
-                            <button onClick={() => onRequestDeleteIdea(idea)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10" style={{ background: "#D9534F" }} title="Delete idea">
+                            <button onClick={() => onRequestDeleteIdea(idea)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10" style={{ background: "#D9534F" }} title="Delete idea" aria-label={`Delete idea: ${idea.content}`}>
                               <X size={11} color="white" />
                             </button>
                             <button

@@ -33,7 +33,7 @@ function ThemeMenu({ theme, setTheme, mainTheme, setMainTheme, cardTheme, setCar
 
   return (
     <div className="relative" ref={rootRef}>
-      <button onClick={() => setOpen(o => !o)} className="whmi-btn-ghost !p-2 flex items-center gap-0.5" title="Theme">
+      <button onClick={() => setOpen(o => !o)} className="whmi-btn-ghost !p-2 flex items-center gap-0.5" title="Theme" aria-label="Theme" aria-haspopup="true" aria-expanded={open}>
         <CurrentIcon size={15} /><ChevronDown size={11} style={{ opacity: 0.6 }} />
       </button>
       {open && (
@@ -141,7 +141,7 @@ export default function HeaderBar({
         )}
         {canManage && (
           <div className="relative">
-            <button onClick={() => setPreviewMenuOpen(o => !o)} className="whmi-btn-ghost !p-2" title="Preview as a test account">
+            <button onClick={() => setPreviewMenuOpen(o => !o)} className="whmi-btn-ghost !p-2" title="Preview as a test account" aria-label="Preview as a test account" aria-haspopup="true" aria-expanded={previewMenuOpen}>
               <Eye size={15} />
             </button>
             {previewMenuOpen && (
@@ -186,7 +186,7 @@ export default function HeaderBar({
             recentNotifications={recentNotifications}
           />
         </div>
-        <button data-tour="header-profile" onClick={onAvatarClick} title="Your profile" className="flex items-center gap-1.5 whmi-row-hover rounded-full p-1 -m-1">
+        <button data-tour="header-profile" onClick={onAvatarClick} title="Your profile" aria-label="Your profile" className="flex items-center gap-1.5 whmi-row-hover rounded-full p-1 -m-1">
           <span className="hidden sm:flex flex-col items-end leading-tight">
             <span className="text-[11.5px] font-semibold truncate max-w-[140px]">{user.name}</span>
             <span className="text-[10px] font-semibold" style={{ color: "var(--text-faint)" }}>

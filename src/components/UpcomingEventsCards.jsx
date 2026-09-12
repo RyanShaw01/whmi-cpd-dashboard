@@ -35,10 +35,10 @@ export default function UpcomingEventsCards({
         <div className="flex items-center gap-2 ml-auto">
           <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{events.length}</span>
           <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-            <button onClick={() => setView("grid")} className="px-2 py-1.5 flex items-center" style={{ background: view === "grid" ? "var(--accent-primary)" : "transparent", color: view === "grid" ? "white" : "var(--text-dim)" }} title="Big cards">
+            <button onClick={() => setView("grid")} className="px-2 py-1.5 flex items-center" style={{ background: view === "grid" ? "var(--accent-primary)" : "transparent", color: view === "grid" ? "white" : "var(--text-dim)" }} title="Big cards" aria-label="Big cards" aria-pressed={view === "grid"}>
               <LayoutGrid size={12} />
             </button>
-            <button onClick={() => setView("list")} className="px-2 py-1.5 flex items-center" style={{ background: view === "list" ? "var(--accent-primary)" : "transparent", color: view === "list" ? "white" : "var(--text-dim)" }} title="Compact list">
+            <button onClick={() => setView("list")} className="px-2 py-1.5 flex items-center" style={{ background: view === "list" ? "var(--accent-primary)" : "transparent", color: view === "list" ? "white" : "var(--text-dim)" }} title="Compact list" aria-label="Compact list" aria-pressed={view === "list"}>
               <List size={12} />
             </button>
           </div>

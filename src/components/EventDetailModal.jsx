@@ -218,19 +218,22 @@ export default function EventDetailModal({
                     onUnregister={() => onUnregister?.(event.id)}
                   />
                 )}
+                {/* Labelled rather than icon-only: a hover tooltip is the only hint these ever
+                    had, and tooltips never appear on a touchscreen at all. The row wraps, so the
+                    extra width is safe. */}
                 {onEdit && (
-                  <button onClick={() => setEditing(true)} className="whmi-btn-ghost !p-2" title="Edit event">
-                    <Pencil size={14} />
+                  <button onClick={() => setEditing(true)} className="whmi-btn-ghost !py-1.5 !px-2.5 text-[12px] flex items-center gap-1.5">
+                    <Pencil size={14} />Edit
                   </button>
                 )}
                 {onDuplicate && (
-                  <button onClick={onDuplicate} className="whmi-btn-ghost !p-2" title="Duplicate event">
-                    <Copy size={14} />
+                  <button onClick={onDuplicate} className="whmi-btn-ghost !py-1.5 !px-2.5 text-[12px] flex items-center gap-1.5">
+                    <Copy size={14} />Duplicate
                   </button>
                 )}
                 {onDelete && (
-                  <button onClick={onDelete} className="whmi-btn-ghost !p-2" title="Delete event" style={{ color: "#D9534F" }}>
-                    <Trash2 size={14} />
+                  <button onClick={onDelete} className="whmi-btn-ghost !py-1.5 !px-2.5 text-[12px] flex items-center gap-1.5" style={{ color: "#D9534F" }}>
+                    <Trash2 size={14} />Delete
                   </button>
                 )}
               </div>
@@ -541,7 +544,7 @@ export default function EventDetailModal({
               <img src={bannerUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(42px) saturate(1.3) brightness(0.85)", transform: "scale(1.35)" }} />
               <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.15)" }} />
               <img src={bannerUrl} alt="" className="relative max-w-full max-h-full object-contain" style={{ boxShadow: "0 4px 24px rgba(0,0,0,.25)" }} />
-              <button onClick={() => setPosterExpanded(true)} className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center z-10" style={{ background: "rgba(0,0,0,.45)" }} title="View full poster" type="button">
+              <button onClick={() => setPosterExpanded(true)} className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center z-10" style={{ background: "rgba(0,0,0,.45)" }} title="View full poster" aria-label="View full poster" type="button">
                 <Maximize2 size={14} color="white" />
               </button>
             </div>

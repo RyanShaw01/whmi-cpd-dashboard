@@ -95,9 +95,9 @@ export default function PreviousEventDetailModal({
             <h2 className="disp text-[16px] font-extrabold">Edit Event</h2>
             <div className="flex items-center gap-1.5">
               {canManage && onRequestDelete && (
-                <button onClick={() => onRequestDelete(event)} className="whmi-btn-ghost !p-2" title="Delete event" style={{ color: "#D9534F" }}><Trash2 size={14} /></button>
+                <button onClick={() => onRequestDelete(event)} className="whmi-btn-ghost !py-1.5 !px-2.5 text-[12px] flex items-center gap-1.5" style={{ color: "#D9534F" }}><Trash2 size={14} />Delete</button>
               )}
-              <button onClick={attemptCloseEdit} className="whmi-btn-ghost !p-2"><X size={14} /></button>
+              <button onClick={attemptCloseEdit} className="whmi-btn-ghost !p-2" title="Close" aria-label="Close"><X size={14} /></button>
             </div>
           </div>
           <div className="p-5">
@@ -208,21 +208,21 @@ export default function PreviousEventDetailModal({
         <div className="min-h-[92px] relative flex items-end p-5" style={{ background: "var(--accent-primary)" }}>
           <div className="absolute top-3 right-3 flex items-center gap-2">
             {canManage && (
-              <button onClick={() => setEditing(true)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Edit event">
+              <button onClick={() => setEditing(true)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Edit event" aria-label="Edit event">
                 <Pencil size={13} color="white" />
               </button>
             )}
             {canManage && onDuplicate && (
-              <button onClick={onDuplicate} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Duplicate event">
+              <button onClick={onDuplicate} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Duplicate event" aria-label="Duplicate event">
                 <Copy size={13} color="white" />
               </button>
             )}
             {canManage && onRequestDelete && (
-              <button onClick={() => onRequestDelete(event)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Delete event">
+              <button onClick={() => onRequestDelete(event)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Delete event" aria-label="Delete event">
                 <Trash2 size={13} color="white" />
               </button>
             )}
-            <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }}>
+            <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.25)" }} title="Close" aria-label="Close">
               <X size={15} color="white" />
             </button>
           </div>
@@ -242,7 +242,7 @@ export default function PreviousEventDetailModal({
               }}
               onClick={() => setPosterExpanded(true)}
             />
-            <button onClick={() => setPosterExpanded(true)} className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,.45)" }} title="View full poster" type="button">
+            <button onClick={() => setPosterExpanded(true)} className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,.45)" }} title="View full poster" aria-label="View full poster" type="button">
               <Maximize2 size={14} color="white" />
             </button>
           </div>
@@ -460,7 +460,7 @@ export default function PreviousEventDetailModal({
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <StatusBadge status={c.status} />
-                        {c.pdfUrl && <a href={c.pdfUrl} target="_blank" rel="noreferrer" className="whmi-btn-ghost !p-2" title="Download certificate"><Download size={13} /></a>}
+                        {c.pdfUrl && <a href={c.pdfUrl} target="_blank" rel="noreferrer" className="whmi-btn-ghost !py-1.5 !px-2.5 text-[11.5px] flex items-center gap-1.5"><Download size={13} />Download</a>}
                       </div>
                     </div>
                   ))}

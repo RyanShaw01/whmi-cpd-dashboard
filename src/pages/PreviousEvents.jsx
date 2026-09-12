@@ -135,7 +135,7 @@ export default function PreviousEvents({ previousEvents, files, onOpenArchive, c
                           style={{ background: "rgba(0,0,0,.45)" }}
                           onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,.75)"; }}
                           onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,0,0,.45)"; }}
-                          title="View full poster" type="button"
+                          title="View full poster" type="button" aria-label={`View full poster for ${ev.title}`}
                         >
                           <Maximize2 size={10} color="white" />
                         </button>
@@ -149,11 +149,11 @@ export default function PreviousEvents({ previousEvents, files, onOpenArchive, c
                   <td className="px-4 py-3 max-w-[200px]" style={{ color: "var(--text-dim)" }}><PresenterLine presenter={ev.presenter} className="break-words" /></td>
                   <td className="px-4 py-3">{ev.attendance}/{ev.capacity}</td>
                   <td className="px-4 py-3">
-                    <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="View feedback">★ {ev.feedback}</button>
+                    <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="View feedback" aria-label={`View feedback for ${ev.title}`}>★ {ev.feedback != null ? `${ev.feedback}/10` : "—"}</button>
                   </td>
                   {canManage && (
                     <td className="px-4 py-3">
-                      <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, null, true); }} className="whmi-btn-ghost !p-1.5" title="Edit event (delete is available inside)">
+                      <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, null, true); }} className="whmi-btn-ghost !p-1.5" title="Edit event (delete is available inside)" aria-label={`Edit ${ev.title}`}>
                         <Pencil size={13} />
                       </button>
                     </td>

@@ -56,7 +56,7 @@ export default function HappeningNowSection({ events, files, registeredIds, onOp
                       style={{ background: "rgba(0,0,0,.45)" }}
                       onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,.75)"; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,0,0,.45)"; }}
-                      title="View full poster" type="button"
+                      title="View full poster" aria-label="View full poster" type="button"
                     >
                       <Maximize2 size={12} color="white" />
                     </button>

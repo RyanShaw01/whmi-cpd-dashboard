@@ -85,10 +85,10 @@ export default function RegisterEventModal({ open, onClose, session, events, def
                 Event <span style={{ color: "var(--text-faint)", fontWeight: 500 }}>· {openEvents.length} available</span>
               </label>
               <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-                <button type="button" onClick={() => setPickerView("grid")} className="px-2 py-1 flex items-center" style={{ background: pickerView === "grid" ? "var(--accent-primary)" : "transparent", color: pickerView === "grid" ? "white" : "var(--text-dim)" }} title="Big view">
+                <button type="button" onClick={() => setPickerView("grid")} className="px-2 py-1 flex items-center" style={{ background: pickerView === "grid" ? "var(--accent-primary)" : "transparent", color: pickerView === "grid" ? "white" : "var(--text-dim)" }} title="Big view" aria-label="Big view" aria-pressed={pickerView === "grid"}>
                   <LayoutGrid size={12} />
                 </button>
-                <button type="button" onClick={() => setPickerView("list")} className="px-2 py-1 flex items-center" style={{ background: pickerView === "list" ? "var(--accent-primary)" : "transparent", color: pickerView === "list" ? "white" : "var(--text-dim)" }} title="Compact list">
+                <button type="button" onClick={() => setPickerView("list")} className="px-2 py-1 flex items-center" style={{ background: pickerView === "list" ? "var(--accent-primary)" : "transparent", color: pickerView === "list" ? "white" : "var(--text-dim)" }} title="Compact list" aria-label="Compact list" aria-pressed={pickerView === "list"}>
                   <List size={12} />
                 </button>
               </div>

@@ -119,10 +119,10 @@ export default function UpcomingEvents({
             {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
           <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-            <button onClick={() => setView("grid")} className="px-2.5 py-2 flex items-center gap-1.5 text-[12px] font-semibold" style={{ background: view === "grid" ? "var(--accent-primary)" : "transparent", color: view === "grid" ? "white" : "var(--text-dim)" }} title="Grid view">
+            <button onClick={() => setView("grid")} className="px-2.5 py-2 flex items-center gap-1.5 text-[12px] font-semibold" style={{ background: view === "grid" ? "var(--accent-primary)" : "transparent", color: view === "grid" ? "white" : "var(--text-dim)" }} title="Grid view" aria-label="Grid view" aria-pressed={view === "grid"}>
               <LayoutGrid size={13} />
             </button>
-            <button onClick={() => setView("list")} className="px-2.5 py-2 flex items-center gap-1.5 text-[12px] font-semibold" style={{ background: view === "list" ? "var(--accent-primary)" : "transparent", color: view === "list" ? "white" : "var(--text-dim)" }} title="List view">
+            <button onClick={() => setView("list")} className="px-2.5 py-2 flex items-center gap-1.5 text-[12px] font-semibold" style={{ background: view === "list" ? "var(--accent-primary)" : "transparent", color: view === "list" ? "white" : "var(--text-dim)" }} title="List view" aria-label="List view" aria-pressed={view === "list"}>
               <List size={13} />
             </button>
           </div>
@@ -187,6 +187,7 @@ export default function UpcomingEvents({
                     onClick={(e) => { e.stopPropagation(); openEvent(ev, undefined, true); }}
                     className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition whmi-btn-ghost !p-1.5"
                     title="Edit event"
+                    aria-label={`Edit ${ev.title}`}
                   >
                     <Pencil size={13} />
                   </button>
@@ -227,6 +228,7 @@ export default function UpcomingEvents({
                   className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
                   style={{ background: "rgba(0,0,0,.35)" }}
                   title="Edit event"
+                  aria-label={`Edit ${ev.title}`}
                 >
                   <Pencil size={13} color="white" />
                 </button>
@@ -275,6 +277,7 @@ export default function UpcomingEvents({
                       onClick={(e) => { e.stopPropagation(); openEvent(ev, "registrations"); }}
                       className="w-full text-left rounded-lg -mx-1 px-1 py-0.5 whmi-row-hover transition"
                       title="View registrations"
+                      aria-label={`View registrations for ${ev.title}`}
                     >
                       <div className="h-1.5 rounded-full" style={{ background: "var(--surface-2)" }}>
                         <div className="h-1.5 rounded-full whmi-accent-bar" style={{ width: `${Math.min(100, (ev.registered / ev.capacity) * 100)}%` }} />
@@ -300,6 +303,7 @@ export default function UpcomingEvents({
                       className="flex items-center gap-1 text-[11px] rounded-lg -mx-1 px-1 whmi-row-hover transition"
                       style={{ color: "var(--text-faint)" }}
                       title="View registrations"
+                      aria-label={`View registrations for ${ev.title}`}
                     >
                       <Users size={10} className="shrink-0" />{ev.capacity == null ? `Registered: ${ev.registered}` : `Registered ${ev.registered}/${ev.capacity}`}{ev.waitlist ? ` · ${ev.waitlist} waitlisted` : ""}
                       {ev.capacity != null && <span className="ml-1">({Math.round((ev.registered / ev.capacity) * 100)}%)</span>}

@@ -130,7 +130,7 @@ export default function PublicEventPage({ events, previousEvents, session, onPub
                 onClick={() => setFlyerExpanded(true)}
                 className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
                 style={{ background: "rgba(0,0,0,.45)" }}
-                title="View full flyer"
+                title="View full flyer" aria-label="View full flyer"
                 type="button"
               >
                 <Maximize2 size={14} color="white" />

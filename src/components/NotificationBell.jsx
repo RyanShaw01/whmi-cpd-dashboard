@@ -21,7 +21,7 @@ export default function NotificationBell({ groups, redDotsEnabled, onNavigate, o
 
   return (
     <div className="relative" ref={rootRef}>
-      <button onClick={() => setOpen(o => !o)} className="whmi-btn-ghost !p-2 relative" title="Notifications">
+      <button onClick={() => setOpen(o => !o)} className="whmi-btn-ghost !p-2 relative" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded={open}>
         <Bell size={15} />
         {hasUnread && redDotsEnabled && (
           <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ background: "#D9534F" }} />
@@ -60,7 +60,7 @@ export default function NotificationBell({ groups, redDotsEnabled, onNavigate, o
                   >
                     {g.label}
                   </button>
-                  <button onClick={() => onAcknowledgeGroup(g)} className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 whmi-row-hover transition" title="Acknowledge" style={{ color: "var(--text-faint)" }}>
+                  <button onClick={() => onAcknowledgeGroup(g)} className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 whmi-row-hover transition" title="Acknowledge" aria-label="Acknowledge" style={{ color: "var(--text-faint)" }}>
                     <X size={13} />
                   </button>
                 </div>

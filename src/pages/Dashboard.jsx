@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
+  PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
@@ -115,10 +115,10 @@ export default function Dashboard({
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{nonLiveEvents.length} upcoming</span>
             <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-              <button onClick={() => setUpNextView("grid")} className="px-2 py-1.5 flex items-center" style={{ background: upNextView === "grid" ? "var(--accent-primary)" : "transparent", color: upNextView === "grid" ? "white" : "var(--text-dim)" }} title="Big cards">
+              <button onClick={() => setUpNextView("grid")} className="px-2 py-1.5 flex items-center" style={{ background: upNextView === "grid" ? "var(--accent-primary)" : "transparent", color: upNextView === "grid" ? "white" : "var(--text-dim)" }} title="Big cards" aria-label="Big cards" aria-pressed={upNextView === "grid"}>
                 <LayoutGrid size={12} />
               </button>
-              <button onClick={() => setUpNextView("list")} className="px-2 py-1.5 flex items-center" style={{ background: upNextView === "list" ? "var(--accent-primary)" : "transparent", color: upNextView === "list" ? "white" : "var(--text-dim)" }} title="Compact list">
+              <button onClick={() => setUpNextView("list")} className="px-2 py-1.5 flex items-center" style={{ background: upNextView === "list" ? "var(--accent-primary)" : "transparent", color: upNextView === "list" ? "white" : "var(--text-dim)" }} title="Compact list" aria-label="Compact list" aria-pressed={upNextView === "list"}>
                 <List size={12} />
               </button>
             </div>
