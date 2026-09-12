@@ -8,6 +8,7 @@ export default function MyCertificates({ user, certificates }) {
   // evidence), and it was the one thing the list didn't show.
   const { total } = myCpdTotals(certificates, user);
   const sentCount = myCerts.filter(c => c.status === "Sent").length;
+  const pendingCount = myCerts.length - sentCount;
 
   return (
     <div className="whmi-fade-in p-6 max-w-[800px] mx-auto space-y-5">
@@ -20,6 +21,12 @@ export default function MyCertificates({ user, certificates }) {
         <div className="whmi-card p-4 flex items-center justify-between gap-3 flex-wrap text-[13px]">
           <span style={{ color: "var(--text-dim)" }}><strong style={{ color: "var(--text)" }}>{sentCount}</strong> certificate{sentCount === 1 ? "" : "s"} issued</span>
           <span style={{ color: "var(--text-dim)" }}><strong style={{ color: "var(--text)" }}>{total}</strong> CPD hours in total</span>
+        </div>
+      )}
+
+      {pendingCount > 0 && (
+        <div className="whmi-card p-3 text-[12.5px]" style={{ background: "var(--surface-2)", color: "var(--text-dim)" }}>
+          {pendingCount === 1 ? "One certificate is" : `${pendingCount} certificates are`} still being prepared by the Education Team. You'll get an email as soon as {pendingCount === 1 ? "it's" : "they're"} issued - nothing further is needed from you.
         </div>
       )}
 
@@ -44,7 +51,7 @@ export default function MyCertificates({ user, certificates }) {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <StatusBadge status={c.status} />
+                <StatusBadge status={c.status} audience="viewer" />
                 {c.status === "Sent" && c.pdfUrl && (
                   // Was an unlabelled icon whose only hint was a hover tooltip - which never
                   // appears at all on a touchscreen.

@@ -1278,10 +1278,6 @@ export default function App() {
     const firstAwaiting = certificates.find(c => c.status === "Awaiting Approval");
     setHighlightId(firstAwaiting?.id ?? null);
   };
-  const openReportsFeedback = () => {
-    changePage("reports");
-    setHighlightId("feedback-section");
-  };
   const openOutstandingReflections = () => {
     changePage("reflection");
   };
@@ -1401,7 +1397,6 @@ export default function App() {
                 onActivityClick={navigateToEntity}
                 onOpenReports={() => changePage("reports")}
                 onOpenCertificatesAwaiting={openCertificatesAwaiting}
-                onOpenReportsFeedback={openReportsFeedback}
                 onOpenOutstandingReflections={openOutstandingReflections}
                 onOpenEventsCurrentlyOpen={openEventsCurrentlyOpen}
                 registeredIds={myRegisteredEventIds} onUnregister={handleUnregisterSelf}

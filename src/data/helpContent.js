@@ -45,8 +45,9 @@ export const HELP_ARTICLES = [
     category: "getting-started",
     title: "Finding your way around the sidebar",
     steps: [
-      "**Admins and owners** see: Dashboard, Upcoming Events, Previous Events, Staff, Reports & Analytics, Certificates, Help Centre, and Settings.",
-      "**Viewers and external accounts** see a simpler menu: My CPD, Help Centre, and Settings.",
+      "**Admins and owners** see: Dashboard, Upcoming Events, Previous Events, Reflections, Staff, Certificates, CPD Brainstorming, Reports & Analytics, Help Centre, and Settings. Everything below the **Education Team Access** divider is admin-only.",
+      "**Western Health staff (viewer accounts)** see: My CPD, My Certificates, Upcoming Events, Previous Events, Reflections, Help Centre, and Settings.",
+      "**External accounts** see the same minus the event pages: My CPD, My Certificates, Reflections, Help Centre, and Settings.",
       "Click the **collapse arrow** at the bottom of the sidebar to shrink it to icons only.",
     ],
   },
@@ -128,6 +129,7 @@ export const HELP_ARTICLES = [
   {
     id: "how-registration-works",
     category: "registrations",
+    adminOnly: true,
     title: "How staff register for an event",
     imagePending: true,
     steps: [
@@ -174,6 +176,7 @@ export const HELP_ARTICLES = [
   {
     id: "reflection-form",
     category: "certificates",
+    adminOnly: true,
     title: "What attendees see on the reflection form",
     steps: [
       "**Name and email**, pre-filled if they're logged in.",
@@ -186,6 +189,7 @@ export const HELP_ARTICLES = [
   {
     id: "auto-certificates",
     category: "certificates",
+    adminOnly: true,
     title: "How automatic certificates work",
     steps: [
       "Once an event has finished, a registered attendee sees a **\"Leave Feedback & Get Certificate\"** button on the event, or in their My CPD **\"Needs Your Feedback\"** section.",
@@ -261,6 +265,7 @@ export const HELP_ARTICLES = [
   {
     id: "trouble-not-saving",
     category: "troubleshooting",
+    adminOnly: true,
     title: "Something I entered doesn't seem to have saved",
     steps: [
       "Check your **internet connection** and try again; the app needs a live connection to Supabase to save changes.",
@@ -271,6 +276,7 @@ export const HELP_ARTICLES = [
   {
     id: "trouble-duplicate-wont-clear",
     category: "troubleshooting",
+    adminOnly: true,
     title: "A duplicate warning won't go away",
     steps: [
       "Use **Keep Separate** or **Ignore** if the two records really are different people; either option dismisses the warning permanently for that specific pair.",
@@ -280,6 +286,7 @@ export const HELP_ARTICLES = [
   {
     id: "trouble-no-certificate-email",
     category: "troubleshooting",
+    adminOnly: true,
     title: "An attendee says their certificate email never arrived",
     steps: [
       "Check the **Certificates page**; if it's listed as \"Awaiting Approval\" rather than \"Sent\", the automatic email failed and needs manual approval.",
@@ -291,11 +298,119 @@ export const HELP_ARTICLES = [
   {
     id: "trouble-missing-pages",
     category: "troubleshooting",
-    title: "I can't see Previous Events, Reports, or Staff",
+    title: "I can't see Reports, Staff or Certificates",
     steps: [
-      "Those pages are only available to **Admin** and **Owner** roles.",
-      "**Viewer and external accounts** see a simpler menu (My CPD, Help Centre, Settings) by design.",
+      "**Reports & Analytics**, **Staff**, **Certificates** and **CPD Brainstorming** are only available to **Admin** and **Owner** roles.",
+      "**Upcoming Events** and **Previous Events** are available to Western Health staff accounts, but not to external accounts - those are scoped to events shared externally, which appear on your **My CPD** page instead.",
+      "Your own records are always available to you under **My CPD**, **My Certificates** and **Reflections**.",
       "Ask an Admin to change your role in **Settings → Team Access** if you believe you should have more access.",
     ],
+  },
+/* ---- Written for viewers (WH staff and external participants), in second person.
+     Everything above that describes the same flow is written from the Education Team's
+     side and is tagged adminOnly. ---- */
+  {
+    id: "viewer-orientation",
+    category: "getting-started",
+    title: "What you can do here",
+    steps: [
+      "**My CPD** is your home page: what's coming up, anything still needing your feedback, and the CPD you've already done.",
+      "**My Certificates** lists every certificate issued to you, with your total CPD hours and a download link for each one.",
+      "**Reflections** holds your written reflections - both from Western Health events and any other CPD you want to record.",
+      "**Settings** is where you change your display name, profile picture and colour theme.",
+    ],
+    note: "You don't need to set anything up. Register for an event, attend it, fill in the reflection form afterwards, and your certificate arrives by email.",
+  },
+  {
+    id: "viewer-register",
+    category: "registrations",
+    title: "Registering for an event",
+    steps: [
+      "Open **My CPD** (or **Upcoming Events** if you're Western Health staff) and find the event you want.",
+      "Select **Register** on the event card. If you're signed in, your name and email are filled in for you.",
+      "You'll get a confirmation email with the date, time and location.",
+      "To cancel, open the same event and choose **Unregister**.",
+    ],
+    note: "You can also register from a link or QR code without signing in at all. If you later sign in with that same email address, those registrations are linked to your account automatically.",
+  },
+  {
+    id: "viewer-get-certificate",
+    category: "certificates",
+    title: "How to get your CPD certificate",
+    steps: [
+      "Attend the event you registered for.",
+      "After it finishes, open the **reflection form** - from the link in your email, from the **Needs Your Feedback** panel on My CPD, or from the event itself.",
+      "Fill it in and submit it.",
+      "Your certificate PDF is generated and emailed to you straight away, along with a copy of your reflection.",
+    ],
+    note: "The reflection is what triggers the certificate - without it, no certificate is issued. If you haven't filled one in about half an hour after the event ends, you'll get a reminder email.",
+  },
+  {
+    id: "viewer-reflection-form",
+    category: "certificates",
+    title: "Filling in the reflection form",
+    steps: [
+      "**Your name and email** - already filled in if you're signed in. The certificate is sent to this address, so check it's right.",
+      "**Your reflection** - what you learned, why it was relevant to your role, and how it might change your practice. There's a suggested structure on the form.",
+      "**Two 0-10 sliders** for the quality and relevance of the session, and one question on whether the level suited you.",
+      "**Three optional questions** on what was most valuable, what could be improved, and what you'd like to see in future.",
+    ],
+    note: "Name, email and the written reflection are required; everything else is optional. The MRPBA requires you to keep evidence of reflection, which is why the form asks for it.",
+  },
+  {
+    id: "viewer-cpd-hours",
+    category: "certificates",
+    title: "Finding your CPD hours",
+    steps: [
+      "**My Certificates** shows your total CPD hours across every certificate issued to you, and the hours attached to each one.",
+      "**My CPD** shows the same total plus your hours for the current year, in the stat cards at the top.",
+      "Select any certificate's **Download** button to save the PDF as evidence.",
+    ],
+    note: "Hours are counted from issued certificates only. If you attended something but never filled in the reflection, those hours won't appear.",
+  },
+  {
+    id: "viewer-external-cpd",
+    category: "certificates",
+    title: "Recording CPD you did somewhere else",
+    steps: [
+      "Go to **Reflections** and choose **Add Reflection**.",
+      "Enter the **activity name** and **date** - a conference, a course, a journal club, anything.",
+      "Pick a format: **Full Template** (structured questions), **Short Form** (a handful), or **Freestyle** (just write).",
+      "Answer as much or as little as you like, then **Save Reflection**.",
+    ],
+    note: "These sit alongside your Western Health reflections but stay clearly separated. Use the mail button on any reflection to email yourself a copy for your own records.",
+  },
+  {
+    id: "viewer-certificate-pending",
+    category: "troubleshooting",
+    title: "My certificate says \"Being prepared\"",
+    steps: [
+      "This means your reflection came through, but the certificate needs a quick check by the Education Team before it's sent.",
+      "**There's nothing you need to do.** You'll get an email as soon as it's issued.",
+      "If it's been more than a few working days, contact the Education Team.",
+    ],
+  },
+  {
+    id: "viewer-no-certificate",
+    category: "troubleshooting",
+    title: "My certificate hasn't arrived",
+    steps: [
+      "Check **My Certificates** first - if it's listed there as **Issued**, use the **Download** button to get the PDF directly, whatever happened to the email.",
+      "Check your **junk or spam folder**.",
+      "Make sure you actually submitted the **reflection form** - the certificate is only created once that's done. Anything still outstanding shows on **My CPD** under **Needs Your Feedback**.",
+      "Check the email address on the reflection was correct; the certificate goes to whatever address was entered there.",
+      "Still nothing? Contact the Education Team and they can re-issue it.",
+    ],
+  },
+  {
+    id: "viewer-profile",
+    category: "getting-started",
+    title: "Changing your name, photo or theme",
+    steps: [
+      "Open **Settings** from the bottom of the sidebar, or select your avatar in the top right.",
+      "Under **Your Profile**, change your display name or pick a new avatar icon and colour, then **Save Profile**.",
+      "Use the theme control in the top-right of the header to switch between **Light**, **Dark** and **Navy**.",
+    ],
+    note: "Your email address can't be changed here, since it's what you sign in with - ask the Education Team if it needs updating.",
   },
 ];

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, ChevronRight, Search, Info, ImageOff } from "lucide-react";
+import { BookOpen, ChevronRight, Search, Info } from "lucide-react";
 import { HELP_CATEGORIES, HELP_ARTICLES } from "../data/helpContent";
 import MailtoLink from "../components/MailtoLink";
 
@@ -25,12 +25,12 @@ function ArticleItem({ article, open, onToggle }) {
       </button>
       {open && (
         <div className="px-4 pb-4 text-[12.5px] leading-relaxed space-y-2" style={{ color: "var(--text-dim)" }}>
-          {article.image ? (
+          {/* `imagePending` is kept in the data as a to-do marker for whoever captures the
+              screenshots, but it isn't rendered - a reader gained nothing from being told a
+              picture was coming, and five "coming soon" panels against one real screenshot
+              made the whole section look unfinished. */}
+          {article.image && (
             <img src={article.image.src} alt={article.image.alt || ""} className="w-full rounded-lg" style={{ border: "1px solid var(--border)" }} />
-          ) : article.imagePending && (
-            <div className="flex items-center gap-1.5 p-3 rounded-lg text-[11px] italic" style={{ background: "var(--surface-2)", color: "var(--text-faint)" }}>
-              <ImageOff size={13} className="shrink-0" />Screenshot coming soon
-            </div>
           )}
           {article.body && <p>{renderRich(article.body)}</p>}
           {article.steps && (

@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
-  Clock, ClipboardList, Award, TrendingUp, ChevronRight, MapPin,
+  Clock, ClipboardList, Award, ChevronRight, MapPin,
   Calendar, UserPlus, Download, Link2, MessageSquareText, UserCircle2, CalendarCheck2, LayoutGrid, List, Users,
 } from "lucide-react";
 import StatCard from "../components/StatCard";
@@ -16,7 +16,7 @@ import PresenterLine from "../components/PresenterLine";
 import HappeningNowSection from "../components/HappeningNowSection";
 import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, isRecentlyCompleted, splitFeaturedEvents, getShowDueSoonDefault, getShowDueSoonDatesDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
-import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections, avgFeedback } from "../lib/analytics";
+import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections } from "../lib/analytics";
 
 const QUICK_ACTIONS = [
   { id: "upcoming", label: "Add/Edit Event", icon: Calendar, color: "var(--accent-primary)" },
@@ -54,7 +54,7 @@ function groupActivity(auditLog, users) {
 
 export default function Dashboard({
   events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onOpenRegister, onActivityClick,
-  onOpenReports, onOpenCertificatesAwaiting, onOpenReportsFeedback, onOpenOutstandingReflections, onOpenEventsCurrentlyOpen,
+  onOpenReports, onOpenCertificatesAwaiting, onOpenOutstandingReflections, onOpenEventsCurrentlyOpen,
   registeredIds, onUnregister,
 }) {
   // Up Next's own big-card/compact-list choice, independent of the Upcoming Events page's.
@@ -84,7 +84,6 @@ export default function Dashboard({
   const oldestCertDays = awaitingCerts.length > 0
     ? Math.max(0, Math.round((Date.now() - Math.min(...awaitingCerts.map(c => new Date(`${c.date}T00:00:00`).getTime()))) / 86400000))
     : null;
-  const feedbackAvg = avgFeedback(reflections, { limit: 6 });
   const outstanding = outstandingReflections(events, registrations, reflections);
   const hoursYtd = Math.round(cpdHoursDelivered(previousEvents) * 10) / 10;
   const hoursData = monthlyHours(previousEvents, 12);
@@ -94,18 +93,14 @@ export default function Dashboard({
   // hasn't been held yet, even if some attendance happens to already be marked on it.
   const currentYear = new Date().getFullYear();
   const previousEventsThisYear = previousEvents.filter(ev => new Date(`${ev.date}T00:00:00`).getFullYear() === currentYear);
-  const ytdEventIds = new Set(previousEventsThisYear.map(ev => ev.id));
-  const ytdAttendees = registrations.filter(r => ytdEventIds.has(r.eventId) && r.attendanceStatus === "Attended").length;
 
   const sections = {
     stats: (
-      <div key="stats" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard label="CPD Hours Delivered (YTD)" value={hoursYtd} sub={`across ${previousEventsThisYear.length} events`} icon={Clock} accent={primaryHex} onClick={onOpenReports} />
-        <StatCard label="YTD Attendees" value={ytdAttendees} sub={`across ${previousEventsThisYear.length} events`} icon={ClipboardList} accent={successHex} onClick={onOpenReports} />
-        <StatCard label="Events Currently Open" value={openEvents.length} sub="accepting registrations" icon={CalendarCheck2} accent={successHex} onClick={onOpenEventsCurrentlyOpen} />
+      <div key="stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label={`CPD Hours Delivered in ${currentYear}`} value={hoursYtd} sub={`across ${previousEventsThisYear.length} events`} icon={Clock} accent={primaryHex} onClick={onOpenReports} />
+        <StatCard label="Events Open for Registration" value={openEvents.length} sub="accepting registrations now" icon={CalendarCheck2} accent={successHex} onClick={onOpenEventsCurrentlyOpen} />
         <StatCard label="Certificates Awaiting Approval" value={awaitingCerts.length} sub={oldestCertDays != null ? `oldest: ${oldestCertDays} days` : undefined} icon={Award} accent={secondaryHex} onClick={onOpenCertificatesAwaiting} />
         <StatCard label="Outstanding Reflections" value={outstanding.count} sub={`across ${outstanding.eventCount} events`} icon={MessageSquareText} accent={secondaryHex} onClick={onOpenOutstandingReflections} />
-        <StatCard label="Avg. Feedback Rating" value={feedbackAvg != null ? `${feedbackAvg} / 10` : "—"} sub="from last 6 events" icon={TrendingUp} accent={primaryHex} onClick={onOpenReportsFeedback} />
       </div>
     ),
     upNext: (
