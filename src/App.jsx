@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Routes, Route } from "react-router-dom";
 import LoginScreen from "./pages/LoginScreen";
 import Dashboard from "./pages/Dashboard";
@@ -96,7 +96,13 @@ export default function App() {
   };
   const [dismissedRegistrationPairs, setDismissedRegistrationPairs] = useState(new Set());
   const [dismissedReflectionPairs, setDismissedReflectionPairs] = useState(new Set());
+  // Acknowledged notifications were React state only, so every reload brought back everything
+  // that had already been dismissed. Persisted per user (the ackKeys are stable entity-derived
+  // strings like "cert-c123", not timestamps, so they stay meaningful across sessions).
   const [acknowledged, setAcknowledged] = useState(new Set());
+  // Which user's acks are currently loaded - guards the save effect below from writing the
+  // initial empty Set over stored data before the load has come back.
+  const acknowledgedLoadedFor = useRef(null);
   const [redDotsEnabled, setRedDotsEnabled] = useState(true);
   const [colorPrefs, setColorPrefs] = useState({ primary: "blue", secondary: "purple", success: "green" });
   const [layoutOrder, setLayoutOrder] = useState(DEFAULT_LAYOUT);
@@ -166,6 +172,27 @@ export default function App() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    const uid = session?.id;
+    if (!uid) { acknowledgedLoadedFor.current = null; setAcknowledged(new Set()); return; }
+    let cancelled = false;
+    (async () => {
+      const saved = await loadPersonal(`notifications-acknowledged:${uid}`, []);
+      if (cancelled) return;
+      setAcknowledged(new Set(Array.isArray(saved) ? saved : []));
+      acknowledgedLoadedFor.current = uid;
+    })();
+    return () => { cancelled = true; };
+  }, [session?.id]);
+
+  useEffect(() => {
+    const uid = session?.id;
+    if (!uid || acknowledgedLoadedFor.current !== uid) return;
+    // Capped so a long-lived account can't grow this without bound; Sets keep insertion order,
+    // so this drops the oldest acks, which are the ones whose conditions are long resolved.
+    savePersonal(`notifications-acknowledged:${uid}`, [...acknowledged].slice(-500));
+  }, [acknowledged, session?.id]);
 
   // Resolves a verified Supabase Auth user to an app `users` row, creating one on first
   // login. Checks login_emails first (covers both primary + secondary emails, and any
