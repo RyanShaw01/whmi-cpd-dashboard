@@ -153,7 +153,10 @@ export default function App() {
         loadPersonal("color-prefs", null), loadPersonal("dashboard-layout", null),
       ]);
       if (loadedColors) setColorPrefs(loadedColors);
-      if (loadedLayout) setLayoutOrder(loadedLayout);
+      if (loadedLayout) {
+        const missing = DEFAULT_LAYOUT.filter(id => !loadedLayout.includes(id));
+        setLayoutOrder(missing.length > 0 ? [...loadedLayout, ...missing] : loadedLayout);
+      }
     })();
   }, []);
 
@@ -1409,7 +1412,7 @@ export default function App() {
               <Dashboard
                 events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} registrations={registrations} reflections={reflections} certificates={certificates} files={files}
                 auditLog={auditLog} users={users}
-                openEvent={openEvent} setPage={changePage} layoutOrder={layoutOrder} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} userName={viewSession.name.split(" ")[0]}
+                externalCpdEvents={externalCpdEvents} openEvent={openEvent} setPage={changePage} layoutOrder={layoutOrder} primaryHex={primaryHex} secondaryHex={secondaryHex} successHex={successHex} userName={viewSession.name.split(" ")[0]}
                 onCreateCertificate={() => { changePage("certificates"); setCreateCertificateOpen(true); }}
                 onAddStaff={() => { changePage("staff"); setSelectedStaff(blankStaff()); }}
                 onAddEvent={() => changePage("upcoming")}

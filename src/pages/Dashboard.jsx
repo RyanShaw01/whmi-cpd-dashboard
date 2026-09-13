@@ -14,6 +14,7 @@ import RegisterOrUnregister from "../components/EventRegisterControl";
 import RecentlyCompletedCard from "../components/RecentlyCompletedCard";
 import PresenterLine from "../components/PresenterLine";
 import HappeningNowSection from "../components/HappeningNowSection";
+import ExternalCpdSection from "../components/ExternalCpdSection";
 import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, fmtTimeRange12h, eventBannerUrl, relativeTime, ACTION_LABELS, activityEntityName, eventLocationSuffix, isRecentlyCompleted, splitFeaturedEvents, getShowDueSoonDefault, getShowDueSoonDatesDefault, getDashboardEventViewDefault, setDashboardEventViewDefault } from "../lib/helpers";
 import { cpdHoursDelivered, monthlyHours, modeSplit, outstandingReflections } from "../lib/analytics";
@@ -55,7 +56,7 @@ function groupActivity(auditLog, users) {
 export default function Dashboard({
   events, previousEvents, registrations, reflections, certificates, files, auditLog = [], users = [], openEvent, setPage, layoutOrder, primaryHex, secondaryHex, successHex, userName, onCreateCertificate, onAddStaff, onAddEvent, onOpenRegister, onActivityClick,
   onOpenReports, onOpenCertificatesAwaiting, onOpenOutstandingReflections, onOpenEventsCurrentlyOpen,
-  registeredIds, onUnregister,
+  registeredIds, onUnregister, externalCpdEvents = [],
 }) {
   // Up Next's own big-card/compact-list choice, independent of the Upcoming Events page's.
   const [upNextView, setUpNextViewState] = useState(getDashboardEventViewDefault);
@@ -103,6 +104,7 @@ export default function Dashboard({
         <StatCard label="Outstanding Reflections" value={outstanding.count} sub={`across ${outstanding.eventCount} events`} icon={MessageSquareText} accent={secondaryHex} onClick={onOpenOutstandingReflections} />
       </div>
     ),
+    externalCpd: <ExternalCpdSection key="externalCpd" entries={externalCpdEvents} />,
     upNext: (
       <div key="upNext" className="whmi-card p-5">
         <div className="flex items-center justify-between mb-4 gap-2">

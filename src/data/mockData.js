@@ -201,6 +201,7 @@ export const DASHBOARD_SECTIONS = [
   { id: "activity", label: "Recent Activity" },
   { id: "hoursChart", label: "CPD Hours Chart" },
   { id: "modeChart", label: "Attendance Mode Chart" },
+  { id: "externalCpd", label: "Browse External CPD" },
 ];
 export const DEFAULT_LAYOUT = DASHBOARD_SECTIONS.map(s => s.id);
 
