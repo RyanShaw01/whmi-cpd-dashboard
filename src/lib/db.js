@@ -160,15 +160,12 @@ export async function fetchPreviousEvents() {
   const { data, error } = await supabase.from("events").select("*")
     .in("status", ["Completed", "Archived"]).order("date", { ascending: false });
   if (error) { console.error("fetchPreviousEvents", error); return PREVIOUS_EVENTS; }
-  return data.map(r => ({
-    id: r.id, title: r.title, topic: r.topic, date: r.date, attendance: r.attendance, capacity: r.capacity,
-    feedback: r.feedback == null ? null : Number(r.feedback), presenter: r.presenter,
-    start: r.start_time, end: r.end_time, mode: r.mode, recordingUrl: r.recording_url || "",
-    certificatesEnabled: r.certificates_enabled !== false,
-    recurrenceGroupId: r.recurrence_group_id || null,
-    groupInUpcoming: r.group_in_upcoming !== false,
-    groupInPrevious: !!r.group_in_previous,
-  }));
+  // Must be the same mapper fetchEvents uses. This was a hand-written partial mapper that left
+  // out 27 fields - including `status`. Opening a completed event's edit form then initialised
+  // every absent field from emptyEvent (status -> "Draft", description/location/tags -> empty)
+  // and saving wrote those blanks back, silently reverting the event to Draft and wiping its
+  // details. eventFromRow is a strict superset of what this used to return.
+  return data.map(eventFromRow);
 }
 
 export async function fetchCertificates() {

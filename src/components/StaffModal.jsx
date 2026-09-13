@@ -67,7 +67,7 @@ export default function StaffModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={onClose}>
       <div className="whmi-card w-full max-w-md max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
         <div className="p-5 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-[15px] font-bold text-white shrink-0" style={{ background: "var(--accent-secondary)" }}>

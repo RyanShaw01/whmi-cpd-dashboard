@@ -6,7 +6,7 @@ export default function ConfirmDeleteModal({ request, onCancel, onConfirm }) {
   const message = request.label ? `Are you sure you want to delete ${request.label}?` : request.message;
   const confirmLabel = request.confirmLabel || "Delete";
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onCancel}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={onCancel}>
       <div className="whmi-card w-full max-w-sm p-5 whmi-fade-in" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle size={18} style={{ color: "#D9534F" }} />

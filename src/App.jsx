@@ -1561,7 +1561,7 @@ export default function App() {
           defaultEventId={registerDefaultEventId} onSubmit={handleSubmitRegistration} files={files}
         />
         {registrationSuccessEvent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setRegistrationSuccessEvent(null)}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={() => setRegistrationSuccessEvent(null)}>
             <div className="w-full max-w-sm whmi-fade-in" onClick={e => e.stopPropagation()}>
               <RegistrationSuccessCard event={registrationSuccessEvent} onClose={() => setRegistrationSuccessEvent(null)} />
             </div>

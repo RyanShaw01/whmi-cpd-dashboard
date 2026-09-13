@@ -15,7 +15,7 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
   const attendedIds = new Set([...(staff?.attendedEventIds || []), ...myRegisteredEventIds]);
   const myPastEvents = previousEvents.filter(ev => attendedIds.has(ev.id));
   const myReflectedEventIds = new Set((reflections || []).filter(r => r.email?.toLowerCase() === user.email.toLowerCase()).map(r => r.eventId));
-  const needsFeedback = events.filter(e => myRegisteredEventIds.has(e.id) && hasEventEnded(e.date, e.end) && !myReflectedEventIds.has(e.id));
+  const needsFeedback = [...events, ...previousEvents].filter(e => myRegisteredEventIds.has(e.id) && hasEventEnded(e.date, e.end) && !myReflectedEventIds.has(e.id));
 
   // Same plain-text "due soon" list admins see at the top of their Dashboard - events already
   // covered by HappeningNowSection (live, or ended within the last 24h) are excluded so they
@@ -65,7 +65,7 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
       </div>
 
       <PersonalStatsRow
-        user={user} certificates={certificates} events={events} registrations={registrations} reflections={reflections}
+        user={user} certificates={certificates} events={[...events, ...previousEvents]} registrations={registrations} reflections={reflections}
         onNavigateCertificates={onNavigatePage ? () => onNavigatePage("mycertificates") : undefined}
       />
 

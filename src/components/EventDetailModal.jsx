@@ -100,8 +100,14 @@ export default function EventDetailModal({
   // Drag-to-resize width, persisted per modal "kind" (not per event) so it stays wide next time
   // any event card is opened. 768 is the floor here (the no-banner default); the banner variant's
   // actual 1024 floor is applied at render time below, once bannerUrl is known.
-  const defaultModalHeightPx = typeof window !== "undefined" ? Math.round(window.innerHeight * 0.85) : 700;
-  const { width: resizedWidth, height: resizedHeight, isDesktop: resizeIsDesktop, dragging: resizeDragging, startResize, startResizeHeight } = useResizableWidth("whmi_modal_width_event", 768, defaultModalHeightPx);
+  // Sized off the viewport rather than a fixed 768/672: an event has a lot to show and was
+  // using a fraction of a modern screen. Capped so it doesn't stretch absurdly wide on an
+  // ultrawide monitor, floored so it's never smaller than the old default.
+  const defaultModalWidthPx = typeof window !== "undefined"
+    ? Math.max(880, Math.min(1320, Math.round(window.innerWidth * 0.82)))
+    : 880;
+  const defaultModalHeightPx = typeof window !== "undefined" ? Math.round(window.innerHeight * 0.92) : 700;
+  const { width: resizedWidth, height: resizedHeight, isDesktop: resizeIsDesktop, dragging: resizeDragging, startResize, startResizeHeight } = useResizableWidth("whmi_modal_width_event", defaultModalWidthPx, defaultModalHeightPx);
   // Per-recipient send log for this event - powers the individual send buttons' "last sent"/hover
   // history as well as the Email Log panel. Fetched once here (not per-button) and refreshed
   // after any send so every surface reading it stays in sync.
@@ -165,7 +171,7 @@ export default function EventDetailModal({
       setEditing(false);
     };
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={attemptCloseEdit}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={attemptCloseEdit}>
         <div
           className="whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"
           style={{
@@ -510,7 +516,7 @@ export default function EventDetailModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={onClose}>
       <div
         className={bannerUrl ? "whmi-card w-full max-w-5xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative" : "whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"}
         style={{

@@ -16,7 +16,7 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
   const myPast = previousEvents.filter(e => myRegisteredEventIds.has(e.id));
 
   const myReflectedEventIds = new Set((reflections || []).filter(r => r.email?.toLowerCase() === user.email.toLowerCase()).map(r => r.eventId));
-  const needsFeedback = events.filter(e => myRegisteredEventIds.has(e.id) && hasEventEnded(e.date, e.end) && !myReflectedEventIds.has(e.id));
+  const needsFeedback = [...events, ...previousEvents].filter(e => myRegisteredEventIds.has(e.id) && hasEventEnded(e.date, e.end) && !myReflectedEventIds.has(e.id));
 
   // Due-soon stays scoped to actually-registerable events (no point nudging "register soon" for
   // something nobody can register for); Browse & Register is the wider visibility list, so it
@@ -62,7 +62,7 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
       </div>
 
       <PersonalStatsRow
-        user={user} certificates={certificates} events={events} registrations={registrations} reflections={reflections}
+        user={user} certificates={certificates} events={[...events, ...previousEvents]} registrations={registrations} reflections={reflections}
         onNavigateCertificates={onNavigatePage ? () => onNavigatePage("mycertificates") : undefined}
       />
 

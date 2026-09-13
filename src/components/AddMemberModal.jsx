@@ -25,7 +25,7 @@ export default function AddMemberModal({ open, onClose, onAdd }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={close}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={close}>
       <div className="whmi-card w-full max-w-md whmi-fade-in" onClick={e => e.stopPropagation()}>
         <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
           <h2 className="disp text-[16px] font-extrabold flex items-center gap-2"><UserPlus size={17} style={{ color: "var(--accent-primary)" }} />Add Member</h2>

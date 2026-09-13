@@ -301,7 +301,7 @@ export default function ReflectionPage({ events, previousEvents, session, onSubm
       </div>
 
       {confirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setConfirmOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={() => setConfirmOpen(false)}>
           <div className="whmi-card w-full max-w-sm p-5 space-y-3" onClick={e => e.stopPropagation()}>
             <h2 className="disp text-[15px] font-extrabold">Submit your reflection?</h2>
             <p className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>Are you sure you want to submit? Your CPD certificate will be emailed to you right after.</p>

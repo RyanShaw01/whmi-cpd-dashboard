@@ -12,7 +12,7 @@ export default function EventFormModal({ open, onClose, event, onSave, uploadedB
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={attemptClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={attemptClose}>
       <div className="whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
         <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
           <h2 className="disp text-[16px] font-extrabold">{event ? "Edit Event" : "New Event"}</h2>

@@ -59,8 +59,14 @@ export default function PreviousEventDetailModal({
   // Drag-to-resize width, persisted per modal "kind" (not per event) so it stays wide next time
   // any past-event card is opened. 672 is the floor here (the view default); the edit form's
   // actual 768 floor is applied at render time in that branch below.
-  const defaultModalHeightPx = typeof window !== "undefined" ? Math.round(window.innerHeight * 0.85) : 700;
-  const { width: resizedWidth, height: resizedHeight, isDesktop: resizeIsDesktop, dragging: resizeDragging, startResize, startResizeHeight } = useResizableWidth("whmi_modal_width_previous_event", 672, defaultModalHeightPx);
+  // Sized off the viewport rather than a fixed 768/672: an event has a lot to show and was
+  // using a fraction of a modern screen. Capped so it doesn't stretch absurdly wide on an
+  // ultrawide monitor, floored so it's never smaller than the old default.
+  const defaultModalWidthPx = typeof window !== "undefined"
+    ? Math.max(880, Math.min(1320, Math.round(window.innerWidth * 0.82)))
+    : 880;
+  const defaultModalHeightPx = typeof window !== "undefined" ? Math.round(window.innerHeight * 0.92) : 700;
+  const { width: resizedWidth, height: resizedHeight, isDesktop: resizeIsDesktop, dragging: resizeDragging, startResize, startResizeHeight } = useResizableWidth("whmi_modal_width_previous_event", defaultModalWidthPx, defaultModalHeightPx);
   // Per-recipient send log for this event - see EventDetailModal for the fuller explanation;
   // same pattern here, keyed by event.id since this modal is already re-keyed per event by App.jsx.
   const [emailLog, setEmailLog] = useState(null);
@@ -80,7 +86,7 @@ export default function PreviousEventDetailModal({
       setEditing(false);
     };
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={attemptCloseEdit}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={attemptCloseEdit}>
         <div
           className="whmi-card w-full max-w-3xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"
           style={{
@@ -180,7 +186,7 @@ export default function PreviousEventDetailModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={onClose}>
       <div
         className="whmi-card w-full max-w-2xl max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in relative"
         style={{

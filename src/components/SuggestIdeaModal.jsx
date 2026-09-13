@@ -26,7 +26,7 @@ export default function SuggestIdeaModal({ session, onClose, onSubmit }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.5)" }} onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={onClose}>
       <div className="whmi-card w-full max-w-md max-h-[85vh] overflow-y-auto whmi-scroll whmi-fade-in" onClick={e => e.stopPropagation()}>
         <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
           <h2 className="disp text-[16px] font-extrabold flex items-center gap-2"><Lightbulb size={17} style={{ color: "var(--accent-primary)" }} />Suggest CPD Ideas</h2>

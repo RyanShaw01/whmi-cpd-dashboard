@@ -84,7 +84,7 @@ export default function Dashboard({
   const oldestCertDays = awaitingCerts.length > 0
     ? Math.max(0, Math.round((Date.now() - Math.min(...awaitingCerts.map(c => new Date(`${c.date}T00:00:00`).getTime()))) / 86400000))
     : null;
-  const outstanding = outstandingReflections(events, registrations, reflections);
+  const outstanding = outstandingReflections([...events, ...previousEvents], registrations, reflections);
   const hoursYtd = Math.round(cpdHoursDelivered(previousEvents) * 10) / 10;
   const hoursData = monthlyHours(previousEvents, 12);
   const modeData = modeSplit(previousEvents);
@@ -119,7 +119,21 @@ export default function Dashboard({
             </div>
           </div>
         </div>
-        {upNextView === "list" ? (
+        {/* With nothing scheduled the section rendered an empty box under its heading, which
+            reads as something failing to load rather than as "there's nothing on". */}
+        {nonLiveEvents.length === 0 ? (
+          <div className="text-center py-6 space-y-1">
+            <div className="text-[13px] font-semibold">No upcoming events scheduled</div>
+            <p className="text-[12px]" style={{ color: "var(--text-faint)" }}>
+              Anything you add with a future date will appear here.
+            </p>
+            {onAddEvent && (
+              <button onClick={onAddEvent} className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] inline-flex items-center gap-1.5 mt-2">
+                <Calendar size={13} />Add an Event
+              </button>
+            )}
+          </div>
+        ) : upNextView === "list" ? (
           <div className="space-y-1.5">
             {nonLiveEvents.slice(0, 6).map(ev => {
               const bannerUrl = eventBannerUrl(files, ev.id);
