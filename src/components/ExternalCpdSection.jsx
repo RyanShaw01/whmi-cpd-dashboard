@@ -15,7 +15,7 @@ const writeStored = (key, value) => {
 // CPD run by other organisations, so every row is an outbound link rather than something
 // registerable here. Collapsed/expanded state and sort direction are remembered per browser.
 export default function ExternalCpdSection({ entries = [] }) {
-  const [open, setOpen] = useState(() => readStored(OPEN_KEY, "false") === "true");
+  const [open, setOpen] = useState(() => readStored(OPEN_KEY, "true") === "true");
   const [sortAsc, setSortAsc] = useState(() => readStored(SORT_KEY, "asc") === "asc");
 
   const toggleOpen = () => { const next = !open; setOpen(next); writeStored(OPEN_KEY, String(next)); };

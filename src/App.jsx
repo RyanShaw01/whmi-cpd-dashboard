@@ -154,8 +154,15 @@ export default function App() {
       ]);
       if (loadedColors) setColorPrefs(loadedColors);
       if (loadedLayout) {
-        const missing = DEFAULT_LAYOUT.filter(id => !loadedLayout.includes(id));
-        setLayoutOrder(missing.length > 0 ? [...loadedLayout, ...missing] : loadedLayout);
+        const merged = [...loadedLayout];
+        DEFAULT_LAYOUT.forEach((id, defaultIdx) => {
+          if (merged.includes(id)) return;
+          // Place it after whichever of its default-order predecessors the saved layout still
+          // has, so it lands where it was designed to sit rather than at the very bottom.
+          const prev = DEFAULT_LAYOUT.slice(0, defaultIdx).reverse().find(p => merged.includes(p));
+          merged.splice(prev ? merged.indexOf(prev) + 1 : 0, 0, id);
+        });
+        setLayoutOrder(merged);
       }
     })();
   }, []);

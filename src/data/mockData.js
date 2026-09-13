@@ -198,10 +198,10 @@ export const NAV_VIEWER_INTERNAL = [
 export const DASHBOARD_SECTIONS = [
   { id: "stats", label: "Stats Overview" },
   { id: "upNext", label: "Up Next" },
+  { id: "externalCpd", label: "Browse External CPD" },
   { id: "activity", label: "Recent Activity" },
   { id: "hoursChart", label: "CPD Hours Chart" },
   { id: "modeChart", label: "Attendance Mode Chart" },
-  { id: "externalCpd", label: "Browse External CPD" },
 ];
 export const DEFAULT_LAYOUT = DASHBOARD_SECTIONS.map(s => s.id);
 
