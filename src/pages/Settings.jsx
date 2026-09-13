@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload, Users, SlidersHorizontal, GripVertical, LayoutGrid, List, Mail, Send } from "lucide-react";
+import { Sun, Moon, MoonStar, ArrowUp, ArrowDown, Shield, Trash2, UserPlus, BellOff, Save, UserCircle2, History, Sparkles, ChevronDown, ChevronRight, BadgeCheck, Ban, RotateCcw, Award, Plus, Pencil, Eye, Image, Palette, Upload, Users, SlidersHorizontal, GripVertical, LayoutGrid, List, Mail, Send, Globe } from "lucide-react";
 import CharacterAvatar from "../components/CharacterAvatar";
 import AvatarPicker from "../components/AvatarPicker";
 import AddMemberModal from "../components/AddMemberModal";
@@ -343,6 +343,7 @@ function SettingsGroup({ title, description, icon: Icon, children }) {
 export default function Settings({
   theme, setTheme, mainTheme, setMainTheme, cardTheme, setCardTheme, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
   redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType, onReorderCpdTypes,
+  externalCpdEvents = [], onSaveExternalCpdEvent, onDeleteExternalCpdEvent,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
   tags = [], onSaveTag, onDeleteTag, onReorderTags, onToggleTagModality, onBackfillStaffLinks, auditLog = [],
   avatarIcons = [], onSaveAvatarIcon, onDeleteAvatarIcon, onReorderAvatarIcons, onUploadAvatarIconImage,
@@ -399,6 +400,9 @@ export default function Settings({
   const alphabetizeTags = () => onReorderTags([...tags].sort((a, b) => a.name.localeCompare(b.name)));
 
   const [avatarIconsExpanded, setAvatarIconsExpanded] = useState(false);
+  const [externalCpdExpanded, setExternalCpdExpanded] = useState(false);
+  // null = not editing; an object = the listing being added or edited.
+  const [externalCpdDraft, setExternalCpdDraft] = useState(null);
   const [editingAvatarIconId, setEditingAvatarIconId] = useState(null); // null | "new" | <id>
   const [avatarIconLabel, setAvatarIconLabel] = useState("");
   const [avatarIconScale, setAvatarIconScale] = useState(55);
@@ -1182,6 +1186,99 @@ export default function Settings({
                   </div>
                 )}
               </div>
+            </>
+          )}
+        </div>
+
+        {/* External CPD: listings from other providers (ASMIRT, RAB, ...) shown to everyone on
+            My CPD. Curated here rather than scraped - see supabase/migration_phase40.sql. */}
+        <div className="whmi-card p-4">
+          <button onClick={() => setExternalCpdExpanded(x => !x)} className="w-full flex items-center justify-between mb-1 px-1 -mx-1 py-1 rounded-lg whmi-row-hover transition">
+            <div className="flex items-center gap-2">
+              {externalCpdExpanded ? <ChevronDown size={13} style={{ color: "var(--text-faint)" }} /> : <ChevronRight size={13} style={{ color: "var(--text-faint)" }} />}
+              <Globe size={15} style={{ color: "var(--accent-primary)" }} />
+              <div className="font-semibold text-[13px]">External CPD Listings</div>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>{externalCpdEvents.length}</span>
+          </button>
+          <div className="text-[11.5px] mb-3" style={{ color: "var(--text-faint)" }}>
+            CPD run by other organisations, listed for everyone under "Browse External CPD" on My CPD. Leave the date blank for an ongoing programme with no single date.
+          </div>
+          {externalCpdExpanded && (
+            <>
+              <div className="space-y-2">
+                {externalCpdEvents.length === 0 && (
+                  <div className="text-[12px]" style={{ color: "var(--text-faint)" }}>Nothing listed yet.</div>
+                )}
+                {externalCpdEvents.map(e => (
+                  <div key={e.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg" style={{ background: "var(--surface-2)" }}>
+                    <div className="min-w-0">
+                      <div className="text-[12.5px] font-semibold truncate">{e.title}</div>
+                      <div className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>
+                        {e.provider} · {e.date || "Ongoing"}{e.cost ? ` · ${e.cost}` : ""}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button onClick={() => setExternalCpdDraft({ ...e })} className="whmi-btn-ghost !py-1 !px-2 text-[11.5px] flex items-center gap-1"><Pencil size={12} />Edit</button>
+                      <button onClick={() => onDeleteExternalCpdEvent?.(e)} className="whmi-btn-ghost !py-1 !px-2 text-[11.5px] flex items-center gap-1" style={{ color: "#D9534F" }}><Trash2 size={12} />Delete</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {externalCpdDraft ? (
+                <form
+                  className="mt-3 p-3 rounded-lg space-y-2"
+                  style={{ border: "1px solid var(--border)" }}
+                  onSubmit={ev => {
+                    ev.preventDefault();
+                    if (!externalCpdDraft.title?.trim() || !externalCpdDraft.provider?.trim() || !externalCpdDraft.url?.trim()) return;
+                    onSaveExternalCpdEvent?.({ ...externalCpdDraft, id: externalCpdDraft.id || "xcpd" + Date.now() });
+                    setExternalCpdDraft(null);
+                  }}
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Title *</label>
+                      <input required autoFocus value={externalCpdDraft.title || ""} onChange={ev => setExternalCpdDraft(d => ({ ...d, title: ev.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12.5px]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Provider *</label>
+                      <input required value={externalCpdDraft.provider || ""} onChange={ev => setExternalCpdDraft(d => ({ ...d, provider: ev.target.value }))} placeholder="e.g. ASMIRT" className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12.5px]" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Link *</label>
+                    <input required type="url" value={externalCpdDraft.url || ""} onChange={ev => setExternalCpdDraft(d => ({ ...d, url: ev.target.value }))} placeholder="https://..." className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12.5px]" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Date</label>
+                      <input type="date" value={externalCpdDraft.date || ""} onChange={ev => setExternalCpdDraft(d => ({ ...d, date: ev.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12.5px]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Cost</label>
+                      <input value={externalCpdDraft.cost || ""} onChange={ev => setExternalCpdDraft(d => ({ ...d, cost: ev.target.value }))} placeholder="Free, $95, ..." className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12.5px]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Location</label>
+                      <input value={externalCpdDraft.location || ""} onChange={ev => setExternalCpdDraft(d => ({ ...d, location: ev.target.value }))} placeholder="Online, Melbourne, ..." className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12.5px]" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Note</label>
+                    <input value={externalCpdDraft.notes || ""} onChange={ev => setExternalCpdDraft(d => ({ ...d, notes: ev.target.value }))} className="whmi-input w-full px-2.5 py-1.5 mt-1 text-[12.5px]" />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button type="submit" className="whmi-btn-primary !py-1.5 !px-3 text-[12px] flex items-center gap-1.5"><Save size={13} />Save Listing</button>
+                    <button type="button" onClick={() => setExternalCpdDraft(null)} className="whmi-btn-ghost !py-1.5 !px-3 text-[12px]">Cancel</button>
+                  </div>
+                </form>
+              ) : (
+                <button onClick={() => setExternalCpdDraft({ title: "", provider: "", url: "", date: "", cost: "", location: "", notes: "" })} className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] flex items-center gap-1.5 mt-3">
+                  <Plus size={13} />Add Listing
+                </button>
+              )}
             </>
           )}
         </div>

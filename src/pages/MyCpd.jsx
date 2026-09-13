@@ -2,11 +2,12 @@ import { Link } from "react-router-dom";
 import { ClipboardList, MessageSquareText, Lightbulb, Link2 } from "lucide-react";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
+import ExternalCpdSection from "../components/ExternalCpdSection";
 import HappeningNowSection from "../components/HappeningNowSection";
 import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
 import { fmtDate, hasEventEnded, daysUntil, formatCountdown, canJoinMeeting, splitFeaturedEvents, isViewerVisibleStatus } from "../lib/helpers";
 
-export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea }) {
+export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea, externalCpdEvents = [] }) {
   const staff = staffDirectory.find(s => s.id === user.staffId);
   const myRegisteredEventIds = new Set((registrations || []).filter(r => r.userId === user.id).map(r => r.eventId));
   // Falling back to the whole previousEvents list meant anyone without a linked staff record saw
@@ -104,6 +105,8 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
           </button>
         </div>
       )}
+
+      <ExternalCpdSection entries={externalCpdEvents} />
 
       <div className="whmi-card p-5">
         <h2 className="disp text-[15px] font-bold mb-3">Past CPD</h2>

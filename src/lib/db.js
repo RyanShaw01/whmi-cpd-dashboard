@@ -315,6 +315,41 @@ export async function updateCertificateStatus(id, status) {
 /* ---------------------------------------------------------------------- */
 const cpdTypeFromRow = (r) => ({ id: r.id, name: r.name, appellationCode: r.appellation_code, category: r.category || "", sortOrder: r.sort_order ?? 0 });
 
+// EXTERNAL CPD ------------------------------------------------------------------
+// CPD run by other organisations (ASMIRT, Radiology Across Borders, ...), curated by admins
+// in Settings rather than scraped - none of those providers publish a feed, so parsing their
+// pages would break silently on any redesign. See supabase/migration_phase40.sql.
+const externalCpdFromRow = (r) => ({
+  id: r.id, title: r.title, provider: r.provider, url: r.url,
+  date: r.event_date, cost: r.cost || "", location: r.location || "", notes: r.notes || "",
+});
+export async function fetchExternalCpdEvents() {
+  if (!supabaseConfigured) return [];
+  const { data, error } = await supabase.from("external_cpd_events").select("*").order("event_date", { ascending: true, nullsFirst: false });
+  if (error) { console.error("fetchExternalCpdEvents", error); return []; }
+  return data.map(externalCpdFromRow);
+}
+const externalCpdToRow = (e) => ({
+  title: e.title, provider: e.provider, url: e.url,
+  // Empty string would be rejected by a date column; "no date" is a real state here.
+  event_date: e.date || null, cost: e.cost || null, location: e.location || null, notes: e.notes || null,
+});
+export async function insertExternalCpdEvent(entry) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("external_cpd_events").insert({ id: entry.id, ...externalCpdToRow(entry) });
+  if (error) console.error("insertExternalCpdEvent", error);
+}
+export async function updateExternalCpdEvent(id, patch) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("external_cpd_events").update(externalCpdToRow(patch)).eq("id", id);
+  if (error) console.error("updateExternalCpdEvent", error);
+}
+export async function deleteExternalCpdEvent(id) {
+  if (!supabaseConfigured) return;
+  const { error } = await supabase.from("external_cpd_events").delete().eq("id", id);
+  if (error) console.error("deleteExternalCpdEvent", error);
+}
+
 export async function fetchCpdTypes() {
   if (!supabaseConfigured) return [];
   const { data, error } = await supabase.from("cpd_types").select("*").order("sort_order").order("name");

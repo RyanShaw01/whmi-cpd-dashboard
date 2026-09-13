@@ -52,6 +52,7 @@ import {
   fetchBrainstormIdeas, insertBrainstormIdea, deleteBrainstormIdea, updateBrainstormIdea,
   fetchAppSetting, upsertAppSetting,
   fetchPersonalReflections, insertPersonalReflection, deletePersonalReflection, emailReflectionCopy, emailReflectionsReport, sendRegistrationConfirmation,
+  fetchExternalCpdEvents, insertExternalCpdEvent, updateExternalCpdEvent, deleteExternalCpdEvent,
 } from "./lib/db";
 import { setAvatarIcons as setRegistryIcons, setAvatarColors as setRegistryColors } from "./lib/avatarRegistry";
 import Footer from "./components/Footer";
@@ -81,6 +82,7 @@ export default function App() {
   // falling back to their hardcoded copy.
   const [emailTemplateOverrides, setEmailTemplateOverrides] = useState({});
   const [personalReflections, setPersonalReflections] = useState([]);
+  const [externalCpdEvents, setExternalCpdEvents] = useState([]);
   const [suggestIdeaOpen, setSuggestIdeaOpen] = useState(false);
   const [auditLog, setAuditLog] = useState([]);
   // Writes to the DB and optimistically prepends locally so the Dashboard's Recent Activity
@@ -194,12 +196,13 @@ export default function App() {
     const [
       userList, staffList, eventList, prevEventList, certList, regList, externalList, reflectionList, fileList,
       dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList, avatarIconList, avatarColorList, brainstormIdeaList,
-      staffFieldVisibilitySetting, personalReflectionList, emailTemplateOverridesSetting,
+      staffFieldVisibilitySetting, personalReflectionList, emailTemplateOverridesSetting, externalCpdList,
     ] = await Promise.all([
       fetchUsers(), fetchStaff(), fetchEvents(), fetchPreviousEvents(), fetchCertificates(), fetchRegistrations(), fetchExternalParticipants(),
       fetchReflections(), fetchAllFiles(), fetchDismissedPairs("registration"), fetchDismissedPairs("reflection"), fetchCpdTypes(), fetchTags(),
       fetchAuditLog(50), fetchAvatarIcons(), fetchAvatarColors(), fetchBrainstormIdeas(),
       fetchAppSetting("staff_field_visibility"), fetchPersonalReflections(), fetchAppSetting("email_template_overrides"),
+      fetchExternalCpdEvents(),
     ]);
     setAvatarIcons(avatarIconList);
     setAvatarColors(avatarColorList);
@@ -223,6 +226,7 @@ export default function App() {
     setStaffFieldVisibility({ ...DEFAULT_STAFF_FIELD_VISIBILITY, ...(staffFieldVisibilitySetting || {}) });
     setPersonalReflections(personalReflectionList);
     setEmailTemplateOverrides(emailTemplateOverridesSetting || {});
+    setExternalCpdEvents(externalCpdList);
   };
 
   const clearAppData = () => {
@@ -231,6 +235,7 @@ export default function App() {
     setAvatarIcons([]); setAvatarColors([]); setBrainstormIdeas([]); setStaffFieldVisibility(DEFAULT_STAFF_FIELD_VISIBILITY);
     setPersonalReflections([]);
     setEmailTemplateOverrides({});
+    setExternalCpdEvents([]);
     setDismissedRegistrationPairs(new Set()); setDismissedReflectionPairs(new Set());
   };
 
@@ -597,6 +602,21 @@ export default function App() {
     updateEvent(payload.id, payload).then(ok => { if (!ok) showToast("Couldn't save changes — please try again."); });
     pushAudit({ actorId: session?.id, action: "event.updated", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
+
+  const handleSaveExternalCpdEvent = (entry) => {
+    const isNew = !externalCpdEvents.some(e => e.id === entry.id);
+    if (isNew) {
+      setExternalCpdEvents(prev => [...prev, entry]);
+      insertExternalCpdEvent(entry);
+    } else {
+      setExternalCpdEvents(prev => prev.map(e => e.id === entry.id ? { ...e, ...entry } : e));
+      updateExternalCpdEvent(entry.id, entry);
+    }
+  };
+  const requestDeleteExternalCpdEvent = (entry) => requestDelete(`the external CPD listing "${entry.title}"`, () => {
+    setExternalCpdEvents(prev => prev.filter(e => e.id !== entry.id));
+    deleteExternalCpdEvent(entry.id);
+  });
 
   // Centralised confirm flow; deletes, and any other "are you sure?" action, route through here.
   const requestDelete = (label, onConfirm) => setConfirmModal({ label, onConfirm });
@@ -1403,10 +1423,10 @@ export default function App() {
               />
             )}
             {page === "mycpd" && viewSession.userType === "external" && (
-              <ExternalDashboard user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
+              <ExternalDashboard externalCpdEvents={externalCpdEvents} user={viewSession} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycpd" && viewSession.userType !== "external" && (
-              <MyCpd user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
+              <MyCpd externalCpdEvents={externalCpdEvents} user={viewSession} staffDirectory={staffDirectory} events={eventsWithLiveCounts} previousEvents={previousEventsWithLiveStats} certificates={certificates} registrations={registrations} reflections={reflections} files={files} openEvent={openEvent} onOpenRegister={handleOpenRegister} onUnregister={handleUnregisterSelf} onNavigatePage={changePage} onSuggestIdea={() => setSuggestIdeaOpen(true)} />
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
             {page === "upcoming" && (canManage || viewSession.userType === "internal") && (
@@ -1471,6 +1491,7 @@ export default function App() {
                 onReplayTour={() => { changePage(homePage); setShowTour(true); }}
                 onRevokeSession={handleRevokeSession}
                 cpdTypes={cpdTypes} onSaveCpdType={requestSaveCpdType} onDeleteCpdType={requestDeleteCpdType} onReorderCpdTypes={handleReorderCpdTypes}
+                externalCpdEvents={externalCpdEvents} onSaveExternalCpdEvent={handleSaveExternalCpdEvent} onDeleteExternalCpdEvent={requestDeleteExternalCpdEvent}
                 tags={tags} onSaveTag={requestSaveTag} onDeleteTag={requestDeleteTag} onReorderTags={handleReorderTags} onToggleTagModality={handleToggleTagModality}
                 onBackfillStaffLinks={handleBackfillStaffLinks} auditLog={auditLog}
                 avatarIcons={avatarIcons} onSaveAvatarIcon={requestSaveAvatarIcon} onDeleteAvatarIcon={requestDeleteAvatarIcon}

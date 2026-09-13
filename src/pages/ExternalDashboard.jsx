@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Video, Link2, Lightbulb, MessageSquareText } from "lucide-react";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
+import ExternalCpdSection from "../components/ExternalCpdSection";
 import HappeningNowSection from "../components/HappeningNowSection";
 import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
 import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, isViewerVisibleStatus, hasEventEnded } from "../lib/helpers";
@@ -10,7 +11,7 @@ import { fmtDate, daysUntil, formatCountdown, canJoinMeeting, isViewerVisibleSta
 // (past + upcoming, recordings, certificates) plus a "Browse & Register" section covering
 // every event admins have opted into external visibility (events.open_to_external) — unlike
 // the internal viewer catalog, this is deliberately scoped to only externally-open events.
-export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea }) {
+export default function ExternalDashboard({ user, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea, externalCpdEvents = [] }) {
   const myRegisteredEventIds = new Set((registrations || []).filter(r => r.userId === user.id).map(r => r.eventId));
   const myUpcoming = events.filter(e => myRegisteredEventIds.has(e.id));
   const myPast = previousEvents.filter(e => myRegisteredEventIds.has(e.id));
@@ -109,6 +110,8 @@ export default function ExternalDashboard({ user, events, previousEvents, certif
         viewerUserType={user.userType}
         emptyText="No externally-open events available right now."
       />
+      <ExternalCpdSection entries={externalCpdEvents} />
+
       {onSuggestIdea && (
         <div className="flex justify-center -mt-3">
           <button onClick={onSuggestIdea} className="whmi-btn-ghost flex items-center gap-1.5 text-[12.5px]">
