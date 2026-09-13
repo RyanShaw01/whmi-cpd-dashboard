@@ -74,6 +74,7 @@ const eventFromRow = (r) => ({
   recurrenceGroupId: r.recurrence_group_id || null,
   groupInUpcoming: r.group_in_upcoming !== false,
   groupInPrevious: !!r.group_in_previous,
+  createdAt: r.created_at,
 });
 const eventToRow = (e) => ({
   title: e.title, topic: e.topic, date: e.date, start_time: e.start, end_time: e.end,

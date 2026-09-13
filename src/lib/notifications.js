@@ -1,5 +1,17 @@
 import { fmtDate, isViewerVisibleStatus } from "./helpers";
 
+// "New" has to actually mean new. Two of the groups below had no recency condition at all -
+// they matched every registration, and every visible event, for all time - so they were really
+// "everything you haven't individually dismissed yet". With 55 registrations that reads as
+// "55 new registrations" forever, and one cleared browser brings all 55 back. Anything older
+// than this window is simply not news any more and never notifies.
+const NEW_WINDOW_DAYS = 14;
+const isRecent = (timestamp) => {
+  if (!timestamp) return false; // unknown age: treat as old, never resurrect legacy rows
+  const t = new Date(timestamp).getTime();
+  return Number.isFinite(t) && Date.now() - t < NEW_WINDOW_DAYS * 86400000;
+};
+
 // Notification groups are derived fresh from live app state every render; nothing is
 // "created"; a group simply stops existing once the underlying condition resolves
 // (event un-drafted, cert approved, registration acknowledged, etc).
@@ -39,7 +51,7 @@ export function buildNotificationGroups({ events, certificates, registrations, a
     });
   }
 
-  const newRegs = registrations.filter(r => !acknowledged.has(`reg-${r.id}`));
+  const newRegs = registrations.filter(r => isRecent(r.createdAt) && !acknowledged.has(`reg-${r.id}`));
   if (newRegs.length) {
     groups.push({
       id: "registration",
@@ -81,7 +93,7 @@ export function buildViewerNotificationGroups({ session, visibleEvents, previous
   }
 
   (visibleEvents || [])
-    .filter(e => isViewerVisibleStatus(e.status) && !acknowledged.has(`viewer-event-${e.id}`))
+    .filter(e => isViewerVisibleStatus(e.status) && isRecent(e.createdAt) && !acknowledged.has(`viewer-event-${e.id}`))
     .forEach(e => {
       groups.push({
         id: `viewer-event-${e.id}`,
