@@ -64,6 +64,14 @@ const EMAIL_TEMPLATE_DEFS = [
     placeholderHelp: "{{name}}, {{title}}, {{reflectUrl}}, and the pre-built {{button}} block.",
   },
   {
+    key: "presenter_thank_you",
+    label: "Presenter Thank You",
+    description: "Sent to an event's presenters from the event's Email tab, thanking them for presenting — separate from the attendee thank-you, and with no reflection request.",
+    supportsHtml: true,
+    defaultSubject: "Thank you for presenting at {title}",
+    placeholderHelp: "{{name}}, {{title}}, and {{certificateLine}} (only appears when a presenter certificate is attached).",
+  },
+  {
     key: "reflection_reminder",
     label: "Reflection Reminder",
     description: "One-off nudge an admin can send to a specific person who hasn't submitted their reflection yet.",
@@ -118,6 +126,10 @@ const HTML_PREVIEW_SAMPLE_VARS = {
   reflection_reminder: {
     name: "Alex", title: "Ultrasound-Guided Procedures Workshop", link: "#",
     button: `<div style="text-align:center;margin:6px 0 18px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;">Submit your reflection</a></div>`,
+  },
+  presenter_thank_you: {
+    name: "Alex", title: "Ultrasound-Guided Procedures Workshop",
+    certificateLine: `<p style="margin:0 0 14px 0;">Your CPD certificate for presenting is attached.</p>`,
   },
   post_event_thank_you: {
     name: "Alex", title: "Ultrasound-Guided Procedures Workshop", reflectUrl: "#",

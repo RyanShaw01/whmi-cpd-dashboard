@@ -9,6 +9,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildCertificatePdf, hoursLabel, bytesToBase64, certificateFilename } from "../_shared/certificate.ts";
 import { sendEmail } from "../_shared/mailer.ts";
 import { presenterThankYouText, presenterThankYouHtml, presenterThankYouSubject } from "../_shared/emailTemplate.ts";
+import { getEmailOverride } from "../_shared/emailOverrides.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -93,6 +94,8 @@ Deno.serve(async (req) => {
 
     let sentCount = 0;
     const sentAt = new Date().toISOString();
+    const override = await getEmailOverride(supabaseAdmin, "presenter_thank_you", event.title);
+
     for (const reg of targets || []) {
       const includeCertificate = presenterOverrides ? !!certById.get(reg.id) : !!globalIncludeCertificate;
       let attachments: { filename: string; content: string }[] | undefined;
@@ -116,9 +119,9 @@ Deno.serve(async (req) => {
 
       const result = await sendEmail({
         to: reg.email,
-        subject: presenterThankYouSubject(event.title),
+        subject: presenterThankYouSubject(event.title, override),
         text: presenterThankYouText(reg.name, event.title, !!attachments),
-        html: presenterThankYouHtml(reg.name, event.title, !!attachments),
+        html: presenterThankYouHtml(reg.name, event.title, !!attachments, override),
         attachments,
         log: { templateKey: "presenter_thank_you", eventId: event.id, recipientName: reg.name },
       });

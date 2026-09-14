@@ -418,10 +418,9 @@ export function thankYouEmailDefaultTemplate(): string {
 
 // Separate, presenter-facing "thanks for presenting" copy - deliberately distinct from
 // thankYouEmail* above (no reflection-form ask, since presenters aren't being asked to reflect
-// on someone else's session) and not override-configurable, unlike the attendee templates,
-// to keep this addition scoped to what was actually asked for.
-export function presenterThankYouSubject(eventTitle: string): string {
-  return `Thank you for presenting at ${eventTitle}`;
+// on someone else's session). Override-configurable like the attendee templates.
+export function presenterThankYouSubject(eventTitle: string, override?: EmailOverride): string {
+  return override?.subject || `Thank you for presenting at ${eventTitle}`;
 }
 
 export function presenterThankYouText(name: string, eventTitle: string, certificateAttached: boolean): string {
@@ -429,10 +428,20 @@ export function presenterThankYouText(name: string, eventTitle: string, certific
   return `Hi ${firstName(name)},\n\nThank you for taking the time to present at ${eventTitle}.\n\nWe appreciate the time and expertise you put into the session and your contribution to ongoing learning across Western Health and the Medical Imaging department.${certLine}\n\nKind regards,\n\nWHMI Education Team`;
 }
 
-export function presenterThankYouHtml(name: string, eventTitle: string, certificateAttached: boolean): string {
+export function presenterThankYouHtml(name: string, eventTitle: string, certificateAttached: boolean, override?: EmailOverride): string {
   const certLine = certificateAttached
     ? `<p style="margin:0 0 14px 0;">Your CPD certificate for presenting is attached.</p>`
     : "";
+
+  if (override?.html) {
+    return applyPlaceholders(override.html, {
+      name: escapeHtml(firstName(name)), title: escapeHtml(eventTitle),
+      // Empty when no certificate is attached, so the line simply disappears rather than
+      // promising an attachment that isn't there.
+      certificateLine: certLine,
+    });
+  }
+
   return wrapEmailHtml({
     preheader: `Thank you for presenting at ${eventTitle}`,
     title: `Thank you for presenting at ${eventTitle}`,
@@ -443,6 +452,23 @@ export function presenterThankYouHtml(name: string, eventTitle: string, certific
       <p style="margin:0 0 14px 0;">Thank you for taking the time to present at ${boldHtml(eventTitle)}.</p>
       <p style="margin:0 0 14px 0;">We appreciate the time and expertise you put into the session and your contribution to ongoing learning across Western Health and the Medical Imaging department.</p>
       ${certLine}
+    `,
+  });
+}
+
+// Placeholder-token default, mirroring the non-override branch above exactly (see
+// certificateEmailDefaultTemplate for why this can't just call presenterThankYouHtml itself).
+export function presenterThankYouDefaultTemplate(): string {
+  return wrapEmailHtml({
+    preheader: "Thank you for presenting at {{title}}",
+    title: "Thank you for presenting at {{title}}",
+    signOff: "Kind regards,<br/><br/>WHMI Education Team",
+    bodyHtml: `
+      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">Thank you for presenting</h1>
+      <p style="margin:0 0 14px 0;">Hi {{name}},</p>
+      <p style="margin:0 0 14px 0;">Thank you for taking the time to present at ${boldHtml("{{title}}")}.</p>
+      <p style="margin:0 0 14px 0;">We appreciate the time and expertise you put into the session and your contribution to ongoing learning across Western Health and the Medical Imaging department.</p>
+      {{certificateLine}}
     `,
   });
 }

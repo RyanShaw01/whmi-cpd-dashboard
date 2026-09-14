@@ -11,6 +11,7 @@ import {
   registrationConfirmationHtml, registrationConfirmationSubject,
   reflectionReminderHtml, reflectionReminderSubject,
   thankYouEmailHtml, thankYouEmailSubject,
+  presenterThankYouHtml, presenterThankYouSubject,
   certificateEmailHtml, certificateEmailSubject,
   wrapEmailHtml, reflectionSectionsHtml, reflectionEntryCardHtml, boldHtml, escapeHtml, BLUE,
   firstName,
@@ -36,7 +37,7 @@ const SAMPLE_SECTIONS = [
   },
 ];
 
-const TEMPLATE_KEYS = ["registration_confirmation", "post_event_thank_you", "reflection_reminder", "certificate", "reflection_copy", "reflections_report"];
+const TEMPLATE_KEYS = ["registration_confirmation", "post_event_thank_you", "presenter_thank_you", "reflection_reminder", "certificate", "reflection_copy", "reflections_report"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
@@ -104,6 +105,13 @@ Deno.serve(async (req) => {
         subject = thankYouEmailSubject(SAMPLE_TITLE, override);
         html = thankYouEmailHtml(name, SAMPLE_TITLE, reflectUrl, override);
         text = `Hi ${firstName(name)},\n\nThis is a test send of the Post-Event Thank You email.`;
+        break;
+      }
+      case "presenter_thank_you": {
+        // true = render the "certificate attached" line, so the test shows the fuller version.
+        subject = presenterThankYouSubject(SAMPLE_TITLE, override);
+        html = presenterThankYouHtml(name, SAMPLE_TITLE, true, override);
+        text = `Hi ${firstName(name)},\n\nThis is a test send of the Presenter Thank You email.`;
         break;
       }
       case "reflection_reminder": {
