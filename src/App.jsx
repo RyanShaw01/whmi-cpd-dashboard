@@ -1467,7 +1467,7 @@ export default function App() {
             )}
             {page === "mycertificates" && <MyCertificates user={viewSession} certificates={certificates} />}
             {page === "upcoming" && (canManage || viewSession.userType === "internal") && (
-              <UpcomingEvents
+              <UpcomingEvents externalCpdEvents={externalCpdEvents}
                 events={viewerEvents} openEvent={openEvent} canManage={canManage} onRequestDelete={requestDeleteEvent} highlightId={page === "upcoming" ? highlightId : null} onOpenRegister={handleOpenRegister} onCreateEvent={() => setCreateEventOpen(true)} files={files} onGoBrainstorm={() => changePage("brainstorm")} onSuggestIdea={canManage ? undefined : () => setSuggestIdeaOpen(true)}
                 registrations={registrations} onDeleteRegistration={requestDeleteRegistration} onUpdateRegistration={handleUpdateRegistrationField} onUpdateAttendanceStatus={handleUpdateAttendanceStatus}
                 dismissedRegistrationPairs={dismissedRegistrationPairs} onMergeRegistrations={handleMergeRegistrations} onDismissRegistrationPair={handleDismissRegistrationPair}
@@ -1475,7 +1475,7 @@ export default function App() {
                 registeredIds={myRegisteredEventIds} onUnregister={handleUnregisterSelf}
               />
             )}
-            {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} files={files} onOpenArchive={openArchiveEvent} canManage={canManage} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} onRequestDeleteMultiple={requestDeletePreviousEvents} />}
+            {page === "previous" && (canManage || viewSession.userType === "internal") && <PreviousEvents previousEvents={viewerPreviousEvents} files={files} onOpenArchive={openArchiveEvent} canManage={canManage} reflections={reflections} session={viewSession} onCreatePreviousEvent={() => setCreatePreviousEventOpen(true)} onRequestDelete={requestDeletePreviousEvent} onRequestDeleteMultiple={requestDeletePreviousEvents} />}
             {page === "staff" && (
               <StaffDirectory
                 openStaff={openStaff} onOpenAdminStaff={handleOpenAdminStaff} staffDirectory={staffDirectory} canManage={canManage}

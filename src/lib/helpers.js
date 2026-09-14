@@ -188,6 +188,16 @@ export function splitFeaturedEvents(events) {
 
 /* A user's own certificates — externals match by recipient email (or name, for
  * manually-created certs before an account existed), internal viewers by name. */
+/* The rating this particular person gave an event, or null if they never reflected on it.
+ * Viewers see this instead of the event's all-attendee average - someone browsing their own CPD
+ * history is looking for what they said, and an average silently reads as a personal score. */
+export function myEventRating(reflections, user, eventId) {
+  const email = (user?.email || "").toLowerCase();
+  if (!email) return null;
+  const mine = (reflections || []).find(r => r.eventId === eventId && (r.email || "").toLowerCase() === email);
+  return mine?.rating ?? null;
+}
+
 export function myCertificates(certificates, user) {
   if (user.userType === "external") {
     return certificates.filter(c => c.recipientEmail?.toLowerCase() === user.email.toLowerCase() || c.staff === user.name);

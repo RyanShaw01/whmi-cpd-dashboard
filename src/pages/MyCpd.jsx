@@ -5,7 +5,7 @@ import UpcomingEventsCards from "../components/UpcomingEventsCards";
 import ExternalCpdSection from "../components/ExternalCpdSection";
 import HappeningNowSection from "../components/HappeningNowSection";
 import DueSoonRegisterBadge from "../components/DueSoonRegisterBadge";
-import { fmtDate, hasEventEnded, daysUntil, formatCountdown, canJoinMeeting, splitFeaturedEvents, isViewerVisibleStatus } from "../lib/helpers";
+import { fmtDate, hasEventEnded, daysUntil, formatCountdown, canJoinMeeting, splitFeaturedEvents, isViewerVisibleStatus, myEventRating } from "../lib/helpers";
 
 export default function MyCpd({ user, staffDirectory, events, previousEvents, certificates, registrations, reflections, files, openEvent, onOpenRegister, onUnregister, onNavigatePage, onSuggestIdea, externalCpdEvents = [] }) {
   const staff = staffDirectory.find(s => s.id === user.staffId);
@@ -117,14 +117,17 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
                 <div className="font-semibold text-[13px] break-words">{ev.title}</div>
                 <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>{fmtDate(ev.date)}</div>
               </div>
-              {/* This is the event's average score across all attendees, not the reader's own
-                  rating - unlabelled and without the scale it read as a personal one, and a null
-                  rendered as a lone star with nothing after it. */}
-              {ev.feedback != null && (
-                <span className="whmi-badge shrink-0" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="Average rating from everyone who attended">
-                  ★ {ev.feedback}/10 avg
-                </span>
-              )}
+              {/* The reader's own rating, never the all-attendee average - a number on your own
+                  CPD history reads as yours, so it had better be yours. */}
+              {(() => {
+                const mine = myEventRating(reflections, user, ev.id);
+                if (mine == null) return null;
+                return (
+                  <span className="whmi-badge shrink-0" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="The rating you gave this event">
+                    ★ My feedback: {mine}/10
+                  </span>
+                );
+              })()}
             </div>
           ))}
           {myPastEvents.length === 0 && <div className="text-[12.5px]" style={{ color: "var(--text-faint)" }}>No past CPD recorded yet.</div>}

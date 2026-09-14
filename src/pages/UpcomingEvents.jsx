@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, Calendar, Clock, MapPin, UserCircle2, Link2, Pencil, ClipboardList, Lightbulb, LayoutGrid, List, Users, Radio } from "lucide-react";
+import ExternalCpdSection from "../components/ExternalCpdSection";
 import StatusBadge from "../components/StatusBadge";
 import ModeBadge from "../components/ModeBadge";
 import AllRegistrationsPanel from "../components/AllRegistrationsPanel";
@@ -16,7 +17,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function UpcomingEvents({
-  events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onUnregister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea,
+  events, openEvent, canManage, onRequestDelete, highlightId, onOpenRegister, onUnregister, onCreateEvent, files, onGoBrainstorm, onSuggestIdea, externalCpdEvents = [],
   registrations, onDeleteRegistration, onUpdateRegistration, onUpdateAttendanceStatus,
   dismissedRegistrationPairs, onMergeRegistrations, onDismissRegistrationPair, highlightRegIds, registeredIds,
 }) {
@@ -129,9 +130,29 @@ export default function UpcomingEvents({
         </div>
       </div>
 
-      {view === "list" ? (
+      {filtered.length === 0 ? (
+        <div className="whmi-card p-8 text-center space-y-1">
+          <div className="text-[14px] font-semibold">
+            {nonLiveEvents.length === 0 ? "No upcoming events" : "No events match this filter"}
+          </div>
+          <p className="text-[12.5px]" style={{ color: "var(--text-faint)" }}>
+            {nonLiveEvents.length === 0
+              ? (canManage
+                  ? "Nothing is scheduled yet. Add an event and it'll show up here."
+                  : "There's no Western Health CPD scheduled right now — have a look at the external CPD below.")
+              : "Try a different status filter, or clear it to see everything."}
+          </p>
+          {nonLiveEvents.length === 0 && canManage && onCreateEvent && (
+            <button onClick={onCreateEvent} className="whmi-btn-primary !py-1.5 !px-3 text-[12px] inline-flex items-center gap-1.5 mt-2">
+              <Plus size={13} />New Event
+            </button>
+          )}
+          {nonLiveEvents.length > 0 && (
+            <button onClick={() => setFilter("All")} className="whmi-btn-ghost !py-1.5 !px-3 text-[12px] mt-2">Clear filter</button>
+          )}
+        </div>
+      ) : view === "list" ? (
         <div className="whmi-card p-3 space-y-1.5">
-          {filtered.length === 0 && <div className="text-[12.5px] p-4 text-center" style={{ color: "var(--text-faint)" }}>No events match this filter.</div>}
           {filtered.map(ev => {
             const bannerUrl = eventBannerUrl(files, ev.id);
             const needsAttention = canManage && (ev.status === "Draft" || ev.status === "Awaiting Approval");
@@ -342,6 +363,8 @@ export default function UpcomingEvents({
           />
         </div>
       )}
+
+      <ExternalCpdSection entries={externalCpdEvents} />
 
       {(onSuggestIdea || (canManage && onGoBrainstorm)) && (
         <div className="flex justify-center items-center gap-2 pt-2 flex-wrap">

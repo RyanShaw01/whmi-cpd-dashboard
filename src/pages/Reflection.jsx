@@ -320,7 +320,7 @@ export default function Reflection({
           <span className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: separateWh ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
             <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: separateWh ? "20px" : "3px", width: 18, height: 18 }} />
           </span>
-          <span className="text-[12.5px] font-semibold">Keep Western Health CPD separate from other activities</span>
+          <span className="text-[12.5px] font-semibold">Keep Western Health CPD separate from external CPD activities</span>
         </button>
         <div className="flex items-center gap-1.5">
           <label className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>Sort by</label>

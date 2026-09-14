@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Table2, CalendarDays, Plus, Pencil, Trash2, CheckSquare, Square, Maximize2, X } from "lucide-react";
 import YearCalendar from "../components/YearCalendar";
 import PresenterLine from "../components/PresenterLine";
-import { fmtDate, fmtTimeRange12h, eventBannerUrl } from "../lib/helpers";
+import { fmtDate, fmtTimeRange12h, eventBannerUrl, myEventRating } from "../lib/helpers";
 
 const SORT_OPTIONS = [
   { id: "date-desc", label: "Date (Newest - Oldest)" },
@@ -11,7 +11,7 @@ const SORT_OPTIONS = [
   { id: "name-desc", label: "Name (Z - A)" },
 ];
 
-export default function PreviousEvents({ previousEvents, files, onOpenArchive, canManage, onCreatePreviousEvent, onRequestDelete, onRequestDeleteMultiple }) {
+export default function PreviousEvents({ previousEvents, files, onOpenArchive, canManage, onCreatePreviousEvent, onRequestDelete, onRequestDeleteMultiple, reflections = [], session }) {
   const years = [...new Set(previousEvents.map(ev => new Date(`${ev.date}T00:00:00`).getFullYear()))].sort((a, b) => b - a);
   const currentYear = new Date().getFullYear();
   const [view, setView] = useState("table");
@@ -100,7 +100,7 @@ export default function PreviousEvents({ previousEvents, files, onOpenArchive, c
           <table className="w-full text-[13px]">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                {[...(selecting ? [""] : []), "", "Event", "Date", "Time", "Location", "Presenter", "Attendance", "Feedback", ...(canManage ? [""] : [])].map((h, i) => (
+                {[...(selecting ? [""] : []), "", "Event", "Date", "Time", "Location", "Presenter", "Attendance", canManage ? "Feedback" : "My Feedback", ...(canManage ? [""] : [])].map((h, i) => (
                   <th key={h || `col-${i}`} className="text-left px-4 py-3 font-semibold text-[11.5px] uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{h}</th>
                 ))}
               </tr>
@@ -149,7 +149,13 @@ export default function PreviousEvents({ previousEvents, files, onOpenArchive, c
                   <td className="px-4 py-3 max-w-[200px]" style={{ color: "var(--text-dim)" }}><PresenterLine presenter={ev.presenter} className="break-words" /></td>
                   <td className="px-4 py-3">{ev.attendance}/{ev.capacity}</td>
                   <td className="px-4 py-3">
-                    <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="View feedback" aria-label={`View feedback for ${ev.title}`}>★ {ev.feedback != null ? `${ev.feedback}/10` : "—"}</button>
+                    {(() => {
+                      // Viewers see the score they gave, not the event's average across everyone.
+                      const value = canManage ? ev.feedback : myEventRating(reflections, session, ev.id);
+                      return (
+                        <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title={canManage ? "View feedback" : "The rating you gave this event"} aria-label={`View feedback for ${ev.title}`}>★ {value != null ? `${value}/10` : "—"}</button>
+                      );
+                    })()}
                   </td>
                   {canManage && (
                     <td className="px-4 py-3">

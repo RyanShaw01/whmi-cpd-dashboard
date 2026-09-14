@@ -908,7 +908,7 @@ export default function Settings({
           <div className="flex items-center justify-between p-4 gap-3">
             <div className="min-w-0">
               <div className="font-semibold text-[13px]">Keep Western Health CPD Separate</div>
-              <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>In the Reflection tab, keep Western Health CPD reflections in their own section, separate from other activities you've added.</div>
+              <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>In the Reflection tab, keep Western Health CPD reflections in their own section, separate from external CPD activities you've added.</div>
             </div>
             <button onClick={toggleSeparateWhReflections} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: separateWhReflections ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
               <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: separateWhReflections ? "20px" : "3px", width: 18, height: 18 }} />
