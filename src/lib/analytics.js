@@ -12,6 +12,23 @@ export function eventAttendedCount(eventId, registrations) {
   return registrations.filter(r => r.eventId === eventId && r.attendanceStatus === "Attended").length;
 }
 
+/* Registrations that held a confirmed place: everyone except people who withdrew (Cancelled)
+ * or never got off the waitlist. That's the meaningful denominator for "42 of 55 attended" -
+ * counting withdrawals would quietly make every event's attendance look worse than it was. */
+export function eventRegisteredCount(eventId, registrations) {
+  return (registrations || []).filter(r =>
+    r.eventId === eventId && r.attendanceStatus !== "Cancelled" && r.attendanceStatus !== "Waitlisted"
+  ).length;
+}
+
+/* Whether anyone has actually marked attendance yet. Distinguishes "nobody came" from "nobody
+ * has filled this in", which otherwise both render as 0. */
+export function eventAttendanceTaken(eventId, registrations) {
+  return (registrations || []).some(r =>
+    r.eventId === eventId && (r.attendanceStatus === "Attended" || r.attendanceStatus === "No Show")
+  );
+}
+
 export function eventAvgRating(eventId, reflections) {
   const ratings = reflections.filter(r => r.eventId === eventId && r.rating != null).map(r => r.rating);
   if (ratings.length === 0) return null;

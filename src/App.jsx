@@ -36,7 +36,7 @@ import { BRAND_HEX, CHARACTERS, NAV_FULL, NAV_VIEWER, NAV_VIEWER_INTERNAL, DEFAU
 import { TOUR_STEPS } from "./data/tourSteps";
 import { loadPersonal, savePersonal } from "./lib/storage";
 import { buildNotificationGroups, buildViewerNotificationGroups } from "./lib/notifications";
-import { eventAttendedCount, eventAvgRating } from "./lib/analytics";
+import { eventAttendedCount, eventAvgRating, eventRegisteredCount, eventAttendanceTaken } from "./lib/analytics";
 import { eventBannerFile, eventCpdHours, isRecentlyCompleted, isViewerVisibleStatus } from "./lib/helpers";
 import { supabase, supabaseConfigured } from "./lib/supabaseClient";
 import {
@@ -1003,6 +1003,8 @@ export default function App() {
   const previousEventsWithLiveStats = useMemo(() => previousEvents.map(ev => ({
     ...ev,
     attendance: eventAttendedCount(ev.id, registrations) || ev.attendance,
+    registeredCount: eventRegisteredCount(ev.id, registrations),
+    attendanceTaken: eventAttendanceTaken(ev.id, registrations),
     feedback: eventAvgRating(ev.id, reflections) ?? ev.feedback,
   })), [previousEvents, registrations, reflections]);
 
@@ -1019,6 +1021,8 @@ export default function App() {
     .map(ev => ({
       ...ev,
       attendance: eventAttendedCount(ev.id, registrations) || ev.registered || 0,
+      registeredCount: eventRegisteredCount(ev.id, registrations),
+      attendanceTaken: eventAttendanceTaken(ev.id, registrations),
       feedback: eventAvgRating(ev.id, reflections) ?? null,
     })), [events, registrations, reflections]);
   const previousEventsForBrowsing = useMemo(

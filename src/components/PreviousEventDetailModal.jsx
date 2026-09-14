@@ -14,6 +14,9 @@ import { fetchEmailLogForEvent } from "../lib/db";
 import { useResizableWidth } from "../lib/useResizableWidth";
 
 const TABS = ["overview", "attendance", "files", "recording", "feedback", "reflections", "certificates", "email"];
+// Admin-only tabs. Their content isn't separately role-gated - it's the tab bar that keeps a
+// viewer out - so anything that can set the active tab has to respect this list too.
+const ADMIN_ONLY_TABS = ["attendance", "certificates", "reflections", "feedback", "email"];
 
 const CERT_SORT_OPTIONS = [
   { id: "date-desc", label: "Newest - Oldest" },
@@ -47,7 +50,9 @@ export default function PreviousEventDetailModal({
   cpdTypes, tags, onSaveTag, onFilesChange, files, onUpdateBannerCrop, onRemoveBanner,
   onCreateCertificateFor, onSendReflectionReminder, onSendAllReflectionReminders, onSendPostEventEmail, onSendPresenterThankYou, initialTab, initialEditing, seriesEvents = [], onSwitchEvent, onDuplicate,
 }) {
-  const [tab, setTab] = useState(initialTab || "overview");
+  const [tab, setTab] = useState(
+    initialTab && (canManage || !ADMIN_ONLY_TABS.includes(initialTab)) ? initialTab : "overview"
+  );
   const [certSortBy, setCertSortBy] = useState("date-desc");
   const [recordingUrl, setRecordingUrl] = useState(event?.recordingUrl || "");
   const [savedNote, setSavedNote] = useState(false);
@@ -134,7 +139,7 @@ export default function PreviousEventDetailModal({
   const myRegistration = session ? (registrations || []).find(r => r.eventId === event.id && r.userId === session.id) : null;
   const viewerHasFileAccess = canManage || session?.userType === "internal"
     || !!(myRegistration && (myRegistration.attendanceStatus === "Attended" || event.externalPrice != null));
-  const visibleTabs = canManage ? TABS : TABS.filter(t => !["attendance", "certificates", "reflections", "feedback", "email"].includes(t));
+  const visibleTabs = canManage ? TABS : TABS.filter(t => !ADMIN_ONLY_TABS.includes(t));
 
   const eventRegistrations = (registrations || []).filter(r => r.eventId === event.id);
   // `event.attendance` is already live-computed with a seed-data fallback (Phase 10); reuse

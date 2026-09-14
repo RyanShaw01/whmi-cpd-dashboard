@@ -10,6 +10,7 @@ export default function Sidebar({ page, setPage, collapsed, setCollapsed, navIte
   const navButton = (n) => (
     <button
       key={n.id}
+      data-tour={`nav-${n.id}`}
       onClick={() => setPage(n.id)}
       title={badgePages[n.id] ? badgeTooltips[n.id] : (collapsed ? n.label : undefined)}
       className={`whmi-side-btn relative ${page === n.id ? "active" : ""}`}

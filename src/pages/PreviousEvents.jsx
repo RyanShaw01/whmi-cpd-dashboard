@@ -147,13 +147,38 @@ export default function PreviousEvents({ previousEvents, files, onOpenArchive, c
                   <td className="px-4 py-3" style={{ color: "var(--text-dim)" }}>{fmtTimeRange12h(ev.start, ev.end)}</td>
                   <td className="px-4 py-3 break-words max-w-[180px]" style={{ color: "var(--text-dim)" }}>{ev.location}</td>
                   <td className="px-4 py-3 max-w-[200px]" style={{ color: "var(--text-dim)" }}><PresenterLine presenter={ev.presenter} className="break-words" /></td>
-                  <td className="px-4 py-3">{ev.attendance}/{ev.capacity}</td>
+                  <td className="px-4 py-3">
+                    {ev.attendanceTaken && !canManage ? (
+                      <span className="font-semibold" title={`${ev.attendance} of ${ev.registeredCount} registrants attended`}>
+                        {ev.attendance}/{ev.registeredCount}
+                      </span>
+                    ) : ev.attendanceTaken ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "attendance"); }}
+                        className="font-semibold whmi-row-hover rounded-lg px-1.5 py-0.5 -mx-1.5 transition"
+                        title={`${ev.attendance} of ${ev.registeredCount} registrants attended`}
+                        aria-label={`View attendance for ${ev.title}: ${ev.attendance} of ${ev.registeredCount} attended`}
+                      >
+                        {ev.attendance}/{ev.registeredCount}
+                      </button>
+                    ) : (
+                      // Nobody has marked attendance yet - distinct from "nobody turned up".
+                      <span style={{ color: "var(--text-faint)" }} title="Attendance hasn't been marked for this event">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {(() => {
                       // Viewers see the score they gave, not the event's average across everyone.
                       const value = canManage ? ev.feedback : myEventRating(reflections, session, ev.id);
+                      if (value == null) {
+                        return <span style={{ color: "var(--text-faint)" }} title={canManage ? "No feedback submitted for this event yet" : "You haven't rated this event"}>—</span>;
+                      }
+                      // Viewers have no feedback tab to open, so theirs is a plain badge.
+                      if (!canManage) {
+                        return <span className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="The rating you gave this event">★ {value}/10</span>;
+                      }
                       return (
-                        <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title={canManage ? "View feedback" : "The rating you gave this event"} aria-label={`View feedback for ${ev.title}`}>★ {value != null ? `${value}/10` : "—"}</button>
+                        <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="View feedback" aria-label={`View feedback for ${ev.title}`}>★ {value}/10</button>
                       );
                     })()}
                   </td>
