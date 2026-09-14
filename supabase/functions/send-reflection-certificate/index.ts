@@ -83,12 +83,17 @@ Deno.serve(async (req) => {
       log: { templateKey: "certificate", eventId: event.id, recipientName: reflection.name },
     });
 
+    // Settings > Auto-approve Certificates. Off means a certificate waits for a human even when
+// its email sent fine; absent setting means on, matching migration_phase41.sql's default.
+    const { data: autoRow } = await supabase.from("app_settings").select("value").eq("key", "automation_settings").maybeSingle();
+    const autoApprove = autoRow?.value?.autoApproveCerts !== false;
+
     const { error: certInsertError } = await supabase.from("certificates").insert({
       id: certId,
       staff_name: reflection.name,
       event_id: event.id,
       event_title: event.title,
-      status: emailResult.ok ? "Sent" : "Awaiting Approval",
+      status: emailResult.ok && autoApprove ? "Sent" : "Awaiting Approval",
       date: event.date,
       recipient_email: reflection.email,
       registration_id: reflection.registration_id,

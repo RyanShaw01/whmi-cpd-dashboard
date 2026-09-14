@@ -472,3 +472,75 @@ export function presenterThankYouDefaultTemplate(): string {
     `,
   });
 }
+
+/* ---------------------------------------------------------------------------
+ * Pre-event reminder (one week / one day / one hour before an event starts).
+ * {{whenLabel}} is the only thing that differs between the three sends - the copy is otherwise
+ * identical, so admins edit one template rather than three near-duplicates.
+ * ------------------------------------------------------------------------ */
+export function eventReminderSubject(eventTitle: string, whenLabel: string, override?: EmailOverride): string {
+  if (override?.subject) return override.subject;
+  return `Reminder: ${eventTitle} is ${whenLabel}`;
+}
+
+export function eventReminderText(name: string, eventTitle: string, whenLabel: string, date: string, time: string, eventUrl: string): string {
+  return `Hi ${firstName(name)},\n\nA reminder that ${eventTitle} is ${whenLabel}.\n\nWhen: ${date}, ${time}\n\nEvent details: ${eventUrl}\n\nWHMI Education Team`;
+}
+
+export function eventReminderHtml({
+  name, title, whenLabel, date, time, location, eventUrl, meetingUrl, mode, override,
+}: {
+  name: string; title: string; whenLabel: string; date: string; time: string;
+  location?: string | null; eventUrl: string; meetingUrl?: string | null; mode?: string | null; override?: EmailOverride;
+}): string {
+  const isOnline = !!meetingUrl;
+  const locationValue = locationRowHtml(location, mode === "Hybrid");
+  const detailsTable = detailRowsHtml([
+    { label: "Date", value: date }, { label: "Time", value: time }, { label: "Location", value: locationValue, raw: true },
+  ]);
+  const buttons = sideBySideButtonsHtml([
+    { label: "View event details", href: eventUrl, color: BLUE },
+    ...(isOnline ? [{ label: "Join online", href: meetingUrl!, color: GREEN }] : []),
+  ]);
+  const disclaimer = isOnline ? disclaimerHtml("The online event button will only work from 20 minutes before the event starts.") : "";
+
+  if (override?.html) {
+    return applyPlaceholders(override.html, {
+      name: escapeHtml(firstName(name)), title: escapeHtml(title), whenLabel: escapeHtml(whenLabel),
+      date: escapeHtml(date), time: escapeHtml(time), location: locationValue,
+      eventUrl, meetingUrl: meetingUrl || "", detailsTable, buttons, disclaimer,
+    });
+  }
+
+  return wrapEmailHtml({
+    preheader: `${title} is ${whenLabel}`,
+    title: `Reminder: ${title} is ${whenLabel}`,
+    bodyHtml: `
+      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">A quick reminder</h1>
+      <p style="margin:0 0 14px 0;">Hi ${escapeHtml(firstName(name))},</p>
+      <p style="margin:0 0 14px 0;">${boldHtml(title)} is ${escapeHtml(whenLabel)}.</p>
+      ${detailsTable}
+      ${buttons}
+      ${disclaimer}
+      ${paragraphsHtml("If you can no longer attend, please unregister so someone on the waitlist can take your place.")}
+    `,
+  });
+}
+
+// Placeholder-token default, mirroring the non-override branch above (see
+// certificateEmailDefaultTemplate for why this can't just call eventReminderHtml itself).
+export function eventReminderDefaultTemplate(): string {
+  return wrapEmailHtml({
+    preheader: "{{title}} is {{whenLabel}}",
+    title: "Reminder: {{title}} is {{whenLabel}}",
+    bodyHtml: `
+      <h1 style="margin:0 0 14px 0;font-size:19px;font-weight:800;color:${BLUE};">A quick reminder</h1>
+      <p style="margin:0 0 14px 0;">Hi {{name}},</p>
+      <p style="margin:0 0 14px 0;">${boldHtml("{{title}}")} is {{whenLabel}}.</p>
+      {{detailsTable}}
+      {{buttons}}
+      {{disclaimer}}
+      ${paragraphsHtml("If you can no longer attend, please unregister so someone on the waitlist can take your place.")}
+    `,
+  });
+}

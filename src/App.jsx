@@ -83,6 +83,9 @@ export default function App() {
   const [emailTemplateOverrides, setEmailTemplateOverrides] = useState({});
   const [personalReflections, setPersonalReflections] = useState([]);
   const [externalCpdEvents, setExternalCpdEvents] = useState([]);
+  // Mirrors the app_settings row the edge functions read, so a toggle means the same thing in
+  // the browser and in a cron run. Defaults match migration_phase41.sql.
+  const [automationSettings, setAutomationSettings] = useState({ emailReminders: true, autoWaitlist: true, autoApproveCerts: true });
   const [suggestIdeaOpen, setSuggestIdeaOpen] = useState(false);
   const [auditLog, setAuditLog] = useState([]);
   // Writes to the DB and optimistically prepends locally so the Dashboard's Recent Activity
@@ -233,13 +236,13 @@ export default function App() {
     const [
       userList, staffList, eventList, prevEventList, certList, regList, externalList, reflectionList, fileList,
       dismissedRegList, dismissedRefList, cpdTypeList, tagList, auditLogList, avatarIconList, avatarColorList, brainstormIdeaList,
-      staffFieldVisibilitySetting, personalReflectionList, emailTemplateOverridesSetting, externalCpdList,
+      staffFieldVisibilitySetting, personalReflectionList, emailTemplateOverridesSetting, externalCpdList, automationSetting,
     ] = await Promise.all([
       fetchUsers(), fetchStaff(), fetchEvents(), fetchPreviousEvents(), fetchCertificates(), fetchRegistrations(), fetchExternalParticipants(),
       fetchReflections(), fetchAllFiles(), fetchDismissedPairs("registration"), fetchDismissedPairs("reflection"), fetchCpdTypes(), fetchTags(),
       fetchAuditLog(50), fetchAvatarIcons(), fetchAvatarColors(), fetchBrainstormIdeas(),
       fetchAppSetting("staff_field_visibility"), fetchPersonalReflections(), fetchAppSetting("email_template_overrides"),
-      fetchExternalCpdEvents(),
+      fetchExternalCpdEvents(), fetchAppSetting("automation_settings"),
     ]);
     setAvatarIcons(avatarIconList);
     setAvatarColors(avatarColorList);
@@ -264,6 +267,7 @@ export default function App() {
     setPersonalReflections(personalReflectionList);
     setEmailTemplateOverrides(emailTemplateOverridesSetting || {});
     setExternalCpdEvents(externalCpdList);
+    setAutomationSettings(s => ({ ...s, ...(automationSetting || {}) }));
   };
 
   const clearAppData = () => {
@@ -451,6 +455,12 @@ export default function App() {
   };
   const handleColorChange = (prefs) => { setColorPrefs(prefs); savePersonal("color-prefs", prefs); };
   const handleLayoutChange = (order) => { setLayoutOrder(order); savePersonal("dashboard-layout", order); };
+  const handleAutomationChange = (key, value) => {
+    const next = { ...automationSettings, [key]: value };
+    setAutomationSettings(next);
+    upsertAppSetting("automation_settings", next);
+    pushAudit({ actorId: session?.id, action: "settings.updated", details: { setting: key, value } });
+  };
   const handleStaffSave = (rec) => {
     setStaffDirectory(prev => prev.map(s => s.id === rec.id ? rec : s));
     updateStaff(rec.id, rec);
@@ -1059,7 +1069,7 @@ export default function App() {
 
     setRegistrations(prev => {
       let next = prev.map(r => r.id === reg.id ? { ...r, attendanceStatus: newStatus } : r);
-      if (freedUp) {
+      if (freedUp && automationSettings.autoWaitlist !== false) {
         const waitlisted = next
           .filter(r => r.eventId === reg.eventId && r.attendanceStatus === "Waitlisted")
           .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
@@ -1529,6 +1539,7 @@ export default function App() {
                 onRevokeSession={handleRevokeSession}
                 cpdTypes={cpdTypes} onSaveCpdType={requestSaveCpdType} onDeleteCpdType={requestDeleteCpdType} onReorderCpdTypes={handleReorderCpdTypes}
                 externalCpdEvents={externalCpdEvents} onSaveExternalCpdEvent={handleSaveExternalCpdEvent} onDeleteExternalCpdEvent={requestDeleteExternalCpdEvent}
+                automationSettings={automationSettings} onAutomationChange={handleAutomationChange}
                 tags={tags} onSaveTag={requestSaveTag} onDeleteTag={requestDeleteTag} onReorderTags={handleReorderTags} onToggleTagModality={handleToggleTagModality}
                 onBackfillStaffLinks={handleBackfillStaffLinks} auditLog={auditLog}
                 avatarIcons={avatarIcons} onSaveAvatarIcon={requestSaveAvatarIcon} onDeleteAvatarIcon={requestDeleteAvatarIcon}

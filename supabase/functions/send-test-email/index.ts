@@ -12,6 +12,7 @@ import {
   reflectionReminderHtml, reflectionReminderSubject,
   thankYouEmailHtml, thankYouEmailSubject,
   presenterThankYouHtml, presenterThankYouSubject,
+  eventReminderHtml, eventReminderSubject,
   certificateEmailHtml, certificateEmailSubject,
   wrapEmailHtml, reflectionSectionsHtml, reflectionEntryCardHtml, boldHtml, escapeHtml, BLUE,
   firstName,
@@ -37,7 +38,7 @@ const SAMPLE_SECTIONS = [
   },
 ];
 
-const TEMPLATE_KEYS = ["registration_confirmation", "post_event_thank_you", "presenter_thank_you", "reflection_reminder", "certificate", "reflection_copy", "reflections_report"];
+const TEMPLATE_KEYS = ["registration_confirmation", "event_reminder", "post_event_thank_you", "presenter_thank_you", "reflection_reminder", "certificate", "reflection_copy", "reflections_report"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
@@ -105,6 +106,16 @@ Deno.serve(async (req) => {
         subject = thankYouEmailSubject(SAMPLE_TITLE, override);
         html = thankYouEmailHtml(name, SAMPLE_TITLE, reflectUrl, override);
         text = `Hi ${firstName(name)},\n\nThis is a test send of the Post-Event Thank You email.`;
+        break;
+      }
+      case "event_reminder": {
+        subject = eventReminderSubject(SAMPLE_TITLE, "tomorrow", override);
+        html = eventReminderHtml({
+          name, title: SAMPLE_TITLE, whenLabel: "tomorrow",
+          date: "Thursday 15 August 2026", time: "5:00 PM - 7:00 PM",
+          location: "Footscray Hospital - Auditorium", eventUrl: SITE_URL, meetingUrl: null, mode: "In-person", override,
+        });
+        text = `Hi ${firstName(name)},\n\nThis is a test send of the Event Reminder email.`;
         break;
       }
       case "presenter_thank_you": {

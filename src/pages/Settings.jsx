@@ -56,6 +56,14 @@ const EMAIL_TEMPLATE_DEFS = [
     placeholderHelp: "{{name}}, {{title}}, {{date}}, {{time}}, {{location}}, {{address}}, {{presenter}}, {{eventUrl}}, {{meetingUrl}} - plus the pre-built {{detailsTable}} and {{buttons}} blocks, and {{disclaimer}} (only appears when the event is online).",
   },
   {
+    key: "event_reminder",
+    label: "Event Reminder (before the event)",
+    description: "Sent automatically one week, one day, and one hour before an event starts, to everyone registered. One template covers all three — {{whenLabel}} becomes \"next week\", \"tomorrow\" or \"in about an hour\". Controlled by the Automated Email Reminders switch below.",
+    supportsHtml: true,
+    defaultSubject: "Reminder: {title} is {whenLabel}",
+    placeholderHelp: "{{name}}, {{title}}, {{whenLabel}}, {{date}}, {{time}}, {{location}}, {{eventUrl}}, {{meetingUrl}} - plus the pre-built {{detailsTable}} and {{buttons}} blocks, and {{disclaimer}} (only appears when the event is online).",
+  },
+  {
     key: "post_event_thank_you",
     label: "Post-Event Thank You",
     description: "Sent automatically 25-40 minutes after an event ends (or manually from the event's Email tab), asking attendees to submit their reflection.",
@@ -126,6 +134,18 @@ const HTML_PREVIEW_SAMPLE_VARS = {
   reflection_reminder: {
     name: "Alex", title: "Ultrasound-Guided Procedures Workshop", link: "#",
     button: `<div style="text-align:center;margin:6px 0 18px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;">Submit your reflection</a></div>`,
+  },
+  event_reminder: {
+    name: "Alex", title: "Ultrasound-Guided Procedures Workshop", whenLabel: "tomorrow",
+    date: "Thursday 15 August 2026", time: "5:00 PM - 7:00 PM",
+    location: "Footscray Hospital - Auditorium", eventUrl: "#", meetingUrl: "#",
+    detailsTable: `<table style="width:100%;border:1px solid #e2e6ea;border-radius:10px;border-collapse:collapse;font-size:13px;margin:14px 0;">
+      <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;width:110px;">Date</td><td style="padding:9px 14px;">Thursday 15 August 2026</td></tr>
+      <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;border-top:1px solid #e2e6ea;">Time</td><td style="padding:9px 14px;border-top:1px solid #e2e6ea;">5:00 PM - 7:00 PM</td></tr>
+      <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;border-top:1px solid #e2e6ea;">Location</td><td style="padding:9px 14px;border-top:1px solid #e2e6ea;">Footscray Hospital - Auditorium</td></tr>
+    </table>`,
+    buttons: `<div style="text-align:center;margin:6px 0 4px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;margin:0 6px;">View event details</a></div>`,
+    disclaimer: "",
   },
   presenter_thank_you: {
     name: "Alex", title: "Ultrasound-Guided Procedures Workshop",
@@ -356,6 +376,7 @@ export default function Settings({
   theme, setTheme, mainTheme, setMainTheme, cardTheme, setCardTheme, role, session, onProfileSave, showToast, users, onUsersChange, colorPrefs, onColorChange, layoutOrder, onLayoutChange, onRequestDelete,
   redDotsEnabled, onToggleRedDots, onReplayTour, onRevokeSession, cpdTypes = [], onSaveCpdType, onDeleteCpdType, onReorderCpdTypes,
   externalCpdEvents = [], onSaveExternalCpdEvent, onDeleteExternalCpdEvent,
+  automationSettings = {}, onAutomationChange,
   previewSession, onPreviewAs, onCreateTestAccount, onSaveUserContact,
   tags = [], onSaveTag, onDeleteTag, onReorderTags, onToggleTagModality, onBackfillStaffLinks, auditLog = [],
   avatarIcons = [], onSaveAvatarIcon, onDeleteAvatarIcon, onReorderAvatarIcons, onUploadAvatarIconImage,
@@ -363,7 +384,6 @@ export default function Settings({
   staffFieldVisibility = {}, onToggleStaffField,
   emailTemplateOverrides = {}, onSaveEmailTemplateOverride,
 }) {
-  const [toggles, setToggles] = useState({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: false });
   const [devMode, setDevMode] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [staffFieldsExpanded, setStaffFieldsExpanded] = useState(false);
@@ -550,8 +570,8 @@ export default function Settings({
         <div className="font-semibold text-[13px]">{label}</div>
         <div className="text-[11.5px]" style={{ color: "var(--text-faint)" }}>{desc}</div>
       </div>
-      <button onClick={() => setToggles(s => ({ ...s, [k]: !s[k] }))} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: toggles[k] ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
-        <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: toggles[k] ? "20px" : "3px", width: 18, height: 18 }} />
+      <button onClick={() => onAutomationChange?.(k, automationSettings[k] === false)} disabled={!onAutomationChange} className="w-10 h-6 rounded-full relative transition shrink-0" style={{ background: automationSettings[k] !== false ? "var(--accent-success)" : "var(--surface-2)", border: "1px solid var(--border)" }}>
+        <span className="absolute top-0.5 rounded-full bg-white transition" style={{ left: automationSettings[k] !== false ? "20px" : "3px", width: 18, height: 18 }} />
       </button>
     </div>
   );
@@ -709,7 +729,6 @@ export default function Settings({
     setEventCardView("grid");
     setDashboardEventView("grid");
     setSeparateWhReflectionsState(true); setSeparateWhDefault(true);
-    setToggles({ emailReminders: true, autoWaitlist: true, autoApproveCerts: false, weeklyDigest: false });
     showToast?.("Settings reverted to default.");
   };
 
@@ -900,10 +919,9 @@ export default function Settings({
       )}
 
       <div className="whmi-card overflow-hidden">
-        {t("emailReminders", "Automated Email Reminders", "One-week, one-day, and one-hour reminders before events")}
+        {t("emailReminders", "Automated Email Reminders", "Emails everyone registered one week, one day, and one hour before an event starts. Edit the wording under Email Templates > Event Reminder.")}
         {canManageUsers && t("autoWaitlist", "Automatic Waitlist Promotion", "Move waitlisted staff to confirmed when a place opens")}
-        {canManageUsers && t("autoApproveCerts", "Auto-approve Certificates", "Skip manual approval once reflection is confirmed")}
-        {canManageUsers && t("weeklyDigest", "Weekly Digest", "Summary email of CPD activity every Monday")}
+        {canManageUsers && t("autoApproveCerts", "Auto-approve Certificates", "Issue a certificate as soon as its email sends, instead of holding it for manual approval.")}
         {canManageUsers && (
           <div className="flex items-center justify-between p-4 gap-3">
             <div className="min-w-0">
