@@ -635,20 +635,37 @@ export default function App() {
     setFiles(prev => prev.filter(f => f.id !== file.id));
     deleteEventFile(file, session?.id);
   };
-  const handleUpdateEvent = (payload) => {
-    setEvents(prev => prev.map(e => e.id === payload.id ? payload : e));
-    setSelectedEvent(payload);
+  /* An event's status is what decides which of the two lists it lives in: fetchEvents excludes
+   * Completed/Archived and fetchPreviousEvents selects exactly those. Editing a status across
+   * that boundary therefore has to move the row between the client-side arrays as well, or the
+   * change only shows up after a full reload - most visibly when a copy of a past event is set
+   * to Draft and then can't be found anywhere in Upcoming Events. */
+  const isPreviousStatus = (status) => status === "Completed" || status === "Archived";
+
+  // Upsert into one list, remove from the other. Keeps an existing row's position rather than
+  // moving it to the end, so an in-place edit doesn't make the list jump around.
+  const applyToList = (setList, payload, shouldContain) => setList(prev => {
+    const present = prev.some(e => e.id === payload.id);
+    if (!shouldContain) return present ? prev.filter(e => e.id !== payload.id) : prev;
+    return present ? prev.map(e => e.id === payload.id ? { ...e, ...payload } : e) : [...prev, { ...payload }];
+  });
+
+  const saveEventAndRehome = (payload, { fromPrevious }) => {
+    const toPrevious = isPreviousStatus(payload.status);
+    applyToList(setEvents, payload, !toPrevious);
+    applyToList(setPreviousEvents, payload, toPrevious);
+    if (fromPrevious) setSelectedArchiveEvent(ev => ev ? { ...ev, ...payload } : ev);
+    else setSelectedEvent(payload);
+    // Say where it went - otherwise an event vanishing out of the tab you're looking at reads
+    // as the save having failed.
+    if (fromPrevious && !toPrevious) showToast(`"${payload.title}" moved to Upcoming Events.`);
+    if (!fromPrevious && toPrevious) showToast(`"${payload.title}" moved to Previous Events.`);
     updateEvent(payload.id, payload).then(ok => { if (!ok) showToast("Couldn't save changes — please try again."); });
     pushAudit({ actorId: session?.id, action: "event.updated", entityType: "event", entityId: payload.id, details: { title: payload.title } });
   };
-  // Previous events live in a separate fetched array from `events`; updating that one
-  // instead keeps the archive view in sync without needing a refetch.
-  const handleUpdatePreviousEvent = (payload) => {
-    setPreviousEvents(prev => prev.map(e => e.id === payload.id ? { ...e, ...payload } : e));
-    setSelectedArchiveEvent(ev => ev ? { ...ev, ...payload } : ev);
-    updateEvent(payload.id, payload).then(ok => { if (!ok) showToast("Couldn't save changes — please try again."); });
-    pushAudit({ actorId: session?.id, action: "event.updated", entityType: "event", entityId: payload.id, details: { title: payload.title } });
-  };
+
+  const handleUpdateEvent = (payload) => saveEventAndRehome(payload, { fromPrevious: false });
+  const handleUpdatePreviousEvent = (payload) => saveEventAndRehome(payload, { fromPrevious: true });
 
   const handleSaveExternalCpdEvent = (entry) => {
     const isNew = !externalCpdEvents.some(e => e.id === entry.id);
@@ -1319,6 +1336,11 @@ export default function App() {
   const duplicateEventPayload = (event) => ({
     ...event, id: "e" + Date.now(), title: `${event.title} (1)`,
     registered: 0, waitlist: 0, recurrenceGroupId: null,
+    // Duplicating a past event means running it again, so the copy starts as a Draft rather
+    // than claiming to have already been held. Copies of upcoming events keep their status.
+    status: isPreviousStatus(event.status) ? "Draft" : event.status,
+    // Attendance/feedback belong to the event that actually happened, not to the new one.
+    attendance: 0, feedback: null, recordingUrl: "",
   });
   const handleDuplicateEvent = (event, fromPrevious) => requestConfirm({
     title: "Duplicate this event?",
@@ -1326,8 +1348,8 @@ export default function App() {
     confirmLabel: "Duplicate",
     onConfirm: async () => {
       const dup = duplicateEventPayload(event);
-      if (fromPrevious) setPreviousEvents(prev => [...prev, dup]);
-      else setEvents(prev => [...prev, dup]);
+      applyToList(setEvents, dup, !isPreviousStatus(dup.status));
+      applyToList(setPreviousEvents, dup, isPreviousStatus(dup.status));
       insertEvent(dup);
       pushAudit({ actorId: session?.id, action: "event.created", entityType: "event", entityId: dup.id, details: { title: dup.title } });
       // Files are keyed by event_id, so a new event id means the source's poster/flyer needs
@@ -1338,8 +1360,13 @@ export default function App() {
         const copy = await duplicateEventFile(f, dup.id, session?.id);
         if (copy) setFiles(prev => [...prev, copy]);
       }
-      showToast("Event duplicated.");
-      if (fromPrevious) openArchiveEvent(dup, null, true);
+      // Open whichever modal matches where the copy actually landed, not where the source was -
+      // a duplicate of a finished event is now a Draft, so it belongs in Upcoming.
+      const dupIsPrevious = isPreviousStatus(dup.status);
+      showToast(fromPrevious && !dupIsPrevious
+        ? "Copy created as a Draft in Upcoming Events."
+        : "Event duplicated.");
+      if (dupIsPrevious) openArchiveEvent(dup, null, true);
       else openEvent(dup, null, true);
     },
   });
