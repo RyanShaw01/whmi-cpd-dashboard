@@ -33,14 +33,20 @@ Deno.serve(async (req) => {
 
   try {
     const now = new Date();
-    // Small lookback window so this stays cheap - anything older than ~10 days is either
-    // already Completed or not worth scanning every run; the real gate is the per-row time
-    // check below.
-    const windowStart = new Date(now.getTime() - 10 * 86400000).toISOString().slice(0, 10);
+    // No date floor, deliberately. There used to be a 10-day lookback "so this stays cheap",
+    // which silently assumed this job never misses a long stretch. It does: the Supabase project
+    // was paused (free tier, ~7 days idle) from 2026-09-16 to 2026-10-19, so pg_cron didn't run
+    // for a month. By the time it came back, anything that ended during the pause was already
+    // older than the floor and was excluded from the query forever - stuck in Upcoming Events
+    // with no mechanism left to ever complete it. "Lunch & Learn #4" (17 Sept) was found that
+    // way a month later.
+    //
+    // The floor bought nothing anyway: the status filter already restricts this to events that
+    // aren't Completed/Archived, which is inherently a small set - you accumulate finished
+    // events, not unfinished ones - and the per-row 24h check below is what actually decides.
     const { data: events, error: eventsError } = await supabase
       .from("events")
       .select("id, date, end_time, status")
-      .gte("date", windowStart)
       .not("status", "in", "(Completed,Archived)")
       .not("end_time", "is", null);
     if (eventsError) throw eventsError;
