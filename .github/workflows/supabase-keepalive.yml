@@ -1,0 +1,61 @@
+# Keeps the Supabase project from being paused.
+#
+# Supabase pauses free-tier projects after about a week with no activity. When that happens the
+# project's hostname stops resolving entirely: the site loads its branding and then hangs on the
+# loading screen forever, every reflection link already sent out is dead, and the pg_cron jobs
+# (auto-completing events, reminder and thank-you emails) stop running. That is exactly what
+# happened between 2026-09-16 and 2026-10-19.
+#
+# This pings the project once a day, which is well inside that window.
+#
+# It calls get-public-event rather than the REST API because that edge function is deployed with
+# --no-verify-jwt and performs a real `select` against the events table. So the ping is genuine
+# database activity and needs no API key, which means nothing to configure and no secret that can
+# silently expire. A nonsense event id is fine - it returns {"ok":true,"event":null}.
+#
+# KNOWN LIMITATION: GitHub disables scheduled workflows in a repository with no pushes for 60
+# days, and emails the owner first. That is far more headroom than Supabase's ~7 days, but it is
+# not infinite. If this repo is ever going to sit untouched for months, a Supabase Pro plan (which
+# never pauses) is the only thing that genuinely removes the problem.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # 19:10 UTC daily — an odd minute, because a lot of jobs pile up on the hour and GitHub
+    # delays scheduled runs under load.
+    - cron: "10 19 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping Supabase
+        run: |
+          set -uo pipefail
+          URL="https://hvdaxlncynkhvwkikoxb.supabase.co/functions/v1/get-public-event"
+
+          # Three attempts: the edge function cold-starts after a quiet day and can take several
+          # seconds, and a single transient failure shouldn't raise a false alarm.
+          for attempt in 1 2 3; do
+            code=$(curl -sS -o /tmp/body.txt -w "%{http_code}" --max-time 60 \
+              -X POST "$URL" \
+              -H "Content-Type: application/json" \
+              -d '{"eventId":"keepalive-probe"}' || echo "000")
+
+            echo "attempt $attempt: HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "Supabase is awake. Response: $(cat /tmp/body.txt)"
+              exit 0
+            fi
+            [ -s /tmp/body.txt ] && echo "  body: $(head -c 300 /tmp/body.txt)"
+            sleep 15
+          done
+
+          # Fail loudly. A silent keep-alive that stopped working is worse than none at all,
+          # because you'd still believe you were covered. A failed run emails the repo owner.
+          echo "::error::Supabase did not respond after 3 attempts. The project may be paused \
+          again, or the get-public-event function may have been removed. Check \
+          https://supabase.com/dashboard/project/hvdaxlncynkhvwkikoxb"
+          exit 1
