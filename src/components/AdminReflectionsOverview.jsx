@@ -72,7 +72,7 @@ function PersonRow({ person, onResend, onSendReport, sendingReport }) {
                   <div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>{fmtDate(event.date)}</div>
                 </div>
                 {reflection ? (
-                  <span className="whmi-badge shrink-0" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>Submitted</span>
+                  <span className="whmi-badge shrink-0" style={{ background: "color-mix(in srgb, var(--accent-success) 15%, transparent)", color: "var(--accent-success)" }}>Submitted</span>
                 ) : (
                   <span className="whmi-badge shrink-0" style={{ background: "rgba(217,83,79,.12)", color: "#D9534F" }}>Outstanding</span>
                 )}

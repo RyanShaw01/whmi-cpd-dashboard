@@ -67,7 +67,7 @@ function ExternalCpdRow({ entry: e }) {
           )}
         </div>
         <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[12.5px]">
-          <span className="whmi-badge" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>{e.provider}</span>
+          <span className="whmi-badge" style={{ background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)", color: "var(--accent-secondary)" }}>{e.provider}</span>
           {e.location && (
             <span className="flex items-center gap-1" style={{ color: "var(--text-dim)" }}>
               <MapPin size={12} className="shrink-0" />{e.location}
@@ -94,7 +94,7 @@ function ExternalCpdRow({ entry: e }) {
           <span
             className="whmi-badge text-[12px]"
             style={/^free$/i.test(e.cost.trim())
-              ? { background: "rgba(156,203,59,.15)", color: "#7CA82F" }
+              ? { background: "color-mix(in srgb, var(--accent-success) 15%, transparent)", color: "var(--accent-success)" }
               : { background: "var(--surface-2)", color: "var(--text-dim)" }}
           >
             <DollarSign size={11} />{e.cost}

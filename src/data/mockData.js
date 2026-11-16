@@ -10,7 +10,7 @@ import { daysFromNow } from "../lib/helpers";
 /* ---------------------------------------------------------------------- */
 /* BRAND COLOURS                                                          */
 /* ---------------------------------------------------------------------- */
-export const BRAND_HEX = { green: "#9CCB3B", blue: "#35A8DD", purple: "#7B3FE4", grey: "#58595B" };
+export const BRAND_HEX = { green: "#557234", blue: "#226C9D", purple: "#4A6FA5", grey: "#6F6A5E" };
 
 /* ---------------------------------------------------------------------- */
 /* AVATAR COLOURS (wider palette than the theme's brand colours)          */

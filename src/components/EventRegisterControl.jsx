@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CheckCircle2, X } from "lucide-react";
 
-const NAVY = "#152A4E";
+const NAVY = "var(--navy)";
 const NAVY_HOVER = "#1E3A63";
 const RED = "#D9534F";
 

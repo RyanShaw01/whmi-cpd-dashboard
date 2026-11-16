@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ClipboardList, MessageSquareText, Lightbulb, Link2 } from "lucide-react";
+import { ClipboardList, MessageSquareText, Lightbulb, Link2, Star } from "lucide-react";
 import PersonalStatsRow from "../components/PersonalStatsRow";
 import UpcomingEventsCards from "../components/UpcomingEventsCards";
 import ExternalCpdSection from "../components/ExternalCpdSection";
@@ -123,8 +123,8 @@ export default function MyCpd({ user, staffDirectory, events, previousEvents, ce
                 const mine = myEventRating(reflections, user, ev.id);
                 if (mine == null) return null;
                 return (
-                  <span className="whmi-badge shrink-0" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="The rating you gave this event">
-                    ★ My feedback: {mine}/10
+                  <span className="whmi-badge shrink-0" style={{ background: "color-mix(in srgb, var(--accent-success) 15%, transparent)", color: "var(--accent-success)" }} title="The rating you gave this event">
+                    <Star size={11} fill="currentColor" strokeWidth={0} />My feedback: {mine}/10
                   </span>
                 );
               })()}

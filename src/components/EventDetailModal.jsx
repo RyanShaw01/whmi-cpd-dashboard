@@ -247,7 +247,7 @@ export default function EventDetailModal({
           </div>
 
           {viewerUserType === "external" && event.externalPrice != null && !iRegistered && (
-            <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>
+            <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: "color-mix(in srgb, var(--accent-success) 15%, transparent)", color: "var(--accent-success)" }}>
               <span className="text-[13px] font-semibold">Registration Fee</span>
               <span className="text-[20px] font-extrabold">${Number(event.externalPrice).toFixed(2)} AUD</span>
             </div>

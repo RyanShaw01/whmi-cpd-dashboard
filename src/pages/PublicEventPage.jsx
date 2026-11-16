@@ -7,7 +7,7 @@ import { fmtDate, fmtTimeRange12h, eventLocationSuffix, eventBannerUrl, splitPeo
 import { fetchPublicEvent } from "../lib/db";
 
 const WH_DOMAIN = "@wh.org.au";
-const NAVY = "#152A4E";
+const NAVY = "var(--navy)";
 
 export default function PublicEventPage({ events, previousEvents, session, onPublicRegister, files, loading }) {
   const { eventId } = useParams();

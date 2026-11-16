@@ -245,7 +245,7 @@ async function exportPdf(rows, year, summary, chartData, colors) {
 }
 
 function hexToRgb(hex) {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "#35A8DD");
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "var(--accent-primary)");
   if (!m) return rgb(0.2, 0.5, 0.8);
   return rgb(parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255);
 }

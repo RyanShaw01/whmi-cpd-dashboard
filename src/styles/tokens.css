@@ -188,6 +188,18 @@
   text-align: left;
 }
 .whmi-quick-action:hover { background: var(--surface-2); border-color: var(--accent-primary); }
+/* Browser surfaces. Selection, caret, focus ring and numerals ship with defaults that belong
+   to no design system; theming them is what separates a page that was built from one that was
+   assembled. */
+.whmi-root ::selection { background: color-mix(in srgb, var(--accent-primary) 24%, transparent); color: var(--text); }
+.whmi-root { caret-color: var(--accent-primary); accent-color: var(--accent-primary); }
+.whmi-root :focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; border-radius: 3px; }
+/* Figures that are read in columns — hours, ratios, counts, dates — line up only with lining
+   tabular numerals. Proportional digits make a column of numbers ragged. */
+.whmi-num, .whmi-root table td, .whmi-root table th {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
 .whmi-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
 .whmi-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 .whmi-input {

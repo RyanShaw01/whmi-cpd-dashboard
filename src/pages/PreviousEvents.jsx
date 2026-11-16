@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Table2, CalendarDays, Plus, Pencil, Trash2, CheckSquare, Square, Maximize2, X } from "lucide-react";
+import { Table2, CalendarDays, Plus, Pencil, Trash2, CheckSquare, Square, Maximize2, X, Star } from "lucide-react";
 import YearCalendar from "../components/YearCalendar";
 import PresenterLine from "../components/PresenterLine";
 import { fmtDate, fmtTimeRange12h, eventBannerUrl, myEventRating } from "../lib/helpers";
@@ -175,10 +175,10 @@ export default function PreviousEvents({ previousEvents, files, onOpenArchive, c
                       }
                       // Viewers have no feedback tab to open, so theirs is a plain badge.
                       if (!canManage) {
-                        return <span className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="The rating you gave this event">★ {value}/10</span>;
+                        return <span className="whmi-badge" style={{ background: "color-mix(in srgb, var(--accent-success) 15%, transparent)", color: "var(--accent-success)" }} title="The rating you gave this event"><Star size={11} fill="currentColor" strokeWidth={0} />{value}/10</span>;
                       }
                       return (
-                        <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }} title="View feedback" aria-label={`View feedback for ${ev.title}`}>★ {value}/10</button>
+                        <button onClick={(e) => { e.stopPropagation(); onOpenArchive(ev, "feedback"); }} className="whmi-badge" style={{ background: "color-mix(in srgb, var(--accent-success) 15%, transparent)", color: "var(--accent-success)" }} title="View feedback" aria-label={`View feedback for ${ev.title}`}><Star size={11} fill="currentColor" strokeWidth={0} />{value}/10</button>
                       );
                     })()}
                   </td>

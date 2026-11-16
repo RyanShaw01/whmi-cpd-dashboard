@@ -214,7 +214,7 @@ export default function Reflection({
             <div className="min-w-0 text-left">
               <div className="font-semibold text-[13px] truncate flex items-center gap-1.5">
                 {entry.name}
-                {entry.source === "wh" && <span className="whmi-badge shrink-0" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}><Building2 size={9} className="mr-0.5 inline" />WH</span>}
+                {entry.source === "wh" && <span className="whmi-badge shrink-0" style={{ background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)", color: "var(--accent-secondary)" }}><Building2 size={9} className="mr-0.5 inline" />WH</span>}
               </div>
               <div className="text-[10.5px]" style={{ color: "var(--text-faint)" }}>{entry.date ? fmtDate(entry.date) : "—"}</div>
             </div>

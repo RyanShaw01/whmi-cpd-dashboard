@@ -6,7 +6,7 @@ import AddToCalendarMenu from "./AddToCalendarMenu";
 export default function RegistrationSuccessCard({ event, onClose }) {
   return (
     <div className="whmi-card p-5 text-center space-y-3">
-      <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ background: "rgba(156,203,59,.15)" }}>
+      <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ background: "color-mix(in srgb, var(--accent-success) 15%, transparent)" }}>
         <CheckCircle2 size={32} style={{ color: "var(--accent-success)" }} />
       </div>
       <div>

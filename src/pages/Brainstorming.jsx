@@ -103,8 +103,8 @@ export default function Brainstorming({ ideas, onAddIdea, onRequestDeleteIdea, o
                               <div className="text-[10px] mt-1.5 flex items-center gap-1 flex-wrap" style={{ color: "var(--text-faint)" }}>
                                 <User size={9} />{idea.addedByName} · {relativeTime(idea.createdAt)}
                               </div>
-                              {idea.source === "public" && <span className="whmi-badge mt-1" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Public link</span>}
-                              {idea.source === "member" && <span className="whmi-badge mt-1" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>Team suggestion</span>}
+                              {idea.source === "public" && <span className="whmi-badge mt-1" style={{ background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)", color: "var(--accent-secondary)" }}>Public link</span>}
+                              {idea.source === "member" && <span className="whmi-badge mt-1" style={{ background: "color-mix(in srgb, var(--accent-success) 15%, transparent)", color: "var(--accent-success)" }}>Team suggestion</span>}
                             </button>
                           </div>
                         ))}

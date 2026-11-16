@@ -128,12 +128,12 @@ const HTML_PREVIEW_SAMPLE_VARS = {
       <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;border-top:1px solid #e2e6ea;">Time</td><td style="padding:9px 14px;border-top:1px solid #e2e6ea;">5:00 PM - 7:00 PM</td></tr>
       <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;border-top:1px solid #e2e6ea;">Location</td><td style="padding:9px 14px;border-top:1px solid #e2e6ea;">Footscray Hospital - Auditorium</td></tr>
     </table>`,
-    buttons: `<div style="text-align:center;margin:6px 0 4px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;margin:0 6px;">View event details</a><a style="display:inline-block;padding:11px 22px;background:#9CCB3B;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;margin:0 6px;">Join online</a></div>`,
+    buttons: `<div style="text-align:center;margin:6px 0 4px 0;"><a style="display:inline-block;padding:11px 22px;background:var(--accent-primary);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;margin:0 6px;">View event details</a><a style="display:inline-block;padding:11px 22px;background:var(--accent-success);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;margin:0 6px;">Join online</a></div>`,
     disclaimer: `<p style="text-align:center;color:#6b7785;font-size:11px;margin:2px 0 18px 0;">The online event button will only work from 20 minutes before the event starts.</p>`,
   },
   reflection_reminder: {
     name: "Alex", title: "Ultrasound-Guided Procedures Workshop", link: "#",
-    button: `<div style="text-align:center;margin:6px 0 18px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;">Submit your reflection</a></div>`,
+    button: `<div style="text-align:center;margin:6px 0 18px 0;"><a style="display:inline-block;padding:11px 22px;background:var(--accent-primary);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;">Submit your reflection</a></div>`,
   },
   event_reminder: {
     name: "Alex", title: "Ultrasound-Guided Procedures Workshop", whenLabel: "tomorrow",
@@ -144,7 +144,7 @@ const HTML_PREVIEW_SAMPLE_VARS = {
       <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;border-top:1px solid #e2e6ea;">Time</td><td style="padding:9px 14px;border-top:1px solid #e2e6ea;">5:00 PM - 7:00 PM</td></tr>
       <tr><td style="padding:9px 14px;background:#f7f9fa;font-weight:600;color:#6b7785;border-top:1px solid #e2e6ea;">Location</td><td style="padding:9px 14px;border-top:1px solid #e2e6ea;">Footscray Hospital - Auditorium</td></tr>
     </table>`,
-    buttons: `<div style="text-align:center;margin:6px 0 4px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;margin:0 6px;">View event details</a></div>`,
+    buttons: `<div style="text-align:center;margin:6px 0 4px 0;"><a style="display:inline-block;padding:11px 22px;background:var(--accent-primary);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;margin:0 6px;">View event details</a></div>`,
     disclaimer: "",
   },
   presenter_thank_you: {
@@ -153,11 +153,11 @@ const HTML_PREVIEW_SAMPLE_VARS = {
   },
   post_event_thank_you: {
     name: "Alex", title: "Ultrasound-Guided Procedures Workshop", reflectUrl: "#",
-    button: `<div style="text-align:center;margin:6px 0 18px 0;"><a style="display:inline-block;padding:11px 22px;background:#35A8DD;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;">Submit your reflection</a></div>`,
+    button: `<div style="text-align:center;margin:6px 0 18px 0;"><a style="display:inline-block;padding:11px 22px;background:var(--accent-primary);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13.5px;">Submit your reflection</a></div>`,
   },
   certificate: {
     name: "Alex", title: "Ultrasound-Guided Procedures Workshop", dateLabel: "on Thursday 15 August 2026",
-    reflectionSection: `<div style="margin:16px 0 4px 0;font-size:11.5px;font-weight:600;color:#6b7785;">YOUR SUBMITTED REFLECTION</div><div style="margin:14px 0;padding:14px 16px;background:#9CCB3B14;border-left:3px solid #9CCB3B;border-radius:6px;font-size:13px;color:#1a2233;line-height:1.6;">This session helped me understand probe positioning for deeper vascular access under real-time guidance.</div>`,
+    reflectionSection: `<div style="margin:16px 0 4px 0;font-size:11.5px;font-weight:600;color:#6b7785;">YOUR SUBMITTED REFLECTION</div><div style="margin:14px 0;padding:14px 16px;background:var(--accent-success)14;border-left:3px solid var(--accent-success);border-radius:6px;font-size:13px;color:#1a2233;line-height:1.6;">This session helped me understand probe positioning for deeper vascular access under real-time guidance.</div>`,
   },
 };
 
@@ -304,12 +304,12 @@ function EmailTemplateEditor({ def, override, onSave, defaultTestTo }) {
       </div>
       {preview ? (
         <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-          <div className="p-3" style={{ background: "#152A4E" }}>
-            <div className="text-[11px] font-bold tracking-wide" style={{ color: "#ffffff" }}>WHMI <span style={{ color: "#35A8DD" }}>CPD</span></div>
+          <div className="p-3" style={{ background: "var(--navy)" }}>
+            <div className="text-[11px] font-bold tracking-wide" style={{ color: "#ffffff" }}>WHMI <span style={{ color: "var(--accent-primary)" }}>CPD</span></div>
           </div>
           <div className="p-4" style={{ background: "#ffffff" }}>
             <div className="text-[10.5px] font-semibold mb-2.5" style={{ color: "#6b7785" }}>Subject: {effectiveSubject}</div>
-            <div className="font-extrabold text-[15px] mb-2" style={{ color: "#35A8DD" }}>{effectiveHeading}</div>
+            <div className="font-extrabold text-[15px] mb-2" style={{ color: "var(--accent-primary)" }}>{effectiveHeading}</div>
             <p className="text-[12.5px]" style={{ color: "#1a2233" }}>{effectiveIntro}</p>
           </div>
         </div>
@@ -484,10 +484,10 @@ export default function Settings({
   const [avatarColorsExpanded, setAvatarColorsExpanded] = useState(false);
   const [editingAvatarColorId, setEditingAvatarColorId] = useState(null); // null | "new" | <id>
   const [avatarColorName, setAvatarColorName] = useState("");
-  const [avatarColorHex, setAvatarColorHex] = useState("#35A8DD");
+  const [avatarColorHex, setAvatarColorHex] = useState("var(--accent-primary)");
   const [avatarColorError, setAvatarColorError] = useState("");
 
-  const startAddAvatarColor = () => { setEditingAvatarColorId("new"); setAvatarColorName(""); setAvatarColorHex("#35A8DD"); setAvatarColorError(""); };
+  const startAddAvatarColor = () => { setEditingAvatarColorId("new"); setAvatarColorName(""); setAvatarColorHex("var(--accent-primary)"); setAvatarColorError(""); };
   const startEditAvatarColor = (c) => { setEditingAvatarColorId(c.id); setAvatarColorName(c.name); setAvatarColorHex(c.hex); setAvatarColorError(""); };
   const cancelAvatarColorEdit = () => { setEditingAvatarColorId(null); setAvatarColorError(""); };
   const saveAvatarColor = () => {
@@ -661,7 +661,7 @@ export default function Settings({
               </div>
               <div>
                 <label className="text-[10.5px] font-semibold" style={{ color: "var(--text-faint)" }}>Verified</label>
-                <button onClick={() => patchUser(u.id, { verified: !u.verified })} className="w-full mt-1 whmi-btn-ghost flex items-center justify-center gap-1.5 text-[12px]" style={u.verified ? { background: "rgba(156,203,59,.15)", color: "#7CA82F", border: "1px solid rgba(156,203,59,.4)" } : {}}>
+                <button onClick={() => patchUser(u.id, { verified: !u.verified })} className="w-full mt-1 whmi-btn-ghost flex items-center justify-center gap-1.5 text-[12px]" style={u.verified ? { background: "color-mix(in srgb, var(--accent-success) 15%, transparent)", color: "var(--accent-success)", border: "1px solid color-mix(in srgb, var(--accent-success) 40%, transparent)" } : {}}>
                   <BadgeCheck size={13} />{u.verified ? "Verified" : "Not verified"}
                 </button>
               </div>
@@ -1422,7 +1422,7 @@ export default function Settings({
                       <div className="flex items-center gap-2">
                         <input type="color" value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} className="w-8 h-8 rounded shrink-0" />
                         <input autoFocus value={avatarColorName} onChange={e => setAvatarColorName(e.target.value)} placeholder="Colour name" className="whmi-input flex-1 px-2.5 py-1.5 text-[12px]" />
-                        <input value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} placeholder="#35A8DD" className="whmi-input w-24 px-2.5 py-1.5 text-[12px]" />
+                        <input value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} placeholder="var(--accent-primary)" className="whmi-input w-24 px-2.5 py-1.5 text-[12px]" />
                       </div>
                       {avatarColorError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{avatarColorError}</div>}
                       <div className="flex gap-1.5 justify-end">
@@ -1451,7 +1451,7 @@ export default function Settings({
                     <div className="flex items-center gap-2">
                       <input type="color" value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} className="w-8 h-8 rounded shrink-0" />
                       <input autoFocus value={avatarColorName} onChange={e => setAvatarColorName(e.target.value)} placeholder="Colour name" className="whmi-input flex-1 px-2.5 py-1.5 text-[12px]" />
-                      <input value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} placeholder="#35A8DD" className="whmi-input w-24 px-2.5 py-1.5 text-[12px]" />
+                      <input value={avatarColorHex} onChange={e => setAvatarColorHex(e.target.value)} placeholder="var(--accent-primary)" className="whmi-input w-24 px-2.5 py-1.5 text-[12px]" />
                     </div>
                     {avatarColorError && <div className="text-[11px] font-semibold" style={{ color: "#D9534F" }}>{avatarColorError}</div>}
                     <div className="flex gap-1.5 justify-end">

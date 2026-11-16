@@ -57,8 +57,8 @@ export default function BrainstormIdeaModal({ idea, onClose, onSave, onRequestDe
             </div>
             <div className="flex items-center gap-1.5 text-[11px] flex-wrap" style={{ color: "var(--text-faint)" }}>
               {relativeTime(idea.createdAt)}
-              {idea.source === "public" && <span className="whmi-badge" style={{ background: "rgba(53,168,221,.12)", color: "var(--accent-secondary)" }}>Public link</span>}
-              {idea.source === "member" && <span className="whmi-badge" style={{ background: "rgba(156,203,59,.15)", color: "#7CA82F" }}>Team suggestion</span>}
+              {idea.source === "public" && <span className="whmi-badge" style={{ background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)", color: "var(--accent-secondary)" }}>Public link</span>}
+              {idea.source === "member" && <span className="whmi-badge" style={{ background: "color-mix(in srgb, var(--accent-success) 15%, transparent)", color: "var(--accent-success)" }}>Team suggestion</span>}
             </div>
             <div className="flex gap-2 pt-1">
               <button
