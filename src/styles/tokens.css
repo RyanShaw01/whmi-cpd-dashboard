@@ -1,34 +1,55 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap');
+/* Newsreader carries the identity: a warm serif reads institutional — journals, universities,
+   hospitals — where a geometric sans reads as a SaaS template. Inter stays for body and UI,
+   where it's genuinely good. */
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;650&display=swap');
 
 .whmi-root {
-  --green: #9CCB3B;
-  --blue: #35A8DD;
-  --purple: #7B3FE4;
-  --accent-primary: var(--blue);
-  --accent-secondary: var(--purple);
-  --accent-success: var(--green);
-  --font-display: 'Manrope', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  /* Brand. --navy is structural (buttons, headers); --accent-primary stays a mid blue because
+     ~100 places use it for progress bars, countdowns and active states, which must not go dark. */
+  --navy: #14294A;
+  --blue: #226C9D;
+  --moss: #557234;
+
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --r-card: 10px;
+  --r-control: 7px;
 }
+
+/* Warm paper rather than cool grey. The old palette's --text-dim/--text-faint were Tailwind's
+   gray-500 and gray-400 verbatim, which is a large part of why this read as generic. */
 .whmi-root.light {
-  --bg: #F7F8FA;
-  --surface: #FFFFFF;
-  --surface-2: #F0F2F5;
-  --border: #E4E7EC;
-  --text: #1A1D23;
-  --text-dim: #6B7280;
-  --text-faint: #9CA3AF;
-  --logo-color: var(--accent-primary);
+  --bg: #F4F1EA;
+  --surface: #FCFBF8;
+  --surface-2: #EFEBE2;
+  --border: #E2DCD1;
+  --text: #16202E;
+  --text-dim: #5A6472;
+  --text-faint: #6F6A5E;
+  --accent-primary: var(--blue);
+  --accent-secondary: #4A6FA5;
+  --accent-success: var(--moss);
+  --logo-color: var(--navy);
+  --btn-bg: var(--navy);
+  --btn-fg: #FCFBF8;
+  --btn-bg-hover: #1F3C6B;
 }
 .whmi-root.dark {
-  --bg: #0E1013;
-  --surface: #16181D;
-  --surface-2: #1D2027;
-  --border: #2A2D35;
-  --text: #F2F3F5;
-  --text-dim: #A3A8B4;
-  --text-faint: #6B7280;
+  --bg: #14130F;
+  --surface: #1C1B16;
+  --surface-2: #24231D;
+  --border: #332F27;
+  --text: #F5F2EA;
+  --text-dim: #A9A295;
+  --text-faint: #8C8578;
+  --accent-primary: #63B2E2;
+  --accent-secondary: #8FA9D2;
+  --accent-success: #9BC45F;
   --logo-color: #FFFFFF;
+  --btn-bg: #F5F2EA;
+  --btn-fg: #14130F;
+  --btn-bg-hover: #FFFFFF;
 }
 /* Deep navy dark mode — complements Western Health's blue brand mark better than a
    neutral black dark mode does. */
@@ -39,8 +60,14 @@
   --border: #234270;
   --text: #F2F5FA;
   --text-dim: #AAB9D6;
-  --text-faint: #6E82AC;
+  --text-faint: #8396BC;
+  --accent-primary: #63B2E2;
+  --accent-secondary: #8FA9D2;
+  --accent-success: #9BC45F;
   --logo-color: #FFFFFF;
+  --btn-bg: #3C8FC9;
+  --btn-fg: #06182F;
+  --btn-bg-hover: #52A3DB;
 }
 .whmi-root {
   background: var(--bg);
@@ -52,32 +79,44 @@
    modals, panels), separate from the page background theme. Declared directly on .whmi-card
    itself so it wins over whatever --surface/--text the page background theme cascaded down. */
 .whmi-root[data-card-theme="light"] .whmi-card {
-  --bg: #F7F8FA; --surface: #FFFFFF; --surface-2: #F0F2F5; --border: #E4E7EC;
-  --text: #1A1D23; --text-dim: #6B7280; --text-faint: #9CA3AF;
+  --bg: #F4F1EA; --surface: #FCFBF8; --surface-2: #EFEBE2; --border: #E2DCD1;
+  --text: #16202E; --text-dim: #5A6472; --text-faint: #6F6A5E;
+  --accent-primary: var(--blue); --accent-secondary: #4A6FA5; --accent-success: var(--moss);
 }
 .whmi-root[data-card-theme="dark"] .whmi-card {
-  --bg: #0E1013; --surface: #16181D; --surface-2: #1D2027; --border: #2A2D35;
-  --text: #F2F3F5; --text-dim: #A3A8B4; --text-faint: #6B7280;
+  --bg: #14130F; --surface: #1C1B16; --surface-2: #24231D; --border: #332F27;
+  --text: #F5F2EA; --text-dim: #A9A295; --text-faint: #8C8578;
+  --accent-primary: #63B2E2; --accent-secondary: #8FA9D2; --accent-success: #9BC45F;
 }
 .whmi-root[data-card-theme="navy"] .whmi-card {
   --bg: #0B1B33; --surface: #122744; --surface-2: #16305A; --border: #234270;
-  --text: #F2F5FA; --text-dim: #AAB9D6; --text-faint: #6E82AC;
+  --text: #F2F5FA; --text-dim: #AAB9D6; --text-faint: #8396BC;
+  --accent-primary: #63B2E2; --accent-secondary: #8FA9D2; --accent-success: #9BC45F;
 }
+
+/* Headings are the serif, set tighter and lighter than a bold sans would be — a serif at 800
+   looks shouty, at 600 it looks considered. */
 .whmi-root h1, .whmi-root h2, .whmi-root h3, .whmi-root .disp {
   font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.012em;
 }
+
+/* Cards stay — they're load-bearing for grouping on dense screens like Reports, attendance and
+   Settings — but they're quiet now: a warm hairline on near-paper, no shadow, tighter radius.
+   On the paper background this reads as a grouped block rather than a floating box. */
 .whmi-card {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--r-card);
 }
 .whmi-event-card { background: var(--surface); }
 .whmi-root.dark .whmi-event-card, .whmi-root.navy .whmi-event-card { background: var(--surface-2); }
 .whmi-quick-actions-group {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   padding: 8px 8px;
 }
 .whmi-accent-bar { background: var(--accent-primary); }
@@ -106,7 +145,7 @@
   font-size: 13px;
   color: var(--text-dim);
   padding: 7px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-control);
   white-space: nowrap;
   transition: background .15s, color .15s;
 }
@@ -121,17 +160,26 @@
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
-  border-radius: 9px;
+  border-radius: var(--r-control);
   white-space: nowrap;
   transition: background .15s, color .15s;
   width: 100%;
 }
 .whmi-side-btn:hover { background: var(--surface-2); color: var(--text); }
-.whmi-side-btn.active { background: var(--surface-2); color: var(--accent-primary); }
+/* The active tab gets a navy rule down its left edge, not just a tint — it reads at a glance
+   from across the sidebar, where a background wash alone doesn't. */
+.whmi-side-btn.active {
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: inset 3px 0 0 var(--navy);
+}
+.whmi-root.navy .whmi-side-btn.active, .whmi-root.dark .whmi-side-btn.active {
+  box-shadow: inset 3px 0 0 var(--accent-primary);
+}
 .whmi-quick-action {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: var(--r-control);
   padding: 7px 8px;
   display: flex;
   align-items: center;
@@ -143,45 +191,56 @@
 .whmi-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
 .whmi-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 .whmi-input {
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 9px;
+  border-radius: var(--r-control);
   font-size: 13px;
+  transition: border-color .12s, box-shadow .12s;
 }
 .whmi-input::placeholder { color: var(--text-faint); }
+.whmi-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 16%, transparent);
+}
+/* Squared off. Pill-shaped badges on every status is one of the loudest generic-template
+   tells, and at this density they turned the pages into badge soup. */
 .whmi-badge {
   font-size: 11px;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 100px;
+  font-weight: 650;
+  padding: 3px 8px;
+  border-radius: 5px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
+/* Brand navy, not near-black. The Western Health blue was previously decoration only. */
 .whmi-btn-primary {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
   font-weight: 600;
   font-size: 13px;
-  border-radius: 9px;
-  padding: 8px 14px;
-  transition: opacity .15s;
+  border-radius: var(--r-control);
+  padding: 8px 15px;
+  transition: background .15s, transform .06s;
 }
-.whmi-btn-primary:hover { opacity: .85; }
+.whmi-btn-primary:hover { background: var(--btn-bg-hover); }
+.whmi-btn-primary:active { transform: translateY(1px); }
 .whmi-btn-primary:disabled { opacity: .4; pointer-events: none; cursor: not-allowed; }
 .whmi-btn-ghost {
-  background: var(--surface-2);
+  background: var(--surface);
   color: var(--text);
   font-weight: 600;
   font-size: 13px;
-  border-radius: 9px;
-  padding: 8px 14px;
+  border-radius: var(--r-control);
+  padding: 8px 15px;
   border: 1px solid var(--border);
   transition: background .12s ease, border-color .12s ease;
 }
-.whmi-btn-ghost:hover { background: var(--border); }
+.whmi-btn-ghost:hover { background: var(--surface-2); border-color: var(--text-faint); }
 .whmi-row-hover:hover { background: var(--surface-2); }
 .whmi-preview-banner:hover { filter: brightness(0.92); }
 .whmi-fade-in { animation: whmiFade .25s ease; }
