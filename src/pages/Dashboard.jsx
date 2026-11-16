@@ -307,7 +307,9 @@ export default function Dashboard({
     <div className="whmi-fade-in p-6 max-w-[1400px] mx-auto space-y-6">
       <div>
         <h1 className="disp text-[22px] font-extrabold">Good afternoon, {userName}</h1>
-        <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Here's what's happening across WHMI CPD today, {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}.</p>
+        {getShowDueSoonDefault() && dueSoonEvents.length > 0 && (
+          <p className="text-[13px]" style={{ color: "var(--text-dim)" }}>Here's what's happening across WHMI CPD today, {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}.</p>
+        )}
 
         {getShowDueSoonDefault() && dueSoonEvents.length > 0 && (
           <ul className="mt-2 space-y-1 pl-5" style={{ listStyleType: "disc" }}>

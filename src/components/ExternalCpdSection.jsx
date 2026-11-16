@@ -19,7 +19,6 @@ const writeStored = (key, value) => {
 function ExternalCpdRow({ entry: e }) {
   const [showInfo, setShowInfo] = useState(false);
   const days = e.date ? daysUntil(e.date) : null;
-  const past = days != null && days < 0;
   const d = e.date ? new Date(`${e.date}T00:00:00`) : null;
   const toggleInfo = (ev) => { ev.preventDefault(); ev.stopPropagation(); setShowInfo(v => !v); };
 
@@ -27,7 +26,7 @@ function ExternalCpdRow({ entry: e }) {
     <a
       href={e.url} target="_blank" rel="noreferrer"
       className="flex items-start gap-4 p-4 rounded-xl whmi-row-hover transition"
-      style={{ border: "1px solid var(--border)", opacity: past ? 0.55 : 1 }}
+      style={{ border: "1px solid var(--border)" }}
     >
       {/* Calendar-chip date instead of a date buried mid-sentence in the meta line -
           the date is the thing people scan this list by. */}
@@ -121,15 +120,17 @@ export default function ExternalCpdSection({ entries = [] }) {
   const toggleSort = () => { const next = !sortAsc; setSortAsc(next); writeStored(SORT_KEY, next ? "asc" : "desc"); };
 
   const sorted = useMemo(() => {
-    const dated = entries.filter(e => e.date);
-    const undated = entries.filter(e => !e.date);
+    // A listing disappears the day after it runs: daysUntil is 0 on the day itself (so it stays
+    // visible right through the event) and negative from the following day. Undated entries are
+    // ongoing programmes with nothing to expire, so they never drop off.
+    const visible = entries.filter(e => !e.date || daysUntil(e.date) >= 0);
+    const dated = visible.filter(e => e.date);
+    const undated = visible.filter(e => !e.date);
     dated.sort((a, b) => (sortAsc ? 1 : -1) * a.date.localeCompare(b.date));
     // Ongoing programmes have no date to sort by, so they always sit at the end rather than
     // jumping to the top under one sort direction and the bottom under the other.
     return [...dated, ...undated];
   }, [entries, sortAsc]);
-
-  const upcomingCount = entries.filter(e => !e.date || daysUntil(e.date) >= 0).length;
 
   return (
     <div className="whmi-card p-5">
@@ -141,13 +142,13 @@ export default function ExternalCpdSection({ entries = [] }) {
           <span className="min-w-0">
             <span className="disp text-[15px] font-bold block">Browse External CPD</span>
             <span className="text-[11.5px] block" style={{ color: "var(--text-faint)" }}>
-              CPD offered by other organisations — not run by Western Health
+              CPD offered by other organisations
             </span>
           </span>
         </button>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{upcomingCount}</span>
-          {open && entries.length > 1 && (
+          <span className="text-[11px] font-semibold" style={{ color: "var(--text-faint)" }}>{sorted.length}</span>
+          {open && sorted.length > 1 && (
             <button onClick={toggleSort} className="whmi-btn-ghost !py-1.5 !px-2.5 text-[11.5px] flex items-center gap-1.5">
               <ArrowDownUp size={12} />{sortAsc ? "Soonest first" : "Furthest first"}
             </button>
